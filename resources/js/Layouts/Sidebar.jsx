@@ -27,7 +27,32 @@ const StackedTrashIcon = ({ SubIcon }) => (
 );
 
 export default function Sidebar() {
+    const { url } = usePage();
     const { counts } = usePage().props;
+
+    // --- Logika Pengecekan Active State yang Akurat ---
+
+    // 1. Dashboard Active State
+    const isDashboardActive = (typeof route === 'function' && route().current('dashboard')) || url === '/dashboard';
+
+    // 2. Manajemen User Active State (Hanya true untuk Halaman User biasa, FALSE untuk Recycle Bin)
+    const isUserActive = (typeof route === 'function' && route().has('users.index') && route().current('users.*') && !route().current('users.recycle-bin'))
+        || (typeof route === 'function' && route().has('user.index') && route().current('user.*') && !route().current('user.recycle-bin'))
+        || ((url.startsWith('/users') || url.startsWith('/user')) && !url.includes('recycle-bin'));
+
+    // 3. Recycle Bin User Active State (Murni hanya true untuk halaman Recycle Bin User)
+    const isUserRecycleBinActive = (typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin'))
+        || (typeof route === 'function' && route().has('user.recycle-bin') && route().current('user.recycle-bin'))
+        || url.includes('/recycle-bin/users')
+        || url.includes('/recycle-bin/user');
+
+    // 4. Master Mitra Active State (Hanya true untuk Master Mitra, FALSE untuk Recycle Bin Mitra)
+    const isMitraActive = (typeof route === 'function' && route().has('mitra.index') && route().current('mitra.*') && !route().current('mitra.recycle-bin'))
+        || (url.startsWith('/mitra') && !url.includes('recycle-bin'));
+
+    // 5. Recycle Bin Mitra Active State (Murni hanya true untuk halaman Recycle Bin Mitra)
+    const isMitraRecycleBinActive = (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin'))
+        || url.includes('/recycle-bin/mitra');
 
     return (
         <aside className="fixed inset-y-0 left-0 w-64 bg-simitra-dark text-white flex flex-col hidden md:flex z-50">
@@ -42,8 +67,8 @@ export default function Sidebar() {
                 <nav className="px-4 space-y-1">
                     {/* Dashboard */}
                     <Link 
-                        href={route('dashboard')} 
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${route().current('dashboard') ? 'bg-simitra-orange text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800'}`}
+                        href={typeof route === 'function' && route().has('dashboard') ? route('dashboard') : '/dashboard'} 
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isDashboardActive ? 'bg-simitra-orange text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800'}`}
                     >
                         <LayoutGrid size={18} />
                         Dashboard
@@ -64,18 +89,24 @@ export default function Sidebar() {
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         ADMINISTRATOR
                     </div>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <Link 
+                        href={typeof route === 'function' && route().has('users.index') ? route('users.index') : '/users'} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${isUserActive ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <Users size={18} />
                             Manajemen User
                         </div>
-                    </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    </Link>
+                    <Link 
+                        href={typeof route === 'function' && route().has('users.recycle-bin') ? route('users.recycle-bin') : '/recycle-bin/users'} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${isUserRecycleBinActive ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={User} />
                             Recycle Bin User
                         </div>
-                    </a>
+                    </Link>
                     <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
                         <div className="flex items-center gap-3">
                             <ShieldCheck size={18} />
@@ -83,8 +114,8 @@ export default function Sidebar() {
                         </div>
                     </a>
                     <Link 
-                        href={route('mitra.index')} 
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('mitra.index') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                        href={typeof route === 'function' && route().has('mitra.index') ? route('mitra.index') : '/mitra'} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${isMitraActive ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
                     >
                         <div className="flex items-center gap-3">
                             <Contact size={18} />
@@ -92,8 +123,8 @@ export default function Sidebar() {
                         </div>
                     </Link>
                     <Link 
-                        href={route('mitra.recycle-bin')} 
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('mitra.recycle-bin') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                        href={typeof route === 'function' && route().has('mitra.recycle-bin') ? route('mitra.recycle-bin') : '/recycle-bin/mitra'} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${isMitraRecycleBinActive ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
                     >
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={Contact} />
@@ -190,7 +221,7 @@ export default function Sidebar() {
                         AKUN
                     </div>
                     <Link 
-                        href={route('profile.edit')} 
+                        href={typeof route === 'function' && route().has('profile.edit') ? route('profile.edit') : '/profile'} 
                         className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
                     >
                         <div className="flex items-center gap-3">
@@ -199,7 +230,7 @@ export default function Sidebar() {
                         </div>
                     </Link>
                     <Link 
-                        href={route('logout')} 
+                        href={typeof route === 'function' && route().has('logout') ? route('logout') : '/logout'} 
                         method="post"
                         as="button"
                         className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
