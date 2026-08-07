@@ -76,7 +76,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
         <>
             <Head title="Penugasan Mitra" />
 
-            <div className="p-6 space-y-5">
+            <div className="space-y-6">
 
                 {/* Page Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -24,7 +24,7 @@ function Create({ auth }) {
         <>
             <Head title="Tambah Kegiatan Baru" />
 
-            <div className="p-6 space-y-6">
+            <div className="space-y-6">
                 {/* Header Title Section dengan Tombol Kembali */}
                 <div className="flex items-center gap-4">
                     <Link

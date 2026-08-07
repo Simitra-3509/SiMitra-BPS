@@ -177,12 +177,15 @@ export default function Sidebar() {
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         TRANSAKSI
                     </div>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <Link 
+                        href={route('honorarium.index')} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('honorarium.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <Banknote size={18} />
                             Input Honor
                         </div>
-                    </a>
+                    </Link>
                     {isAdmin && (
                         <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
                             <div className="flex items-center gap-3">
@@ -196,12 +199,15 @@ export default function Sidebar() {
                             )}
                         </a>
                     )}
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <Link 
+                        href={route('laporan-honor.index')} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('laporan-honor.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <FileText size={18} />
                             Laporan Detail Honor Mitra
                         </div>
-                    </a>
+                    </Link>
                     <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
                         <div className="flex items-center gap-3">
                             <Gauge size={18} />

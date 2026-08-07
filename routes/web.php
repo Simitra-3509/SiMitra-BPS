@@ -5,6 +5,8 @@ use App\Http\Controllers\MitraController;
 use App\Http\Controllers\SbmlLimitController;
 use App\Http\Controllers\KegiatanController; 
 use App\Http\Controllers\PenugasanController;
+use App\Http\Controllers\HonorariumController;
+use App\Http\Controllers\LaporanHonorController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -86,6 +88,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         Route::resource('penugasan', PenugasanController::class);
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
+        Route::resource('honorarium', HonorariumController::class);
+        Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
     });
 
     // ==========================================
