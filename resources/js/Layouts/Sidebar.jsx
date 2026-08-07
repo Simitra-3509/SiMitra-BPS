@@ -29,6 +29,13 @@ const StackedTrashIcon = ({ SubIcon }) => (
 export default function Sidebar() {
     const { counts } = usePage().props;
 
+    const navItemClass = (isActive) => 
+        `flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${
+            isActive 
+                ? 'bg-simitra-orange text-white shadow-lg' 
+                : 'text-gray-300 hover:bg-gray-800'
+        }`;
+
     return (
         <aside className="fixed inset-y-0 left-0 w-64 bg-simitra-dark text-white flex flex-col hidden md:flex z-50">
             {/* Logo */}
@@ -43,61 +50,66 @@ export default function Sidebar() {
                     {/* Dashboard */}
                     <Link 
                         href={route('dashboard')} 
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${route().current('dashboard') ? 'bg-simitra-orange text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800'}`}
+                        className={navItemClass(route().current('dashboard'))}
                     >
-                        <LayoutGrid size={18} />
-                        Dashboard
+                        <div className="flex items-center gap-3">
+                            <LayoutGrid size={18} />
+                            <span>Dashboard</span>
+                        </div>
                     </Link>
 
                     {/* PENGATURAN */}
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         PENGATURAN
                     </div>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <Link 
+                        href={route('sbml.index')} 
+                        className={navItemClass(route().current('sbml.index'))}
+                    >
                         <div className="flex items-center gap-3">
                             <Settings size={18} />
-                            Batas SBML
+                            <span>Batas SBML</span>
                         </div>
-                    </a>
+                    </Link>
 
                     {/* ADMINISTRATOR */}
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         ADMINISTRATOR
                     </div>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <Users size={18} />
-                            Manajemen User
+                            <span>Manajemen User</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={User} />
-                            Recycle Bin User
+                            <span>Recycle Bin User</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <ShieldCheck size={18} />
-                            Security Center
+                            <span>Security Center</span>
                         </div>
                     </a>
                     <Link 
                         href={route('mitra.index')} 
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('mitra.index') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                        className={navItemClass(route().current('mitra.index'))}
                     >
                         <div className="flex items-center gap-3">
                             <Contact size={18} />
-                            Master Mitra
+                            <span>Master Mitra</span>
                         </div>
                     </Link>
                     <Link 
                         href={route('mitra.recycle-bin')} 
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('mitra.recycle-bin') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                        className={navItemClass(route().current('mitra.recycle-bin'))}
                     >
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={Contact} />
-                            Recycle Bin Mitra
+                            <span>Recycle Bin Mitra</span>
                         </div>
                         {counts?.recycleBinMitra > 0 && (
                             <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
@@ -110,16 +122,16 @@ export default function Sidebar() {
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         MANAJEMEN KEGIATAN
                     </div>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <CalendarCheck size={18} />
-                            Kegiatan
+                            <span>Kegiatan</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={CalendarDays} />
-                            Recycle Bin Kegiatan
+                            <span>Recycle Bin Kegiatan</span>
                         </div>
                         {counts?.recycleBinKegiatan > 0 && (
                             <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
@@ -127,16 +139,16 @@ export default function Sidebar() {
                             </span>
                         )}
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <UserCheck size={18} />
-                            Penugasan Mitra
+                            <span>Penugasan Mitra</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={UserCheck} />
-                            Recycle Bin Penugasan
+                            <span>Recycle Bin Penugasan</span>
                         </div>
                         {counts?.recycleBinPenugasan > 0 && (
                             <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
@@ -149,16 +161,16 @@ export default function Sidebar() {
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         TRANSAKSI
                     </div>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <Banknote size={18} />
-                            Input Honor
+                            <span>Input Honor</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={Banknote} />
-                            Recycle Bin Honorarium
+                            <span>Recycle Bin Honorarium</span>
                         </div>
                         {counts?.recycleBinHonorarium > 0 && (
                             <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
@@ -166,22 +178,22 @@ export default function Sidebar() {
                             </span>
                         )}
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <FileText size={18} />
-                            Laporan Detail Honor Mitra
+                            <span>Laporan Detail Honor Mitra</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <Gauge size={18} />
-                            Monitoring Kuota
+                            <span>Monitoring Kuota</span>
                         </div>
                     </a>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <TrendingUp size={18} />
-                            Monitoring SBML
+                            <span>Monitoring SBML</span>
                         </div>
                     </a>
 
@@ -191,22 +203,22 @@ export default function Sidebar() {
                     </div>
                     <Link 
                         href={route('profile.edit')} 
-                        className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
+                        className={navItemClass(route().current('profile.edit'))}
                     >
                         <div className="flex items-center gap-3">
                             <User size={18} />
-                            Profil Saya
+                            <span>Profil Saya</span>
                         </div>
                     </Link>
                     <Link 
                         href={route('logout')} 
                         method="post"
                         as="button"
-                        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
+                        className={`w-full ${navItemClass(false)}`}
                     >
                         <div className="flex items-center gap-3">
                             <LogOut size={18} />
-                            Logout
+                            <span>Logout</span>
                         </div>
                     </Link>
                 </nav>

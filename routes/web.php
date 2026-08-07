@@ -62,11 +62,16 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 use App\Http\Controllers\MitraController;
+use App\Http\Controllers\SbmlLimitController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // SBML Routes
+    Route::get('/sbml', [SbmlLimitController::class, 'index'])->name('sbml.index');
+    Route::post('/sbml', [SbmlLimitController::class, 'update'])->name('sbml.update');
 
     // Mitra Routes
     Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
@@ -79,3 +84,4 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
