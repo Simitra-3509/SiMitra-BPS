@@ -19,6 +19,14 @@ class DatabaseSeeder extends Seeder
             'name' => 'Administrator',
             'username' => 'admin',
             'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+
+        User::create([
+            'name' => 'Operator Si-Mitra',
+            'username' => 'operator',
+            'password' => Hash::make('password'),
+            'role' => 'operator',
         ]);
 
         // Sbml Limits
