@@ -21,16 +21,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['admin', 'operator', 'viewer', 'mitra'])
-                  ->notNull()
-                  ->default('operator')
-                  ->after('password'); // MySQL/MariaDB only — diabaikan di SQLite
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->enum('role', ['admin', 'operator', 'viewer', 'mitra'])
+                      ->notNull()
+                      ->default('operator')
+                      ->after('password'); // MySQL/MariaDB only — diabaikan di SQLite
+            }
 
-            $table->foreignId('pegawai_id')
-                  ->nullable()
-                  ->constrained('pegawai')
-                  ->nullOnDelete() // hard-delete pegawai -> null; soft-delete tidak memengaruhi FK
-                  ->after('role'); // MySQL/MariaDB only
+            if (!Schema::hasColumn('users', 'pegawai_id')) {
+                $table->foreignId('pegawai_id')
+                      ->nullable()
+                      ->constrained('pegawai')
+                      ->nullOnDelete() // hard-delete pegawai -> null; soft-delete tidak memengaruhi FK
+                      ->after('role'); // MySQL/MariaDB only
+            }
         });
     }
 
