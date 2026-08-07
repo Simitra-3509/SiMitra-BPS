@@ -16,12 +16,7 @@ use App\Models\Honorarium;
 use App\Models\SbmlLimit;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -109,6 +104,56 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
     });
 
+<<<<<<< HEAD
 });
 
 require __DIR__.'/auth.php';
+=======
+    // SBML Routes
+    Route::get('/sbml', [SbmlLimitController::class, 'index'])->name('sbml.index');
+    Route::post('/sbml', [SbmlLimitController::class, 'update'])->name('sbml.update');
+
+    // Mitra Routes
+    Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+    Route::post('/mitra', [MitraController::class, 'store'])->name('mitra.store');
+    Route::put('/mitra/{mitra}', [MitraController::class, 'update'])->name('mitra.update');
+    Route::delete('/mitra/{mitra}', [MitraController::class, 'destroy'])->name('mitra.destroy');
+    Route::get('/recycle-bin/mitra', [MitraController::class, 'recycleBin'])->name('mitra.recycle-bin');
+    Route::post('/recycle-bin/mitra/{id}/restore', [MitraController::class, 'restore'])->name('mitra.restore');
+    Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
+    // User Routes
+    Route::get('/users', function () {
+        return Inertia::render('Users/Index');
+    })->name('users.index');
+    Route::get('/recycle-bin/users', function (Illuminate\Http\Request $request) {
+        return Inertia::render('Users/RecycleBin', [
+            'trashedUsers' => [],
+            'filters' => $request->only(['search', 'role', 'status', 'per_page']),
+        ]);
+    })->name('users.recycle-bin');
+    Route::get('/users/create', function () {
+        return Inertia::render('Users/Create');
+    })->name('users.create');
+    Route::post('/users', function (Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'username' => 'required|string|max:255|unique:users,username',
+            'password' => 'required|string|min:6',
+            'nama_lengkap' => 'required|string|max:255',
+            'sobat_id' => 'nullable|string|max:12',
+            'role' => 'required|string',
+        ]);
+        App\Models\User::create([
+            'name' => $validated['nama_lengkap'],
+            'username' => $validated['username'],
+            'password' => Illuminate\Support\Facades\Hash::make($validated['password']),
+        ]);
+        return redirect()->route('users.index')->with('message', 'User berhasil ditambahkan.');
+    })->name('user.store');
+    Route::get('/users/edit', function () {
+        return Inertia::render('Users/Edit');
+    })->name('users.edit');
+});
+
+require __DIR__.'/auth.php';
+
+>>>>>>> 0e1b886b6fb6e89a0ec10d6d1e02fb0ea8d5ac01

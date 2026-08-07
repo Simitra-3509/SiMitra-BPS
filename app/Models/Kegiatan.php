@@ -19,6 +19,11 @@ class Kegiatan extends Model
         'status_aktif',
     ];
 
+    public function masterKegiatan()
+    {
+        return $this->belongsTo(MasterKegiatan::class, 'master_kegiatan_id');
+    }
+
     public function penugasans()
     {
         return $this->hasMany(Penugasan::class);

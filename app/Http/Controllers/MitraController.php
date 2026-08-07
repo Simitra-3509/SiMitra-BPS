@@ -16,9 +16,9 @@ class MitraController extends Controller
         $search = $request->input('search');
         $status = $request->input('status', 'semua');
         $bank = $request->input('bank', 'semua');
-        $perPage = (int) $request->input('per_page', 20);
+        $perPageInput = $request->input('per_page', 20);
 
-        $mitras = Mitra::query()
+        $query = Mitra::query()
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nik', 'like', "%{$search}%")
@@ -36,9 +36,12 @@ class MitraController extends Controller
             ->when($bank !== 'semua', function ($query) use ($bank) {
                 $query->where('nama_bank', $bank);
             })
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
+            ->latest();
+
+        $perPage = $perPageInput === 'semua' ? $query->count() : (int) $perPageInput;
+        $perPage = $perPage > 0 ? $perPage : 1;
+
+        $mitras = $query->paginate($perPage)->withQueryString();
 
         $deletedCount = Mitra::onlyTrashed()->count();
         $banksList = Mitra::whereNotNull('nama_bank')->distinct()->pluck('nama_bank');
@@ -49,7 +52,7 @@ class MitraController extends Controller
                 'search' => $search,
                 'status' => $status,
                 'bank' => $bank,
-                'per_page' => $perPage,
+                'per_page' => $perPageInput,
             ],
             'banksList' => $banksList,
             'deletedCount' => $deletedCount,
@@ -114,23 +117,26 @@ class MitraController extends Controller
     public function recycleBin(Request $request)
     {
         $search = $request->input('search');
-        $perPage = (int) $request->input('per_page', 20);
+        $perPageInput = $request->input('per_page', 20);
 
-        $trashedMitras = Mitra::onlyTrashed()
+        $query = Mitra::onlyTrashed()
             ->when($search, function ($query, $search) {
                 $query->where('nik', 'like', "%{$search}%")
                       ->orWhere('nama_lengkap', 'like', "%{$search}%")
                       ->orWhere('sobat_id', 'like', "%{$search}%");
             })
-            ->latest('deleted_at')
-            ->paginate($perPage)
-            ->withQueryString();
+            ->latest('deleted_at');
+
+        $perPage = $perPageInput === 'semua' ? $query->count() : (int) $perPageInput;
+        $perPage = $perPage > 0 ? $perPage : 1;
+
+        $trashedMitras = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('Mitra/RecycleBin', [
             'mitras' => $trashedMitras,
             'filters' => [
                 'search' => $search,
-                'per_page' => $perPage,
+                'per_page' => $perPageInput,
             ]
         ]);
     }

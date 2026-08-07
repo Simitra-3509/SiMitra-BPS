@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Mitra;
+use App\Models\MasterKegiatan;
 use App\Models\Kegiatan;
 use App\Models\Penugasan;
 use App\Models\Honorarium;
@@ -33,10 +34,67 @@ class DatabaseSeeder extends Seeder
         SbmlLimit::create(['jenis_kegiatan' => 'pendataan', 'batas_maksimal' => 3085000, 'tahun' => 2026]);
         SbmlLimit::create(['jenis_kegiatan' => 'pengolahan', 'batas_maksimal' => 2854000, 'tahun' => 2026]);
 
+        // Master Kegiatans
+        $master1 = MasterKegiatan::create([
+            'kode_kegiatan' => 'KRO-SE2026-PEND',
+            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pendataan)',
+            'satuan_kegiatan' => 'Responden',
+            'harga_satuan' => 50000,
+            'kategori_kegiatan' => 'Sensus',
+        ]);
+
+        $master2 = MasterKegiatan::create([
+            'kode_kegiatan' => 'KRO-SE2026-PENG',
+            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pengolahan)',
+            'satuan_kegiatan' => 'Dokumen',
+            'harga_satuan' => 25000,
+            'kategori_kegiatan' => 'Sensus',
+        ]);
+
+        $master3 = MasterKegiatan::create([
+            'kode_kegiatan' => 'KRO-SAKERNAS-PEND',
+            'nama_kegiatan' => 'Survei Angkatan Kerja Nasional',
+            'satuan_kegiatan' => 'Dokumen',
+            'harga_satuan' => 35000,
+            'kategori_kegiatan' => 'Survei',
+        ]);
+
         // Kegiatans
-        $kegiatan1 = Kegiatan::create(['nama_kegiatan' => 'Sensus Ekonomi 2026 (Pendataan)', 'jenis_kegiatan' => 'pendataan']);
-        $kegiatan2 = Kegiatan::create(['nama_kegiatan' => 'Sensus Ekonomi 2026 (Pengolahan)', 'jenis_kegiatan' => 'pengolahan']);
-        $kegiatan3 = Kegiatan::create(['nama_kegiatan' => 'Survei Angkatan Kerja Nasional', 'jenis_kegiatan' => 'pendataan']);
+        $kegiatan1 = Kegiatan::create([
+            'master_kegiatan_id' => $master1->id,
+            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pendataan)',
+            'jenis_kegiatan' => 'pendataan',
+            'kode_kegiatan' => $master1->kode_kegiatan,
+            'satuan_kegiatan' => $master1->satuan_kegiatan,
+            'harga_satuan' => $master1->harga_satuan,
+            'jumlah_sampel' => 1500,
+            'total_anggaran' => 75000000,
+            'deskripsi' => 'Kegiatan pencacahan lapangan Sensus Ekonomi 2026',
+        ]);
+
+        $kegiatan2 = Kegiatan::create([
+            'master_kegiatan_id' => $master2->id,
+            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pengolahan)',
+            'jenis_kegiatan' => 'pengolahan',
+            'kode_kegiatan' => $master2->kode_kegiatan,
+            'satuan_kegiatan' => $master2->satuan_kegiatan,
+            'harga_satuan' => $master2->harga_satuan,
+            'jumlah_sampel' => 2000,
+            'total_anggaran' => 50000000,
+            'deskripsi' => 'Kegiatan pengolahan dan entri data Sensus Ekonomi 2026',
+        ]);
+
+        $kegiatan3 = Kegiatan::create([
+            'master_kegiatan_id' => $master3->id,
+            'nama_kegiatan' => 'Survei Angkatan Kerja Nasional',
+            'jenis_kegiatan' => 'pendataan',
+            'kode_kegiatan' => $master3->kode_kegiatan,
+            'satuan_kegiatan' => $master3->satuan_kegiatan,
+            'harga_satuan' => $master3->harga_satuan,
+            'jumlah_sampel' => 800,
+            'total_anggaran' => 28000000,
+            'deskripsi' => 'Kegiatan pendataan Sakernas',
+        ]);
 
         $sampleMitras = [
             ['nama' => 'Ahmad Suryadi', 'sobat' => '723511', 'rek' => '39161904675', 'bank' => 'Mandiri', 'hp' => '081283072330', 'status' => false],
