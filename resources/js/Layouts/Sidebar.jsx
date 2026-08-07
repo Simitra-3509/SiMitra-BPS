@@ -27,6 +27,7 @@ const StackedTrashIcon = ({ SubIcon }) => (
 );
 
 export default function Sidebar() {
+    const { url } = usePage();
     const { counts } = usePage().props;
 
     const navItemClass = (isActive) => 
@@ -35,6 +36,26 @@ export default function Sidebar() {
                 ? 'bg-simitra-orange text-white shadow-lg' 
                 : 'text-gray-300 hover:bg-gray-800'
         }`;
+
+    // --- Active State Logic ---
+    const isDashboardActive = (typeof route === 'function' && route().current('dashboard')) || url === '/dashboard';
+
+    const isUserActive = (typeof route === 'function' && route().has('users.index') && route().current('users.*') && !route().current('users.recycle-bin'))
+        || (typeof route === 'function' && route().has('user.index') && route().current('user.*') && !route().current('user.recycle-bin'))
+        || ((url.startsWith('/users') || url.startsWith('/user')) && !url.includes('recycle-bin'));
+
+    const isUserRecycleBinActive = (typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin'))
+        || (typeof route === 'function' && route().has('user.recycle-bin') && route().current('user.recycle-bin'))
+        || url.includes('/recycle-bin/users')
+        || url.includes('/recycle-bin/user');
+
+    const isMitraActive = (typeof route === 'function' && route().has('mitra.index') && route().current('mitra.*') && !route().current('mitra.recycle-bin'))
+        || (url.startsWith('/mitra') && !url.includes('recycle-bin'));
+
+    const isMitraRecycleBinActive = (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin'))
+        || url.includes('/recycle-bin/mitra');
+
+    const isProfileActive = url.startsWith('/profile');
 
     return (
         <aside className="fixed inset-y-0 left-0 w-64 bg-simitra-dark text-white flex flex-col hidden md:flex z-50">
@@ -49,22 +70,20 @@ export default function Sidebar() {
                 <nav className="px-4 space-y-1">
                     {/* Dashboard */}
                     <Link 
-                        href={route('dashboard')} 
-                        className={navItemClass(route().current('dashboard'))}
+                        href={typeof route === 'function' && route().has('dashboard') ? route('dashboard') : '/dashboard'} 
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isDashboardActive ? 'bg-simitra-orange text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800'}`}
                     >
-                        <div className="flex items-center gap-3">
-                            <LayoutGrid size={18} />
-                            <span>Dashboard</span>
-                        </div>
+                        <LayoutGrid size={18} />
+                        <span>Dashboard</span>
                     </Link>
 
                     {/* PENGATURAN */}
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         PENGATURAN
                     </div>
-                    <Link 
-                        href={route('sbml.index')} 
-                        className={navItemClass(route().current('sbml.index'))}
+                    <Link
+                        href={typeof route === 'function' && route().has('sbml.index') ? route('sbml.index') : '#'}
+                        className={navItemClass(typeof route === 'function' && route().has('sbml.index') && route().current('sbml.index'))}
                     >
                         <div className="flex items-center gap-3">
                             <Settings size={18} />
@@ -76,18 +95,24 @@ export default function Sidebar() {
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         ADMINISTRATOR
                     </div>
-                    <a href="#" className={navItemClass(false)}>
+                    <Link 
+                        href={typeof route === 'function' && route().has('users.index') ? route('users.index') : '/users'} 
+                        className={navItemClass(isUserActive)}
+                    >
                         <div className="flex items-center gap-3">
                             <Users size={18} />
                             <span>Manajemen User</span>
                         </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
+                    </Link>
+                    <Link 
+                        href={typeof route === 'function' && route().has('users.recycle-bin') ? route('users.recycle-bin') : '/recycle-bin/users'} 
+                        className={navItemClass(isUserRecycleBinActive)}
+                    >
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={User} />
                             <span>Recycle Bin User</span>
                         </div>
-                    </a>
+                    </Link>
                     <a href="#" className={navItemClass(false)}>
                         <div className="flex items-center gap-3">
                             <ShieldCheck size={18} />
@@ -95,8 +120,8 @@ export default function Sidebar() {
                         </div>
                     </a>
                     <Link 
-                        href={route('mitra.index')} 
-                        className={navItemClass(route().current('mitra.index'))}
+                        href={typeof route === 'function' && route().has('mitra.index') ? route('mitra.index') : '/mitra'} 
+                        className={navItemClass(isMitraActive)}
                     >
                         <div className="flex items-center gap-3">
                             <Contact size={18} />
@@ -104,8 +129,8 @@ export default function Sidebar() {
                         </div>
                     </Link>
                     <Link 
-                        href={route('mitra.recycle-bin')} 
-                        className={navItemClass(route().current('mitra.recycle-bin'))}
+                        href={typeof route === 'function' && route().has('mitra.recycle-bin') ? route('mitra.recycle-bin') : '/recycle-bin/mitra'} 
+                        className={navItemClass(isMitraRecycleBinActive)}
                     >
                         <div className="flex items-center gap-3">
                             <StackedTrashIcon SubIcon={Contact} />
@@ -202,8 +227,8 @@ export default function Sidebar() {
                         AKUN
                     </div>
                     <Link 
-                        href={route('profile.edit')} 
-                        className={navItemClass(route().current('profile.edit'))}
+                        href={typeof route === 'function' && route().has('profile.edit') ? route('profile.edit') : '/profile'} 
+                        className={navItemClass(isProfileActive)}
                     >
                         <div className="flex items-center gap-3">
                             <User size={18} />
@@ -211,7 +236,7 @@ export default function Sidebar() {
                         </div>
                     </Link>
                     <Link 
-                        href={route('logout')} 
+                        href={typeof route === 'function' && route().has('logout') ? route('logout') : '/logout'} 
                         method="post"
                         as="button"
                         className={`w-full ${navItemClass(false)}`}
