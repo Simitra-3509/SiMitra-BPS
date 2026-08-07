@@ -104,11 +104,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
     });
 
-<<<<<<< HEAD
-});
-
-require __DIR__.'/auth.php';
-=======
     // SBML Routes
     Route::get('/sbml', [SbmlLimitController::class, 'index'])->name('sbml.index');
     Route::post('/sbml', [SbmlLimitController::class, 'update'])->name('sbml.update');
@@ -156,4 +151,3 @@ require __DIR__.'/auth.php';
 
 require __DIR__.'/auth.php';
 
->>>>>>> 0e1b886b6fb6e89a0ec10d6d1e02fb0ea8d5ac01
