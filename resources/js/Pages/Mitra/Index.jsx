@@ -227,6 +227,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                             <option value={20}>20</option>
                             <option value={50}>50</option>
                             <option value={100}>100</option>
+                            <option value="semua">Semua</option>
                         </select>
                         <span>data</span>
                     </div>
