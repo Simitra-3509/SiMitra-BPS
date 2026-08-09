@@ -9,12 +9,7 @@ use App\Models\Kegiatan;
 use App\Models\Honorarium;
 use App\Models\SbmlLimit;
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
@@ -81,6 +76,37 @@ Route::middleware('auth')->group(function () {
     Route::get('/recycle-bin/mitra', [MitraController::class, 'recycleBin'])->name('mitra.recycle-bin');
     Route::post('/recycle-bin/mitra/{id}/restore', [MitraController::class, 'restore'])->name('mitra.restore');
     Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
+    // User Routes
+    Route::get('/users', function () {
+        return Inertia::render('Users/Index');
+    })->name('users.index');
+    Route::get('/recycle-bin/users', function (Illuminate\Http\Request $request) {
+        return Inertia::render('Users/RecycleBin', [
+            'trashedUsers' => [],
+            'filters' => $request->only(['search', 'role', 'status', 'per_page']),
+        ]);
+    })->name('users.recycle-bin');
+    Route::get('/users/create', function () {
+        return Inertia::render('Users/Create');
+    })->name('users.create');
+    Route::post('/users', function (Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'username' => 'required|string|max:255|unique:users,username',
+            'password' => 'required|string|min:6',
+            'nama_lengkap' => 'required|string|max:255',
+            'sobat_id' => 'nullable|string|max:12',
+            'role' => 'required|string',
+        ]);
+        App\Models\User::create([
+            'name' => $validated['nama_lengkap'],
+            'username' => $validated['username'],
+            'password' => Illuminate\Support\Facades\Hash::make($validated['password']),
+        ]);
+        return redirect()->route('users.index')->with('message', 'User berhasil ditambahkan.');
+    })->name('user.store');
+    Route::get('/users/edit', function () {
+        return Inertia::render('Users/Edit');
+    })->name('users.edit');
 });
 
 require __DIR__.'/auth.php';
