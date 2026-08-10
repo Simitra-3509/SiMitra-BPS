@@ -263,9 +263,9 @@ const Index = () => {
                                     <td className="px-6 py-4 text-center dark:text-gray-300">1</td>
                                     <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">Rp 2.700.000</td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1">
+                                        <Link href={route('laporan-honor.show', 1)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
                                             <Search size={14} /> Detail
-                                        </button>
+                                        </Link>
                                     </td>
                                 </tr>
                                 <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition border-b border-gray-50 dark:border-gray-700">
@@ -278,9 +278,24 @@ const Index = () => {
                                     <td className="px-6 py-4 text-center dark:text-gray-300">1</td>
                                     <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">Rp 2.400.000</td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1">
+                                        <Link href={route('laporan-honor.show', 2)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
                                             <Search size={14} /> Detail
-                                        </button>
+                                        </Link>
+                                    </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition border-b border-gray-50 dark:border-gray-700">
+                                    <td className="px-6 py-4 dark:text-gray-300">3</td>
+                                    <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">Dewi Sartika</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Mei 2026</td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white bg-[#F26522]">Pendataan</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center dark:text-gray-300">3</td>
+                                    <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">Rp 3.500.000</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <Link href={route('laporan-honor.show', 3)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
+                                            <Search size={14} /> Detail
+                                        </Link>
                                     </td>
                                 </tr>
                             </tbody>

@@ -14,4 +14,14 @@ class LaporanHonorController extends Controller
     {
         return Inertia::render('LaporanHonor/Index');
     }
+
+    /**
+     * Tampilkan halaman detail laporan honor mitra.
+     */
+    public function show($id, Request $request)
+    {
+        return Inertia::render('LaporanHonor/Show', [
+            'id' => $id,
+        ]);
+    }
 }
