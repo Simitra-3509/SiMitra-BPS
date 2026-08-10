@@ -301,6 +301,25 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     </table>
                 </div>
 
+                {/* Pagination */}
+                {kegiatan?.last_page > 1 && (
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                            Menampilkan {kegiatan.from || 0} ke {kegiatan.to || 0} dari {kegiatan.total} data
+                        </div>
+                        <div className="flex items-center gap-1 overflow-x-auto">
+                            {kegiatan.links.map((link, i) => (
+                                <Link
+                                    key={i}
+                                    href={link.url || '#'}
+                                    className={`px-3 py-1 rounded-md text-sm whitespace-nowrap ${link.active ? 'bg-[#F26522] text-white font-semibold shadow-sm' : 'bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'} ${!link.url && 'opacity-50 cursor-not-allowed'}`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Floating Action Bar untuk Bulk Delete */}
                 {selectedIds.length > 0 && (
                     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-5">
