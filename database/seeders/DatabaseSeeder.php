@@ -23,6 +23,13 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
+        User::create([
+            'name' => 'Operator Si-Mitra',
+            'username' => 'operator',
+            'password' => Hash::make('password'),
+            'role' => 'operator',
+        ]);
+
         // Sbml Limits
         SbmlLimit::create(['jenis_kegiatan' => 'pendataan', 'batas_maksimal' => 3085000, 'tahun' => 2026]);
         SbmlLimit::create(['jenis_kegiatan' => 'pengolahan', 'batas_maksimal' => 2854000, 'tahun' => 2026]);
@@ -56,7 +63,9 @@ class DatabaseSeeder extends Seeder
         $kegiatan1 = Kegiatan::create([
             'master_kegiatan_id' => $master1->id,
             'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pendataan)',
-            'jenis_kegiatan' => 'pendataan',
+            'jenis_sbml' => 'pendataan',
+            'bulan' => 8,
+            'tahun' => 2026,
             'kode_kegiatan' => $master1->kode_kegiatan,
             'satuan_kegiatan' => $master1->satuan_kegiatan,
             'harga_satuan' => $master1->harga_satuan,
@@ -68,7 +77,9 @@ class DatabaseSeeder extends Seeder
         $kegiatan2 = Kegiatan::create([
             'master_kegiatan_id' => $master2->id,
             'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pengolahan)',
-            'jenis_kegiatan' => 'pengolahan',
+            'jenis_sbml' => 'pengolahan',
+            'bulan' => 8,
+            'tahun' => 2026,
             'kode_kegiatan' => $master2->kode_kegiatan,
             'satuan_kegiatan' => $master2->satuan_kegiatan,
             'harga_satuan' => $master2->harga_satuan,
@@ -80,7 +91,9 @@ class DatabaseSeeder extends Seeder
         $kegiatan3 = Kegiatan::create([
             'master_kegiatan_id' => $master3->id,
             'nama_kegiatan' => 'Survei Angkatan Kerja Nasional',
-            'jenis_kegiatan' => 'pendataan',
+            'jenis_sbml' => 'pendataan',
+            'bulan' => 8,
+            'tahun' => 2026,
             'kode_kegiatan' => $master3->kode_kegiatan,
             'satuan_kegiatan' => $master3->satuan_kegiatan,
             'harga_satuan' => $master3->harga_satuan,

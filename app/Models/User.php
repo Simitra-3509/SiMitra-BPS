@@ -20,13 +20,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
-        'username',
-        'nama_lengkap',
-        'sobat_id',
         'role',
-        'status',
     ];
 
     /**
@@ -50,5 +47,35 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Check if user is Admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if user is Operator.
+     */
+    public function isOperator(): bool
+    {
+        return $this->role === 'operator';
+    }
+
+    /**
+     * Check if user has specific role(s).
+     *
+     * @param string|array $roles
+     */
+    public function hasRole(string|array $roles): bool
+    {
+        if (is_array($roles)) {
+            return in_array($this->role, $roles);
+        }
+
+        return $this->role === $roles;
     }
 }
