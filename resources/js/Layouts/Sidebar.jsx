@@ -208,12 +208,15 @@ export default function Sidebar() {
                             Laporan Detail Honor Mitra
                         </div>
                     </Link>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                    <Link 
+                        href={route('monitoring-kuota.index')} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('monitoring-kuota.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <Gauge size={18} />
                             Monitoring Kuota
                         </div>
-                    </a>
+                    </Link>
                     <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
                         <div className="flex items-center gap-3">
                             <TrendingUp size={18} />

@@ -12,22 +12,22 @@ const Create = () => {
                 
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Input Honorarium</h1>
-                    <p className="text-sm text-gray-500 mt-1">Catat pembayaran honor mitra</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Input Honorarium</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Catat pembayaran honor mitra</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     
                     {/* Left Panel: Form */}
-                    <div className="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                         <form className="space-y-6">
                             
                             {/* Penugasan */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Penugasan (Kegiatan - Mitra) <span className="text-red-500">*</span>
                                 </label>
-                                <select className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition">
+                                <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition">
                                     <option value="">-- Pilih Penugasan --</option>
                                     {/* Opsi dari database */}
                                 </select>
@@ -36,30 +36,30 @@ const Create = () => {
                             {/* Volume & Harga Satuan */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Volume <span className="text-red-500">*</span>
                                     </label>
                                     <div className="flex">
                                         <input 
                                             type="number" 
-                                            className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition" 
+                                            className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition" 
                                         />
-                                        <span className="inline-flex items-center px-4 rounded-r-lg border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                        <span className="inline-flex items-center px-4 rounded-r-lg border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm">
                                             Satuan
                                         </span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Harga Satuan</label>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Harga Satuan</label>
                                     <div className="flex">
-                                        <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm font-semibold">
+                                        <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">
                                             Rp
                                         </span>
                                         <input 
                                             type="text" 
                                             value="0" 
                                             readOnly 
-                                            className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-r-lg bg-white focus:outline-none focus:ring-0 focus:border-gray-300" 
+                                            className="w-full px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-r-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-0" 
                                         />
                                     </div>
                                 </div>
@@ -68,24 +68,24 @@ const Create = () => {
                             {/* Tanggal Mulai & Selesai */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-300 mb-2">
                                         Tanggal Mulai Kegiatan
                                     </label>
                                     <input 
                                         type="date" 
                                         readOnly
-                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-0 focus:border-gray-300 text-gray-500 transition" 
+                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0 transition" 
                                     />
                                     <p className="text-xs text-gray-400 mt-1.5">Otomatis dari data kegiatan</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-300 mb-2">
                                         Tanggal Selesai Kegiatan
                                     </label>
                                     <input 
                                         type="date" 
                                         readOnly
-                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-0 focus:border-gray-300 text-gray-500 transition" 
+                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0 transition" 
                                     />
                                     <p className="text-xs text-gray-400 mt-1.5">Otomatis dari data kegiatan</p>
                                 </div>
@@ -93,16 +93,16 @@ const Create = () => {
 
                             {/* Total Honor */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Total Honor (Kalkulasi Otomatis)</label>
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Total Honor (Kalkulasi Otomatis)</label>
                                 <div className="flex">
-                                    <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm font-semibold">
+                                    <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">
                                         Rp
                                     </span>
                                     <input 
                                         type="text" 
                                         value="0" 
                                         readOnly 
-                                        className="w-full px-3.5 py-2.5 text-sm font-bold text-red-500 border border-gray-300 rounded-r-lg bg-gray-50 focus:outline-none focus:ring-0 focus:border-gray-300" 
+                                        className="w-full px-3.5 py-2.5 text-sm font-bold text-red-500 dark:text-red-400 border border-gray-300 dark:border-gray-600 rounded-r-lg bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-0" 
                                     />
                                 </div>
                             </div>
@@ -110,22 +110,22 @@ const Create = () => {
                             {/* Tanggal, Bulan, Tahun */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-300 mb-2">
                                         Tanggal Input <span className="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="date" 
                                         defaultValue="2026-07-08"
-                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition" 
+                                        className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition" 
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Bulan Bayar <span className="text-red-500">*</span>
                                     </label>
                                     <select 
                                         defaultValue="8"
-                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
+                                        className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
                                     >
                                         <option value="1">Januari</option>
                                         <option value="2">Februari</option>
@@ -142,12 +142,12 @@ const Create = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Tahun Bayar <span className="text-red-500">*</span>
                                     </label>
                                     <select 
                                         defaultValue="2026"
-                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
+                                        className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
                                     >
                                         <option value="2025">2025</option>
                                         <option value="2026">2026</option>
@@ -158,19 +158,19 @@ const Create = () => {
 
                             {/* Keterangan */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Keterangan</label>
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Keterangan</label>
                                 <textarea 
                                     rows="3" 
                                     placeholder="Keterangan tambahan (opsional)"
-                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
+                                    className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
                                 ></textarea>
                             </div>
 
                             {/* Actions */}
-                            <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
                                 <Link
                                     href={route('honorarium.index')}
-                                    className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                    className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 >
                                     Kembali
                                 </Link>
@@ -186,18 +186,18 @@ const Create = () => {
                     </div>
 
                     {/* Right Panel: Validasi Info */}
-                    <div className="lg:col-span-4 rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="lg:col-span-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                         <div className="bg-[#D9531E] p-4 flex items-center gap-2 text-white font-semibold">
                             <ShieldAlert size={20} /> Validasi SBML Real-Time
                         </div>
-                        <div className="bg-white p-5 space-y-4">
+                        <div className="bg-white dark:bg-gray-800 p-5 space-y-4">
                             <div className="bg-[#fff9e6] border border-[#fde08b] text-[#8a6d3b] p-4 rounded-lg flex items-start gap-3">
                                 <AlertTriangle size={20} className="shrink-0 mt-0.5" />
                                 <p className="text-sm font-medium leading-relaxed">
                                     Sistem akan memvalidasi apakah honor yang diinput melebihi batas SBML mitra.
                                 </p>
                             </div>
-                            <p className="text-sm text-gray-500 leading-relaxed px-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed px-1">
                                 Pilih penugasan dan isi volume untuk melihat kuota secara real-time.
                             </p>
                         </div>

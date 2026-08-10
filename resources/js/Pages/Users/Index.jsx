@@ -182,7 +182,7 @@ export default function UserManagement() {
                 </div>
 
                 {/* 2. Bagian Filter (Flexbox Horizontal) */}
-                <div className="bg-gray-100 dark:bg-gray-800 p-5 rounded-lg shadow-md mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm mb-6 border border-gray-100 dark:border-gray-700">
                     <div className="flex flex-col md:flex-row gap-4 items-end w-full">
                         {/* Dropdown Role */}
                         <div className="w-full md:w-48 shrink-0">
@@ -294,10 +294,10 @@ export default function UserManagement() {
                 </div>
 
                 {/* 4. Tabel Data (Responsive) */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden w-full">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden w-full">
                     <div className="overflow-x-auto w-full">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-simitra-dark text-white uppercase text-xs font-bold tracking-wider border-b border-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
                                     <th className="p-4 w-10 text-center">
                                         <input
@@ -385,7 +385,7 @@ export default function UserManagement() {
                                                     <button
                                                         type="button"
                                                         onClick={() => router.get(route('users.edit'), { id: user.id })}
-                                                        className="border border-orange-400 text-orange-500 hover:bg-orange-500 hover:text-white px-2.5 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition-colors"
+                                                        className="text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition"
                                                         title="Edit User"
                                                     >
                                                         <Edit size={14} />
@@ -394,7 +394,7 @@ export default function UserManagement() {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteSingle(user.id)}
-                                                        className="border border-red-500 text-red-500 hover:bg-red-500 hover:text-white px-2.5 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition-colors"
+                                                        className="text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition"
                                                         title="Hapus User"
                                                     >
                                                         <Trash size={14} />
