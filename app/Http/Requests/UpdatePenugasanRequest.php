@@ -12,7 +12,7 @@ class UpdatePenugasanRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,9 @@ class UpdatePenugasanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'kegiatan_id' => 'required|exists:kegiatans,id',
+            'mitra_id'    => 'required|exists:mitras,id',
+            'status'      => 'required|string',
         ];
     }
 }
