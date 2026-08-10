@@ -20,10 +20,10 @@ class PenugasanController extends Controller
         $query = Penugasan::with(['mitra', 'kegiatan', 'honoraria'])
             ->whereNull('deleted_at');
 
-        // Filter jenis_sbml (kolom di DB: jenis_kegiatan)
+        // Filter jenis_sbml (kolom di DB: jenis_sbml)
         if ($request->filled('jenis_sbml')) {
             $query->whereHas('kegiatan', fn($q) =>
-                $q->where('jenis_kegiatan', $request->jenis_sbml)
+                $q->where('jenis_sbml', $request->jenis_sbml)
             );
         }
 
@@ -46,7 +46,7 @@ class PenugasanController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->whereHas('mitra', fn($m) =>
-                    $m->where('nama', 'like', "%{$search}%")
+                    $m->where('nama_lengkap', 'like', "%{$search}%")
                       ->orWhere('nik', 'like', "%{$search}%")
                 )->orWhereHas('kegiatan', fn($k) =>
                     $k->where('nama_kegiatan', 'like', "%{$search}%")
@@ -59,7 +59,7 @@ class PenugasanController extends Controller
         // Kegiatan aktif tanpa mitra (untuk warning banner)
         $kegiatanTanpaMitra = Kegiatan::where('status_aktif', true)
             ->whereDoesntHave('penugasans')
-            ->get(['id', 'nama_kegiatan', 'jenis_kegiatan']);
+            ->get(['id', 'nama_kegiatan', 'jenis_sbml']);
 
         // Data untuk filter dropdown
         $semuaKegiatan = Kegiatan::where('status_aktif', true)
@@ -78,8 +78,8 @@ class PenugasanController extends Controller
      */
     public function create()
     {
-        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'jenis_kegiatan']);
-        $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama', 'nik']);
+        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'jenis_sbml']);
+        $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'nik']);
 
         return Inertia::render('Penugasan/Create', [
             'kegiatan' => $kegiatan,

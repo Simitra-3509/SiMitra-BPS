@@ -17,9 +17,9 @@ class KegiatanController extends Controller
     {
         $query = Kegiatan::query();
 
-        // Filter berdasarkan jenis_kegiatan (dari form Jenis SBML)
+        // Filter berdasarkan jenis_sbml (dari form Jenis SBML)
         if ($request->filled('jenis_sbml')) {
-            $query->where('jenis_kegiatan', $request->jenis_sbml);
+            $query->where('jenis_sbml', $request->jenis_sbml);
         }
 
         // Filter berdasarkan status

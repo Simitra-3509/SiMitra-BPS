@@ -20,6 +20,7 @@ return new class extends Migration
         $table->integer('tahun');     // e.g. 2026
         $table->boolean('status_aktif')->default(true);
         $table->timestamps();
+        $table->softDeletes();
     });
 }
     /**
