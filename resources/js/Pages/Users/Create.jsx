@@ -42,7 +42,7 @@ export default function Create() {
                 </div>
 
                 {/* 2. Container Form */}
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                         
                         {/* Username * */}
@@ -55,8 +55,8 @@ export default function Create() {
                                 value={data.username}
                                 onChange={(e) => setData('username', e.target.value)}
                                 placeholder="Masukkan username"
-                                className={`w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border ${
-                                    errors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-500'
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border ${
+                                    errors.username ? 'border-red-500 focus:ring-red-500 focus:border-transparent' : 'border-gray-300 dark:border-gray-600 focus:ring-simitra-orange focus:border-transparent'
                                 } rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors`}
                             />
                             {errors.username && (
@@ -74,8 +74,8 @@ export default function Create() {
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
                                 placeholder="Masukkan password"
-                                className={`w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border ${
-                                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-500'
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border ${
+                                    errors.password ? 'border-red-500 focus:ring-red-500 focus:border-transparent' : 'border-gray-300 dark:border-gray-600 focus:ring-simitra-orange focus:border-transparent'
                                 } rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors`}
                             />
                             {errors.password && (
@@ -93,8 +93,8 @@ export default function Create() {
                                 value={data.nama_lengkap}
                                 onChange={(e) => setData('nama_lengkap', e.target.value)}
                                 placeholder="Masukkan nama lengkap beserta gelar"
-                                className={`w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border ${
-                                    errors.nama_lengkap ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-500'
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border ${
+                                    errors.nama_lengkap ? 'border-red-500 focus:ring-red-500 focus:border-transparent' : 'border-gray-300 dark:border-gray-600 focus:ring-simitra-orange focus:border-transparent'
                                 } rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors`}
                             />
                             {errors.nama_lengkap && (
@@ -112,8 +112,8 @@ export default function Create() {
                                 value={data.sobat_id}
                                 onChange={(e) => setData('sobat_id', e.target.value)}
                                 placeholder="Contoh: 350922010017"
-                                className={`w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border ${
-                                    errors.sobat_id ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-500'
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border ${
+                                    errors.sobat_id ? 'border-red-500 focus:ring-red-500 focus:border-transparent' : 'border-gray-300 dark:border-gray-600 focus:ring-simitra-orange focus:border-transparent'
                                 } rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors`}
                             />
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -132,8 +132,8 @@ export default function Create() {
                             <select
                                 value={data.role}
                                 onChange={(e) => setData('role', e.target.value)}
-                                className={`w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border ${
-                                    errors.role ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-500'
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border ${
+                                    errors.role ? 'border-red-500 focus:ring-red-500 focus:border-transparent' : 'border-gray-300 dark:border-gray-600 focus:ring-simitra-orange focus:border-transparent'
                                 } rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors`}
                             >
                                 <option value="" disabled>
@@ -155,7 +155,7 @@ export default function Create() {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                                className="bg-[#D9531E] hover:bg-orange-600 disabled:opacity-50 text-white font-medium px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
                             >
                                 <CheckCircle size={16} />
                                 <span>{processing ? 'Menyimpan...' : 'Simpan'}</span>
@@ -163,7 +163,7 @@ export default function Create() {
 
                             <Link
                                 href={backRoute}
-                                className="bg-gray-500 hover:bg-gray-600 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-sm"
+                                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-sm"
                             >
                                 <ArrowLeft size={16} />
                                 <span>Kembali</span>

@@ -131,7 +131,15 @@ class PenugasanController extends Controller
      */
     public function edit(Penugasan $penugasan)
     {
-        //
+        $penugasan->load(['kegiatan', 'mitra']);
+        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'jenis_sbml']);
+        $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'nik']);
+
+        return Inertia::render('Penugasan/Edit', [
+            'penugasan' => $penugasan,
+            'kegiatan'  => $kegiatan,
+            'mitra'     => $mitra,
+        ]);
     }
 
     /**
@@ -139,7 +147,9 @@ class PenugasanController extends Controller
      */
     public function update(UpdatePenugasanRequest $request, Penugasan $penugasan)
     {
-        //
+        $penugasan->update($request->validated());
+
+        return redirect()->route('penugasan.index')->with('success', 'Penugasan berhasil diperbarui.');
     }
 
     /**

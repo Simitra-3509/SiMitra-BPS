@@ -7,6 +7,7 @@ use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\PenugasanController;
 use App\Http\Controllers\HonorariumController;
 use App\Http\Controllers\LaporanHonorController;
+use App\Http\Controllers\MonitoringKuotaController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -85,6 +86,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
         Route::resource('honorarium', HonorariumController::class);
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
+        Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');
+        Route::get('monitoring-kuota/{id}', [MonitoringKuotaController::class, 'show'])->name('monitoring-kuota.show');
     });
 
     // ==========================================

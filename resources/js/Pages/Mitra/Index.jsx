@@ -151,7 +151,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                 </div>
 
                 {/* Filters Section */}
-                <div className="bg-gray-100 dark:bg-gray-800 p-5 rounded-lg shadow-md mb-4 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <form onSubmit={handleFilterSubmit} className="flex flex-col md:flex-row gap-4 items-end w-full">
                         {/* Filter Status */}
                         <div className="w-full md:w-48 shrink-0">
@@ -238,10 +238,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                 </div>
 
                 {/* Table Component */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-simitra-dark text-white uppercase text-xs font-bold tracking-wider border-b border-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
                                     <th className="p-4 w-10 text-center">
                                         <input
@@ -305,14 +305,14 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     <button
                                                         onClick={() => openEditModal(mitra)}
-                                                        className="border border-orange-400 text-orange-500 hover:bg-orange-500 hover:text-white p-1.5 rounded transition-colors"
+                                                        className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
                                                         title="Edit Mitra"
                                                     >
                                                         <Edit2 size={15} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(mitra.id)}
-                                                        className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded transition-colors"
+                                                        className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
                                                         title="Pindahkan ke Recycle Bin"
                                                     >
                                                         <Trash2 size={15} />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, AlertTriangle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 const namaBulan = [
@@ -81,13 +81,13 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                 {/* Page Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Penugasan Mitra</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Kelola penugasan mitra ke kegiatan</p>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">Penugasan Mitra</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola penugasan mitra ke kegiatan</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-1.5 shadow-sm"
+                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-1.5 shadow-sm"
                         >
                             <FileSpreadsheet size={16} /> Import Excel
                         </button>
@@ -133,30 +133,30 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                             <div className="mt-4 flex flex-wrap gap-3">
                                 {(showAllKegiatan ? kegiatanTanpaMitra : kegiatanTanpaMitra.slice(0, 3)).map((kg) => (
-                                    <div key={kg.id} className="flex items-center bg-white border border-amber-200/70 rounded-xl p-2.5 pr-3 shadow-sm hover:shadow-md hover:border-amber-400 transition-all group">
+                                    <div key={kg.id} className="flex items-center bg-white dark:bg-gray-800 border border-amber-200/70 dark:border-amber-700/50 rounded-xl p-2.5 pr-3 shadow-sm hover:shadow-md hover:border-amber-400 dark:hover:border-amber-500 transition-all group">
                                         <div className="flex flex-col ml-1 mr-6">
-                                            <span className="text-sm font-bold text-gray-800">
+                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white">
                                                 {kg.nama_kegiatan}
-                                            </span>
+                                            </h3>
                                             <div className="flex items-center gap-2 mt-1.5">
-                                                <span className={`w-fit px-2 py-0.5 text-[9px] font-bold rounded flex items-center uppercase tracking-wide ${(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan'
-                                                        ? 'bg-orange-100 text-orange-700'
-                                                        : 'bg-purple-100 text-purple-700'
+                                                <span className={`w-fit px-2 py-0.5 text-[10px] font-bold rounded flex items-center uppercase tracking-wide text-white ${(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan'
+                                                        ? 'bg-[#F26522]'
+                                                        : 'bg-[#3dbcc9]'
                                                     }`}>
                                                     {(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
                                                 </span>
-                                                <span className="text-[10px] font-medium text-gray-500 bg-gray-50 px-2 py-0.5 rounded flex items-center gap-1.5 border border-gray-200 shadow-sm">
-                                                    <Calendar size={10} className="text-gray-400" />
+                                                <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 border border-gray-200 dark:border-gray-600 shadow-sm">
+                                                    <Calendar size={10} className="text-gray-400 dark:text-gray-500" />
                                                     {kg.tgl_mulai && kg.tgl_selesai 
                                                         ? `${kg.tgl_mulai} s/d ${kg.tgl_selesai}`
                                                         : '01 Jan - 31 Jan 2026'}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="ml-auto pl-4 border-l border-gray-100 flex items-center">
+                                        <div className="ml-auto pl-4 border-l border-gray-100 dark:border-gray-700 flex items-center">
                                             <button
                                                 onClick={() => setAssignModal({ isOpen: true, kegiatan: kg })}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-[#D9531E] hover:text-white hover:border-[#D9531E] transition-colors"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg hover:bg-[#D9531E] hover:text-white dark:hover:bg-[#D9531E] dark:hover:text-white hover:border-[#D9531E] transition-colors"
                                             >
                                                 <Plus size={14} /> Tugaskan
                                             </button>
@@ -166,15 +166,16 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                 {!showAllKegiatan && kegiatanTanpaMitra.length > 3 && (
                                     <button
                                         onClick={() => setShowAllKegiatan(true)}
-                                        className="flex items-center justify-center bg-amber-100/50 hover:bg-amber-200/60 border border-amber-200 border-dashed rounded-xl px-5 py-2 text-sm font-semibold text-amber-700 transition-colors"
+                                        className="flex flex-col items-center justify-center bg-white/50 dark:bg-gray-800/50 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-2 border-amber-200 dark:border-amber-700/50 border-dashed rounded-xl px-6 py-2 transition-all group min-h-[60px]"
                                     >
-                                        + {kegiatanTanpaMitra.length - 3} kegiatan lainnya...
+                                        <span className="text-lg font-bold text-amber-600 group-hover:scale-110 transition-transform">+{kegiatanTanpaMitra.length - 3}</span>
+                                        <span className="text-xs font-semibold text-amber-700">Lainnya</span>
                                     </button>
                                 )}
                                 {showAllKegiatan && kegiatanTanpaMitra.length > 3 && (
                                     <button
                                         onClick={() => setShowAllKegiatan(false)}
-                                        className="flex items-center justify-center bg-amber-100/50 hover:bg-amber-200/60 border border-amber-200 border-dashed rounded-xl px-5 py-2 text-sm font-semibold text-amber-700 transition-colors"
+                                        className="flex items-center justify-center bg-white/50 dark:bg-gray-800/50 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-2 border-amber-200 dark:border-amber-700/50 border-dashed rounded-xl px-5 py-2 text-sm font-semibold text-amber-700 dark:text-amber-500 transition-all min-h-[60px]"
                                     >
                                         Sembunyikan
                                     </button>
@@ -185,15 +186,15 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                 )}
 
                 {/* Filter Bar */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
                     <div className="flex flex-wrap items-end gap-3">
                         {/* Jenis SBML */}
                         <div className="flex flex-col gap-1 min-w-[150px]">
-                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Jenis SBML</label>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Jenis SBML</label>
                             <select
                                 value={jenisSbml}
                                 onChange={(e) => setJenisSbml(e.target.value)}
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
                             >
                                 <option value="">Semua Jenis</option>
                                 <option value="pendataan">Pendataan</option>
@@ -203,11 +204,11 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                         {/* Kegiatan */}
                         <div className="flex flex-col gap-1 min-w-[200px] flex-1">
-                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Kegiatan</label>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Kegiatan</label>
                             <select
                                 value={kegiatanId}
                                 onChange={(e) => setKegiatanId(e.target.value)}
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
                             >
                                 <option value="">Semua Kegiatan</option>
                                 {semuaKegiatan?.map((kg) => (
@@ -218,11 +219,11 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                         {/* Status Honor */}
                         <div className="flex flex-col gap-1 min-w-[160px]">
-                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Status Honor</label>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Status Honor</label>
                             <select
                                 value={statusHonor}
                                 onChange={(e) => setStatusHonor(e.target.value)}
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="sudah">Sudah Input</option>
@@ -232,16 +233,16 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                         {/* Search */}
                         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
-                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cari</label>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Cari</label>
                             <div className="relative">
-                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                                 <input
                                     type="text"
                                     placeholder="Nama/NIK mitra, nama kegiatan..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                                    className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
                                 />
                             </div>
                         </div>
@@ -256,7 +257,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                             </button>
                             <button
                                 onClick={handleReset}
-                                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-1.5"
+                                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-1.5"
                             >
                                 <X size={14} /> Reset
                             </button>
@@ -265,14 +266,14 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                 </div>
 
                 {/* Total count */}
-                <div className="text-right text-sm text-gray-600">
-                    Total: <span className="font-semibold">{penugasan?.total ?? 0}</span> penugasan
+                <div className="text-right text-sm text-gray-600 dark:text-gray-400">
+                    Total: <span className="font-semibold text-gray-900 dark:text-gray-200">{penugasan?.total ?? 0}</span> penugasan
                 </div>
 
                 {/* Tabel */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
                                 <th className="p-4 w-10 text-center">No</th>
@@ -283,7 +284,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                 <th className="p-4 text-center">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
                             {penugasan?.data && penugasan.data.length > 0 ? (
                                 penugasan.data.map((item, index) => {
                                     const totalHonor = item.honoraria?.reduce((sum, h) => sum + (h.jumlah_honor ?? 0), 0) ?? 0;
@@ -291,35 +292,35 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                     const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
 
                                     return (
-                                        <tr key={item.id} className="hover:bg-gray-50 transition">
+                                        <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                             <td className="p-4 text-center"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="rounded text-orange-600" /></td>
-                                            <td className="p-4 text-center font-medium text-gray-400">{nomorUrut}</td>
+                                            <td className="p-4 text-center font-medium text-gray-400 dark:text-gray-500">{nomorUrut}</td>
                                             <td className="p-4">
-                                                <p className="font-semibold text-gray-900 leading-snug">
+                                                <p className="font-semibold text-gray-900 dark:text-white leading-snug">
                                                     {item.kegiatan?.nama_kegiatan ?? '-'}
                                                     {item.bulan && item.tahun && (
-                                                        <span className="text-gray-500 font-medium text-xs ml-1">
+                                                        <span className="text-gray-500 dark:text-gray-400 font-medium text-xs ml-1">
                                                             ({namaBulan[item.bulan - 1]} {item.tahun})
                                                         </span>
                                                     )}
                                                 </p>
                                                 {(item.kegiatan?.jenis_sbml || item.kegiatan?.jenis_kegiatan) && (
-                                                    <span className={`mt-1 inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded ${(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan'
-                                                            ? 'bg-orange-100 text-orange-700'
-                                                            : 'bg-purple-100 text-purple-700'
+                                                        <span className={`mt-1.5 inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan'
+                                                            ? 'bg-[#F26522]'
+                                                            : 'bg-[#3dbcc9]'
                                                         }`}>
                                                         {(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
                                                     </span>
                                                 )}
                                             </td>
                                             <td className="p-4">
-                                                <p className="font-semibold text-gray-900">{item.mitra?.nama ?? '-'}</p>
-                                                <p className="text-xs text-gray-400 mt-0.5">{item.mitra?.nik ?? ''}</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">{item.mitra?.nama ?? '-'}</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.mitra?.nik ?? ''}</p>
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-red-100 text-red-700'
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                                     }`}>
                                                     {item.kegiatan?.status_aktif ? 'Aktif' : 'Non-Aktif'}
                                                 </span>
@@ -327,37 +328,39 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                             <td className="p-4 text-center">
                                                 {sudahInput ? (
                                                     <div>
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
                                                             ✓ Sudah Input
                                                         </span>
-                                                        <p className="text-xs text-gray-500 mt-1">
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                             Rp {totalHonor.toLocaleString('id-ID')}
                                                         </p>
                                                     </div>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                                         ⏳ Belum Input
                                                     </span>
                                                 )}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="flex items-center justify-center gap-1.5">
-                                                    <button
-                                                        title="Detail"
-                                                        className="p-1.5 text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                                                    <Link
+                                                        href={route('honorarium.create', { penugasan_id: item.id })}
+                                                        title="Input Honor"
+                                                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:text-emerald-500 rounded-lg transition flex items-center justify-center"
                                                     >
-                                                        <Eye size={15} />
-                                                    </button>
-                                                    <button
+                                                        <Banknote size={15} />
+                                                    </Link>
+                                                    <Link
+                                                        href={route('penugasan.edit', item.id)}
                                                         title="Edit"
-                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
                                                     >
                                                         <Edit size={15} />
-                                                    </button>
+                                                    </Link>
                                                     <button
                                                         onClick={() => handleDelete(item.id)}
                                                         title="Hapus"
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                                                     >
                                                         <Trash2 size={15} />
                                                     </button>
@@ -368,7 +371,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="p-10 text-center text-gray-400">
+                                    <td colSpan="7" className="p-10 text-center text-gray-400 dark:text-gray-500">
                                         <div className="flex flex-col items-center gap-2">
                                             <span className="text-3xl">📋</span>
                                             <span className="text-sm">Tidak ada data penugasan yang ditemukan.</span>
@@ -381,15 +384,15 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                     {/* Pagination */}
                     {penugasan?.last_page > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
-                            <p className="text-sm text-gray-500">
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Halaman <span className="font-medium">{penugasan.current_page}</span> dari <span className="font-medium">{penugasan.last_page}</span>
                             </p>
                             <div className="flex items-center gap-1">
                                 {penugasan.prev_page_url && (
                                     <Link
                                         href={penugasan.prev_page_url}
-                                        className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition"
+                                        className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
                                     >
                                         <ChevronLeft size={16} />
                                     </Link>
@@ -397,7 +400,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                 {penugasan.next_page_url && (
                                     <Link
                                         href={penugasan.next_page_url}
-                                        className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition"
+                                        className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
                                     >
                                         <ChevronRight size={16} />
                                     </Link>
@@ -410,10 +413,10 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                 {/* Assign Mitra Modal */}
                 {assignModal.isOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                        <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col">
                             {/* Modal Header */}
-                            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-800">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
                                     Tugaskan Mitra
                                 </h3>
                                 <button
@@ -421,7 +424,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                         setAssignModal({ isOpen: false, kegiatan: null });
                                         setMitraSearch('');
                                     }}
-                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
                                 >
                                     <X size={18} />
                                 </button>
@@ -433,31 +436,31 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                     <p className="text-xs text-orange-600 font-semibold uppercase tracking-wide mb-1">
                                         Kegiatan Terpilih
                                     </p>
-                                    <p className="text-sm font-bold text-gray-800">
+                                    <p className="text-sm font-bold text-gray-800 dark:text-white">
                                         {assignModal.kegiatan?.nama_kegiatan}
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700">
-                                        Cari Mitra <span className="text-xs text-gray-400 font-normal">(Live Search)</span>
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                        Cari Mitra <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">(Live Search)</span>
                                     </label>
                                     <div className="relative">
-                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                                         <input
                                             type="text"
                                             value={mitraSearch}
                                             onChange={(e) => setMitraSearch(e.target.value)}
                                             placeholder="Ketik nama atau NIK mitra..."
-                                            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
+                                            className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Placeholder for List */}
-                                <div className="border border-gray-200 rounded-lg h-48 flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-4 text-center space-y-2">
-                                    <div className="p-3 bg-white rounded-full shadow-sm">
-                                        <Search size={24} className="text-gray-300" />
+                                <div className="border border-gray-200 dark:border-gray-700 rounded-lg h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 p-4 text-center space-y-2">
+                                    <div className="p-3 bg-white dark:bg-gray-900 rounded-full shadow-sm">
+                                        <Search size={24} className="text-gray-300 dark:text-gray-600" />
                                     </div>
                                     <p className="text-sm font-medium">Belum ada data mitra.</p>
                                     <p className="text-xs">Daftar mitra akan muncul di sini setelah pencarian dilakukan.</p>
@@ -465,13 +468,13 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+                            <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-2">
                                 <button
                                     onClick={() => {
                                         setAssignModal({ isOpen: false, kegiatan: null });
                                         setMitraSearch('');
                                     }}
-                                    className="px-4 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                    className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 >
                                     Tutup
                                 </button>
@@ -498,7 +501,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setSelectedIds([])}
-                                className="px-2 py-2 text-sm font-medium text-gray-300 hover:text-white transition"
+                                className="px-2 py-2 text-sm font-medium text-gray-300 dark:text-gray-500 hover:text-white transition"
                             >
                                 Batal
                             </button>

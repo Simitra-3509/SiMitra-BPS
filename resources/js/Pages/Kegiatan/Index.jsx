@@ -79,14 +79,14 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                 {/* Header Title & Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Daftar Kegiatan</h1>
-                        <p className="text-sm text-gray-500">Kelola kegiatan survei dan sensus</p>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Daftar Kegiatan</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Kelola kegiatan survei dan sensus</p>
                     </div>
 
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 bg-white border border-emerald-500 rounded-lg hover:bg-emerald-50 transition flex items-center gap-2"
+                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
                         >
                             <FileSpreadsheet size={16} /> Import Excel
                         </button>
@@ -101,16 +101,16 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                 </div>
 
                 {/* Filter & Search Bar Card */}
-                <form onSubmit={handleFilter} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <form onSubmit={handleFilter} className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
                         
                         {/* Filter Jenis SBML */}
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">Jenis SBML</label>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Jenis SBML</label>
                             <select
                                 value={jenisSbml}
                                 onChange={(e) => setJenisSbml(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
                             >
                                 <option value="">Semua Jenis</option>
                                 <option value="pendataan">Pendataan</option>
@@ -120,11 +120,11 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
                         {/* Filter Bulan */}
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">Bulan</label>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Bulan</label>
                             <select
                                 value={bulan}
                                 onChange={(e) => setBulan(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
                             >
                                 <option value="">Semua Bulan</option>
                                 {namaBulan.map((item, index) => (
@@ -135,11 +135,11 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
                         {/* Filter Status */}
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">Status</label>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Status</label>
                             <select
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="1">Aktif</option>
@@ -149,11 +149,11 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
                         {/* Filter Tahun */}
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">Tahun</label>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Tahun</label>
                             <select
                                 value={tahun}
                                 onChange={(e) => setTahun(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
                             >
                                 <option value="">Semua Tahun</option>
                                 <option value="2025">2025</option>
@@ -163,16 +163,16 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
                         {/* Input Cari & Tombol Akses */}
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">Cari</label>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Cari</label>
                             <div className="flex items-center gap-2">
                                 <div className="relative flex-1">
-                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
                                     <input
                                         type="text"
                                         placeholder="Nama / KRO..."
                                         value={cari}
                                         onChange={(e) => setCari(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                        className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
                                     />
                                 </div>
                                 <button
@@ -184,7 +184,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 <button
                                     type="button"
                                     onClick={handleReset}
-                                    className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition flex items-center gap-1 shrink-0"
+                                    className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-1 shrink-0"
                                 >
                                     <X size={16} /> Reset
                                 </button>
@@ -195,14 +195,14 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                 </form>
 
                 {/* Status Jumlah Data */}
-                <div className="text-right text-sm text-gray-600">
-                    Menampilkan <span className="font-semibold">{kegiatanCount || 0}</span> kegiatan
+                <div className="text-right text-sm text-gray-600 dark:text-gray-400">
+                    Menampilkan <span className="font-semibold text-gray-900 dark:text-gray-200">{kegiatanCount || 0}</span> kegiatan
                 </div>
 
                 {/* Tabel Data dari Database */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-12 text-center">
                                     <input 
@@ -220,10 +220,10 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 <th className="p-4 text-center">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
                             {kegiatan?.data && kegiatan.data.length > 0 ? (
                                 kegiatan.data.map((item, index) => (
-                                    <tr key={item.id} className="hover:bg-gray-50 transition">
+                                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                         <td className="p-4 text-center">
                                             <input 
                                                 type="checkbox" 
@@ -232,13 +232,13 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                                 onChange={() => toggleSelect(item.id)}
                                             />
                                         </td>
-                                        <td className="p-4 text-center font-medium text-gray-500">
+                                        <td className="p-4 text-center font-medium text-gray-500 dark:text-gray-400">
                                             {(kegiatan.current_page - 1) * kegiatan.per_page + index + 1}
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col gap-1">
-                                                <span className="font-bold text-gray-900">{item.nama_kegiatan}</span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="font-bold text-gray-900 dark:text-white">{item.nama_kegiatan}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                                     {item.tgl_mulai && item.tgl_selesai ? `${item.tgl_mulai} - ${item.tgl_selesai}` : '01 - 30 September 2026'}
                                                 </span>
                                                 <span className="text-xs text-orange-600 font-medium mt-0.5">
@@ -247,26 +247,26 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             </div>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${
+                                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${
                                                 (item.jenis_sbml || item.jenis_kegiatan) === 'pendataan' 
-                                                    ? 'bg-orange-100 text-orange-700' 
-                                                    : 'bg-cyan-100 text-cyan-700'
+                                                    ? 'bg-[#F26522]' 
+                                                    : 'bg-[#3dbcc9]'
                                             }`}>
-                                                {item.jenis_sbml || item.jenis_kegiatan}
+                                                {(item.jenis_sbml || item.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
                                             </span>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-gray-900">
+                                                <span className="font-bold text-gray-900 dark:text-white">
                                                     Rp {numberFormat(item.harga_satuan || (item.jenis_kegiatan === 'pendataan' ? 50000 : 30000))}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                                     / {item.satuan || (item.jenis_kegiatan === 'pendataan' ? 'Responden' : 'Dokumen')}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${item.status_aktif !== 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${item.status_aktif !== 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                                 {item.status_aktif !== 0 ? 'Aktif' : 'Non-Aktif'}
                                             </span>
                                         </td>
@@ -274,14 +274,14 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             <div className="flex items-center justify-center gap-2">
                                                 <Link
                                                     href={route('kegiatan.edit', item.id)}
-                                                    className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 rounded transition"
+                                                    className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
                                                     title="Edit"
                                                 >
                                                     <Edit size={14} />
                                                 </Link>
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 rounded transition"
+                                                    className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
                                                     title="Hapus"
                                                 >
                                                     <Trash2 size={14} />
@@ -292,7 +292,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="p-8 text-center text-gray-400">
+                                    <td colSpan="7" className="p-8 text-center text-gray-400 dark:text-gray-500">
                                         Tidak ada data kegiatan yang ditemukan.
                                     </td>
                                 </tr>
@@ -313,7 +313,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setSelectedIds([])}
-                                className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition"
+                                className="px-4 py-2 text-sm font-medium text-gray-300 dark:text-gray-500 hover:text-white transition"
                             >
                                 Batal
                             </button>
