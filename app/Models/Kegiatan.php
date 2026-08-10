@@ -8,10 +8,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Kegiatan extends Model
 {
-    /** @use HasFactory<\Database\Factories\KegiatanFactory> */
     use HasFactory, SoftDeletes;
-    
-    protected $guarded = ['id'];
+
+    protected $fillable = [
+        'nama_kegiatan',
+        'kro',
+        'jenis_sbml',
+        'bulan',
+        'tahun',
+        'status_aktif',
+    ];
 
     public function masterKegiatan()
     {

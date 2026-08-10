@@ -8,9 +8,6 @@ use Inertia\Inertia;
 
 class SbmlLimitController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $currentYear = date('Y');

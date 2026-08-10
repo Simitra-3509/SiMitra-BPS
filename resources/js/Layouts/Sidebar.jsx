@@ -27,14 +27,8 @@ const StackedTrashIcon = ({ SubIcon }) => (
 );
 
 export default function Sidebar() {
-    const { counts } = usePage().props;
-
-    const navItemClass = (isActive) => 
-        `flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${
-            isActive 
-                ? 'bg-simitra-orange text-white shadow-lg' 
-                : 'text-gray-300 hover:bg-gray-800'
-        }`;
+    const { auth, counts } = usePage().props;
+    const isAdmin = auth?.user?.role === 'admin';
 
     return (
         <aside className="fixed inset-y-0 left-0 w-64 bg-simitra-dark text-white flex flex-col hidden md:flex z-50">
@@ -50,150 +44,180 @@ export default function Sidebar() {
                     {/* Dashboard */}
                     <Link 
                         href={route('dashboard')} 
-                        className={navItemClass(route().current('dashboard'))}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${route().current('dashboard') ? 'bg-simitra-orange text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800'}`}
                     >
-                        <div className="flex items-center gap-3">
-                            <LayoutGrid size={18} />
-                            <span>Dashboard</span>
-                        </div>
+                        <LayoutGrid size={18} />
+                        Dashboard
                     </Link>
 
                     {/* PENGATURAN */}
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         PENGATURAN
                     </div>
+                    
+                    {/* Batas SBML */}
                     <Link 
                         href={route('sbml.index')} 
-                        className={navItemClass(route().current('sbml.index'))}
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('sbml.index') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
                     >
                         <div className="flex items-center gap-3">
                             <Settings size={18} />
-                            <span>Batas SBML</span>
+                            Batas SBML
                         </div>
-                    </Link>
-
-                    {/* ADMINISTRATOR */}
-                    <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        ADMINISTRATOR
-                    </div>
-                    <a href="#" className={navItemClass(false)}>
-                        <div className="flex items-center gap-3">
-                            <Users size={18} />
-                            <span>Manajemen User</span>
-                        </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
-                        <div className="flex items-center gap-3">
-                            <StackedTrashIcon SubIcon={User} />
-                            <span>Recycle Bin User</span>
-                        </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
-                        <div className="flex items-center gap-3">
-                            <ShieldCheck size={18} />
-                            <span>Security Center</span>
-                        </div>
-                    </a>
-                    <Link 
-                        href={route('mitra.index')} 
-                        className={navItemClass(route().current('mitra.index'))}
-                    >
-                        <div className="flex items-center gap-3">
-                            <Contact size={18} />
-                            <span>Master Mitra</span>
-                        </div>
-                    </Link>
-                    <Link 
-                        href={route('mitra.recycle-bin')} 
-                        className={navItemClass(route().current('mitra.recycle-bin'))}
-                    >
-                        <div className="flex items-center gap-3">
-                            <StackedTrashIcon SubIcon={Contact} />
-                            <span>Recycle Bin Mitra</span>
-                        </div>
-                        {counts?.recycleBinMitra > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
-                                {counts.recycleBinMitra}
+                        {!isAdmin && (
+                            <span className="bg-gray-800 border border-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded font-medium">
+                                Lihat
                             </span>
                         )}
                     </Link>
+
+                    {/* ADMINISTRATOR (Hanya untuk Role Admin) */}
+                    {isAdmin && (
+                        <>
+                            <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                ADMINISTRATOR
+                            </div>
+                            <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <Users size={18} />
+                                    Manajemen User
+                                </div>
+                            </a>
+                            <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <StackedTrashIcon SubIcon={User} />
+                                    Recycle Bin User
+                                </div>
+                            </a>
+                            <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <ShieldCheck size={18} />
+                                    Security Center
+                                </div>
+                            </a>
+                            <Link 
+                                href={route('mitra.index')} 
+                                className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('mitra.index') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Contact size={18} />
+                                    Master Mitra
+                                </div>
+                            </Link>
+                            <Link 
+                                href={route('mitra.recycle-bin')} 
+                                className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('mitra.recycle-bin') ? 'bg-simitra-orange text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <StackedTrashIcon SubIcon={Contact} />
+                                    Recycle Bin Mitra
+                                </div>
+                                {counts?.recycleBinMitra > 0 && (
+                                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
+                                        {counts.recycleBinMitra}
+                                    </span>
+                                )}
+                            </Link>
+                        </>
+                    )}
 
                     {/* MANAJEMEN KEGIATAN */}
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         MANAJEMEN KEGIATAN
                     </div>
-                    <a href="#" className={navItemClass(false)}>
+                    
+                    {/* Menu Kegiatan yang Sudah Diperbarui */}
+                    <Link 
+                        href={route('kegiatan.index')} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('kegiatan.index') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <CalendarCheck size={18} />
-                            <span>Kegiatan</span>
+                            Kegiatan
                         </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
-                        <div className="flex items-center gap-3">
-                            <StackedTrashIcon SubIcon={CalendarDays} />
-                            <span>Recycle Bin Kegiatan</span>
-                        </div>
-                        {counts?.recycleBinKegiatan > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
-                                {counts.recycleBinKegiatan}
-                            </span>
-                        )}
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
+                    </Link>
+
+                    {isAdmin && (
+                        <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <StackedTrashIcon SubIcon={CalendarDays} />
+                                Recycle Bin Kegiatan
+                            </div>
+                            {counts?.recycleBinKegiatan > 0 && (
+                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
+                                    {counts.recycleBinKegiatan}
+                                </span>
+                            )}
+                        </a>
+                    )}
+                    <Link
+                        href={route('penugasan.index')}
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('penugasan.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <UserCheck size={18} />
-                            <span>Penugasan Mitra</span>
+                            Penugasan Mitra
                         </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
-                        <div className="flex items-center gap-3">
-                            <StackedTrashIcon SubIcon={UserCheck} />
-                            <span>Recycle Bin Penugasan</span>
-                        </div>
-                        {counts?.recycleBinPenugasan > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
-                                {counts.recycleBinPenugasan}
-                            </span>
-                        )}
-                    </a>
+                    </Link>
+                    {isAdmin && (
+                        <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <StackedTrashIcon SubIcon={UserCheck} />
+                                Recycle Bin Penugasan
+                            </div>
+                            {counts?.recycleBinPenugasan > 0 && (
+                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
+                                    {counts.recycleBinPenugasan}
+                                </span>
+                            )}
+                        </a>
+                    )}
 
                     {/* TRANSAKSI */}
                     <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         TRANSAKSI
                     </div>
-                    <a href="#" className={navItemClass(false)}>
+                    <Link 
+                        href={route('honorarium.index')} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('honorarium.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <Banknote size={18} />
-                            <span>Input Honor</span>
+                            Input Honor
                         </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
-                        <div className="flex items-center gap-3">
-                            <StackedTrashIcon SubIcon={Banknote} />
-                            <span>Recycle Bin Honorarium</span>
-                        </div>
-                        {counts?.recycleBinHonorarium > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
-                                {counts.recycleBinHonorarium}
-                            </span>
-                        )}
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
+                    </Link>
+                    {isAdmin && (
+                        <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <StackedTrashIcon SubIcon={Banknote} />
+                                Recycle Bin Honorarium
+                            </div>
+                            {counts?.recycleBinHonorarium > 0 && (
+                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-md font-semibold">
+                                    {counts.recycleBinHonorarium}
+                                </span>
+                            )}
+                        </a>
+                    )}
+                    <Link 
+                        href={route('laporan-honor.index')} 
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('laporan-honor.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+                    >
                         <div className="flex items-center gap-3">
                             <FileText size={18} />
-                            <span>Laporan Detail Honor Mitra</span>
+                            Laporan Detail Honor Mitra
                         </div>
-                    </a>
-                    <a href="#" className={navItemClass(false)}>
+                    </Link>
+                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
                         <div className="flex items-center gap-3">
                             <Gauge size={18} />
-                            <span>Monitoring Kuota</span>
+                            Monitoring Kuota
                         </div>
                     </a>
-                    <a href="#" className={navItemClass(false)}>
+                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
                         <div className="flex items-center gap-3">
                             <TrendingUp size={18} />
-                            <span>Monitoring SBML</span>
+                            Monitoring SBML
                         </div>
                     </a>
 
@@ -203,22 +227,22 @@ export default function Sidebar() {
                     </div>
                     <Link 
                         href={route('profile.edit')} 
-                        className={navItemClass(route().current('profile.edit'))}
+                        className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
                     >
                         <div className="flex items-center gap-3">
                             <User size={18} />
-                            <span>Profil Saya</span>
+                            Profil Saya
                         </div>
                     </Link>
                     <Link 
                         href={route('logout')} 
                         method="post"
                         as="button"
-                        className={`w-full ${navItemClass(false)}`}
+                        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
                     >
                         <div className="flex items-center gap-3">
                             <LogOut size={18} />
-                            <span>Logout</span>
+                            Logout
                         </div>
                     </Link>
                 </nav>

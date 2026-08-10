@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage } from '@inertiajs/react';
 import { 
@@ -7,12 +8,37 @@ import {
     FileSpreadsheet, 
     TrendingUp, 
     LineChart as LineChartIcon, 
-    PieChart as PieChartIcon 
+    PieChart as PieChartIcon,
+    Moon,
+    Sun
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function Dashboard({ stats, sbml, chartData }) {
     const user = usePage().props.auth.user;
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    useEffect(() => {
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            setIsDarkMode(true);
+        } else {
+            document.documentElement.classList.remove('dark');
+            setIsDarkMode(false);
+        }
+    }, []);
+
+    const toggleDarkMode = () => {
+        if (isDarkMode) {
+            document.documentElement.classList.remove('dark');
+            localStorage.theme = 'light';
+            setIsDarkMode(false);
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.theme = 'dark';
+            setIsDarkMode(true);
+        }
+    };
     
     const COLORS = ['#F26522', '#00AEEF', '#00A651', '#808285'];
     
@@ -27,18 +53,29 @@ export default function Dashboard({ stats, sbml, chartData }) {
 
             <div className="space-y-6">
                 
-                {/* Alert Welcome */}
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span className="block sm:inline">Selamat datang, {user.name}!</span>
-                </div>
-                
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h2>
-                    <p className="text-gray-600 dark:text-gray-400">Selamat datang di SIMITRA Lite - Sistem Informasi Mitra Terpadu</p>
+                {/* Header Title & Dark Mode Toggle */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Selamat datang di SIMITRA Lite - Sistem Informasi Mitra Terpadu</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={toggleDarkMode}
+                            className="flex items-center gap-2 border border-simitra-orange text-simitra-orange hover:bg-orange-50 dark:hover:bg-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-white dark:bg-gray-800"
+                        >
+                            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                        </button>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                            Mode saat ini: <strong className="text-gray-800 dark:text-gray-200">{isDarkMode ? 'Dark' : 'Light'}</strong>
+                        </span>
+                    </div>
                 </div>
 
-                {/* Progress bar line (decorative) */}
-                <div className="h-4 bg-blue-500 rounded-full w-full" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.1) 10px, rgba(255,255,255,.1) 20px)' }}></div>
+                {/* Striped Progress Bar Decor */}
+                <div className="h-3 bg-blue-600 rounded-full w-full opacity-90" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.2) 10px, rgba(255,255,255,.2) 20px)' }}></div>
 
                 {/* Stat Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -75,8 +112,8 @@ export default function Dashboard({ stats, sbml, chartData }) {
                 {/* SBML Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2">
-                            <TrendingUp size={18} /> Batas SBML Pendataan
+                        <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2 text-sm">
+                            <TrendingUp size={16} /> Batas SBML Pendataan
                         </div>
                         <div className="p-6">
                             <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatRp(sbml.pendataan)}</div>
@@ -85,8 +122,8 @@ export default function Dashboard({ stats, sbml, chartData }) {
                     </div>
                     
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2">
-                            <TrendingUp size={18} /> Batas SBML Pengolahan
+                        <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2 text-sm">
+                            <TrendingUp size={16} /> Batas SBML Pengolahan
                         </div>
                         <div className="p-6">
                             <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatRp(sbml.pengolahan)}</div>
@@ -99,8 +136,8 @@ export default function Dashboard({ stats, sbml, chartData }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Line Chart */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                            <LineChartIcon size={18} className="text-simitra-orange" /> Performa Bulanan
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2 text-sm">
+                            <LineChartIcon size={16} className="text-simitra-orange" /> Performa Bulanan
                         </h3>
                         <div className="h-64">
                             <ResponsiveContainer width="100%" height="100%">
@@ -118,8 +155,8 @@ export default function Dashboard({ stats, sbml, chartData }) {
 
                     {/* Donut Chart */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                            <PieChartIcon size={18} className="text-simitra-orange" /> Komposisi Data
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2 text-sm">
+                            <PieChartIcon size={16} className="text-simitra-orange" /> Komposisi Data
                         </h3>
                         <div className="h-64 flex justify-center">
                             <ResponsiveContainer width="100%" height="100%">
