@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['auth'])->group(function () {
         Route::resource('kegiatan', KegiatanController::class);
+        Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         Route::resource('penugasan', PenugasanController::class);
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');

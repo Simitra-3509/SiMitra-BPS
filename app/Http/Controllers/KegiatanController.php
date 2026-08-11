@@ -113,4 +113,38 @@ class KegiatanController extends Controller
 
         return redirect()->route('kegiatan.index')->with('message', 'Kegiatan berhasil dihapus');
     }
+
+    /**
+     * Duplicate the specified resource in storage.
+     */
+    public function duplicate(Request $request, Kegiatan $kegiatan)
+    {
+        $request->validate([
+            'tgl_mulai' => 'required|date',
+            'tgl_selesai' => 'required|date',
+            'status_aktif' => 'required|boolean',
+        ]);
+
+        $newKegiatan = $kegiatan->replicate();
+        
+        $bulanIndo = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        
+        $mulai = \Carbon\Carbon::parse($request->tgl_mulai);
+        $selesai = \Carbon\Carbon::parse($request->tgl_selesai);
+
+        $newKegiatan->tgl_mulai = str_pad($mulai->day, 2, '0', STR_PAD_LEFT) . ' ' . $bulanIndo[$mulai->month] . ' ' . $mulai->year;
+        $newKegiatan->tgl_selesai = str_pad($selesai->day, 2, '0', STR_PAD_LEFT) . ' ' . $bulanIndo[$selesai->month] . ' ' . $selesai->year;
+        $newKegiatan->status_aktif = $request->status_aktif;
+        
+        // Buat nama yang menunjukkan duplikasi
+        $newKegiatan->nama_kegiatan = $kegiatan->nama_kegiatan . ' (' . $bulanIndo[$mulai->month] . ' ' . $mulai->year . ')';
+        
+        $newKegiatan->save();
+
+        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan berhasil diduplikasi');
+    }
 }

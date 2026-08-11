@@ -13,7 +13,7 @@ class HonorariumController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Honorarium::query();
+        $query = Honorarium::with(['penugasan.mitra', 'penugasan.kegiatan']);
 
         // TODO: Implementasi filter berdasarkan Jenis SBML, Kegiatan, dan search text
 
