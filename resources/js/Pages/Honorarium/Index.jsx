@@ -123,7 +123,7 @@ const Index = ({ honorarium, filters }) => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
-                                <th className="p-4 w-12 text-center">#</th>
+                                <th className="p-4 w-12 text-center">No</th>
                                 <th className="p-4">TANGGAL</th>
                                 <th className="p-4">MITRA</th>
                                 <th className="p-4">KEGIATAN</th>
@@ -139,12 +139,17 @@ const Index = ({ honorarium, filters }) => {
                                         <td className="p-4 text-center">
                                             {(honorarium.current_page - 1) * honorarium.per_page + index + 1}
                                         </td>
-                                        <td className="p-4">-</td>
-                                        <td className="p-4">-</td>
-                                        <td className="p-4">-</td>
-                                        <td className="p-4 text-center">-</td>
-                                        <td className="p-4 text-right">-</td>
-                                        <td className="p-4 text-center">-</td>
+                                        <td className="p-4">{item.tanggal_input ? new Date(item.tanggal_input).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'}</td>
+                                        <td className="p-4 font-medium">{item.penugasan?.mitra?.nama || '-'}</td>
+                                        <td className="p-4 text-gray-600 dark:text-gray-400">{item.penugasan?.kegiatan?.nama_kegiatan || '-'}</td>
+                                        <td className="p-4 text-center">{item.jumlah_item || '-'}</td>
+                                        <td className="p-4 text-right font-semibold text-gray-900 dark:text-gray-100">
+                                            Rp {new Intl.NumberFormat('id-ID').format(item.jumlah_honor || 0)}
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            {/* Tambahkan aksi edit/delete jika diperlukan */}
+                                            <span className="text-xs text-gray-400">-</span>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (

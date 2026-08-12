@@ -384,27 +384,19 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                     {/* Pagination */}
                     {penugasan?.last_page > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Halaman <span className="font-medium">{penugasan.current_page}</span> dari <span className="font-medium">{penugasan.last_page}</span>
-                            </p>
-                            <div className="flex items-center gap-1">
-                                {penugasan.prev_page_url && (
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                Menampilkan {penugasan.from || 0} ke {penugasan.to || 0} dari {penugasan.total} data
+                            </div>
+                            <div className="flex items-center gap-1 overflow-x-auto">
+                                {penugasan.links.map((link, i) => (
                                     <Link
-                                        href={penugasan.prev_page_url}
-                                        className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
-                                    >
-                                        <ChevronLeft size={16} />
-                                    </Link>
-                                )}
-                                {penugasan.next_page_url && (
-                                    <Link
-                                        href={penugasan.next_page_url}
-                                        className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </Link>
-                                )}
+                                        key={i}
+                                        href={link.url || '#'}
+                                        className={`px-3 py-1 rounded-md text-sm whitespace-nowrap ${link.active ? 'bg-[#F26522] text-white font-semibold shadow-sm' : 'bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'} ${!link.url && 'opacity-50 cursor-not-allowed'}`}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ))}
                             </div>
                         </div>
                     )}

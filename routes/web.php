@@ -81,11 +81,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['auth'])->group(function () {
         Route::resource('kegiatan', KegiatanController::class);
+        Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         Route::resource('penugasan', PenugasanController::class);
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
         Route::resource('honorarium', HonorariumController::class);
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
+        Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
         Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');
         Route::get('monitoring-kuota/{id}', [MonitoringKuotaController::class, 'show'])->name('monitoring-kuota.show');
     });

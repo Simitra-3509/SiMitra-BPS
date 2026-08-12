@@ -131,13 +131,29 @@ const Index = () => {
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bulan Kegiatan</label>
                                         <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E]">
-                                            <option>Semua</option>
+                                            <option value="">Semua Bulan</option>
+                                            <option value="1">Januari</option>
+                                            <option value="2">Februari</option>
+                                            <option value="3">Maret</option>
+                                            <option value="4">April</option>
+                                            <option value="5">Mei</option>
+                                            <option value="6">Juni</option>
+                                            <option value="7">Juli</option>
+                                            <option value="8">Agustus</option>
+                                            <option value="9">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tahun Kegiatan</label>
                                         <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E]">
-                                            <option>Semua</option>
+                                            <option value="">Semua Tahun</option>
+                                            <option value="2024">2024</option>
+                                            <option value="2025">2025</option>
+                                            <option value="2026">2026</option>
+                                            <option value="2027">2027</option>
                                         </select>
                                     </div>
                                     <div>
@@ -160,19 +176,37 @@ const Index = () => {
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bulan Bayar</label>
                                         <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E]">
-                                            <option>Semua</option>
+                                            <option value="">Semua Bulan</option>
+                                            <option value="1">Januari</option>
+                                            <option value="2">Februari</option>
+                                            <option value="3">Maret</option>
+                                            <option value="4">April</option>
+                                            <option value="5">Mei</option>
+                                            <option value="6">Juni</option>
+                                            <option value="7">Juli</option>
+                                            <option value="8">Agustus</option>
+                                            <option value="9">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tahun Bayar</label>
                                         <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E]">
-                                            <option>Semua</option>
+                                            <option value="">Semua Tahun</option>
+                                            <option value="2024">2024</option>
+                                            <option value="2025">2025</option>
+                                            <option value="2026">2026</option>
+                                            <option value="2027">2027</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status Pembayaran</label>
                                         <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E]">
-                                            <option>Semua</option>
+                                            <option value="">Semua Status</option>
+                                            <option value="sudah_dibayar">Sudah Dibayar</option>
+                                            <option value="belum_dibayar">Belum Dibayar</option>
                                         </select>
                                     </div>
                                 </div>
@@ -193,7 +227,9 @@ const Index = () => {
                                     <div className="md:col-span-3">
                                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis SBML</label>
                                         <select className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E]">
-                                            <option>Semua Jenis</option>
+                                            <option value="">Semua Jenis</option>
+                                            <option value="pendataan">Pendataan</option>
+                                            <option value="pengolahan">Pengolahan</option>
                                         </select>
                                     </div>
                                     <div className="md:col-span-6 flex items-end">
@@ -229,8 +265,11 @@ const Index = () => {
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                             Show
-                            <select className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:ring-[#D9531E] focus:border-[#D9531E]">
-                                <option>50</option>
+                            <select className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded pr-8 py-1 text-sm focus:ring-[#D9531E] focus:border-[#D9531E]">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="all">All</option>
                             </select>
                             entries
                         </div>
@@ -263,9 +302,9 @@ const Index = () => {
                                     <td className="px-6 py-4 text-center dark:text-gray-300">1</td>
                                     <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">Rp 2.700.000</td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1">
+                                        <Link href={route('laporan-honor.show', 1)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
                                             <Search size={14} /> Detail
-                                        </button>
+                                        </Link>
                                     </td>
                                 </tr>
                                 <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition border-b border-gray-50 dark:border-gray-700">
@@ -278,13 +317,42 @@ const Index = () => {
                                     <td className="px-6 py-4 text-center dark:text-gray-300">1</td>
                                     <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">Rp 2.400.000</td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1">
+                                        <Link href={route('laporan-honor.show', 2)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
                                             <Search size={14} /> Detail
-                                        </button>
+                                        </Link>
+                                    </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition border-b border-gray-50 dark:border-gray-700">
+                                    <td className="px-6 py-4 dark:text-gray-300">3</td>
+                                    <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">Dewi Sartika</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Mei 2026</td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white bg-[#F26522]">Pendataan</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center dark:text-gray-300">3</td>
+                                    <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">Rp 3.500.000</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <Link href={route('laporan-honor.show', 3)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
+                                            <Search size={14} /> Detail
+                                        </Link>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    {/* Pagination */}
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                            Menampilkan 1 ke 3 dari 3 data
+                        </div>
+                        <div className="flex items-center gap-1 overflow-x-auto">
+                            <button disabled className="px-3 py-1 rounded-md text-sm whitespace-nowrap bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 opacity-50 cursor-not-allowed">&laquo; Previous</button>
+                            <button className="px-3 py-1 rounded-md text-sm whitespace-nowrap bg-[#F26522] text-white font-semibold shadow-sm">1</button>
+                            <button className="px-3 py-1 rounded-md text-sm whitespace-nowrap bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">2</button>
+                            <button className="px-3 py-1 rounded-md text-sm whitespace-nowrap bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">3</button>
+                            <button className="px-3 py-1 rounded-md text-sm whitespace-nowrap bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Next &raquo;</button>
+                        </div>
                     </div>
                 </div>
 
