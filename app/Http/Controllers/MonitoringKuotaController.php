@@ -35,12 +35,14 @@ class MonitoringKuotaController extends Controller
                      ->where('p.tahun', '=', $tahun);
             })
             ->leftJoin('kegiatans as k', 'p.kegiatan_id', '=', 'k.id')
+            ->leftJoin('akun_kegiatan as ak', 'ak.kegiatan_id', '=', 'k.id')
+            ->leftJoin('detil_kegiatan as dk', 'dk.akun_id', '=', 'ak.id')
             ->leftJoin('honoraria as h', 'h.penugasan_id', '=', 'p.id')
             ->selectRaw("
-                COALESCE(SUM(CASE WHEN k.jenis_sbml = 'pendataan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pendataan,
-                COALESCE(SUM(CASE WHEN k.jenis_sbml = 'pengolahan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pengolahan,
-                SUM(CASE WHEN k.jenis_sbml = 'pendataan' THEN 1 ELSE 0 END) as transaksi_pendataan,
-                SUM(CASE WHEN k.jenis_sbml = 'pengolahan' THEN 1 ELSE 0 END) as transaksi_pengolahan
+                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pendataan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pendataan,
+                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pengolahan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pengolahan,
+                COUNT(DISTINCT CASE WHEN dk.jenis_sbml = 'pendataan' THEN p.id ELSE NULL END) as transaksi_pendataan,
+                COUNT(DISTINCT CASE WHEN dk.jenis_sbml = 'pengolahan' THEN p.id ELSE NULL END) as transaksi_pengolahan
             ")
             ->groupBy('mitras.id');
 
@@ -51,9 +53,6 @@ class MonitoringKuotaController extends Controller
             });
         }
 
-        // Kita gunakan get() saja untuk saat ini karena kita butuh filter status berdasarkan hasil kalkulasi
-        // Idealnya jika data sangat besar, filter status dipindah ke klausa HAVING
-        
         $allMitras = $query->get();
         
         // Post-processing untuk menentukan status
@@ -68,70 +67,65 @@ class MonitoringKuotaController extends Controller
             $statusPengolahan = 'OK';
             if ($usagePengolahan >= 100) $statusPengolahan = 'Kritis';
             elseif ($usagePengolahan >= $threshold) $statusPengolahan = 'Warning';
-            
-            $mitra->usage_pendataan = $usagePendataan;
-            $mitra->usage_pengolahan = $usagePengolahan;
-            $mitra->status_pendataan = $statusPendataan;
-            $mitra->status_pengolahan = $statusPengolahan;
-            $mitra->sisa_pendataan = $batasPendataan - $mitra->terpakai_pendataan;
-            $mitra->sisa_pengolahan = $batasPengolahan - $mitra->terpakai_pengolahan;
-            
-            // Overall status logic for filtering
-            $mitra->overall_status = 'OK';
-            if ($statusPendataan === 'Kritis' || $statusPengolahan === 'Kritis') $mitra->overall_status = 'Kritis';
-            elseif ($statusPendataan === 'Warning' || $statusPengolahan === 'Warning') $mitra->overall_status = 'Warning';
-            
-            return $mitra;
+
+            return [
+                'id' => $mitra->id,
+                'nik' => $mitra->nik,
+                'nama_lengkap' => $mitra->nama_lengkap,
+                'terpakai_pendataan' => (float)$mitra->terpakai_pendataan,
+                'terpakai_pengolahan' => (float)$mitra->terpakai_pengolahan,
+                'transaksi_pendataan' => (int)$mitra->transaksi_pendataan,
+                'transaksi_pengolahan' => (int)$mitra->transaksi_pengolahan,
+                'usage_pendataan_pct' => round($usagePendataan, 1),
+                'usage_pengolahan_pct' => round($usagePengolahan, 1),
+                'status_pendataan' => $statusPendataan,
+                'status_pengolahan' => $statusPengolahan,
+            ];
         });
 
-        // Filter by status if not "semua"
+        // Filtering berdasarkan status
         if ($status !== 'semua') {
             $processedMitras = $processedMitras->filter(function($mitra) use ($status) {
-                return strtolower($mitra->overall_status) === strtolower($status);
+                return $mitra['status_pendataan'] === $status || $mitra['status_pengolahan'] === $status;
             });
         }
-        
-        // Hitung statistik dashboard
-        $totalMitra = $processedMitras->count();
-        $kuotaNormal = $processedMitras->where('overall_status', 'OK')->count();
-        $peringatan = $processedMitras->where('overall_status', 'Warning')->count();
-        $kritis = $processedMitras->where('overall_status', 'Kritis')->count();
 
         // Manual Pagination
         $page = $request->input('page', 1);
-        $paginatedItems = $processedMitras->slice(($page - 1) * $perPage, $perPage)->values();
-        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
-            $paginatedItems, 
-            $processedMitras->count(), 
-            $perPage, 
-            $page, 
+        $perPage = (int) $perPage;
+        $offset = ($page - 1) * $perPage;
+        
+        $paginatedItems = $processedMitras->slice($offset, $perPage)->values();
+        
+        $mitras = new \Illuminate\Pagination\LengthAwarePaginator(
+            $paginatedItems,
+            $processedMitras->count(),
+            $perPage,
+            $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
         return Inertia::render('MonitoringKuota/Index', [
-            'data' => $paginator,
+            'mitras' => $mitras,
             'filters' => $request->only(['bulan', 'tahun', 'jenis_sbml', 'status', 'threshold', 'per_page', 'cari']),
-            'stats' => [
-                'total' => $totalMitra,
-                'normal' => $kuotaNormal,
-                'warning' => $peringatan,
-                'kritis' => $kritis,
-            ],
-            'batas' => [
+            'limits' => [
                 'pendataan' => $batasPendataan,
                 'pengolahan' => $batasPengolahan,
             ]
         ]);
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show($id, Request $request)
     {
-        $bulan = $request->input('bulan', Carbon::now()->month);
-        $tahun = $request->input('tahun', Carbon::now()->year);
-        
         $mitra = Mitra::findOrFail($id);
         
-        $penugasans = Penugasan::with(['kegiatan', 'honoraria'])
+        $bulan = $request->input('bulan', date('m'));
+        $tahun = $request->input('tahun', date('Y'));
+        
+        $penugasans = Penugasan::with(['kegiatan.akunKegiatan.detilKegiatan', 'honoraria'])
             ->where('mitra_id', $id)
             ->where('bulan', $bulan)
             ->where('tahun', $tahun)
@@ -147,10 +141,15 @@ class MonitoringKuotaController extends Controller
         foreach ($penugasans as $p) {
             $honorTotal = $p->honoraria->sum('jumlah_honor');
             $p->total_honor = $honorTotal;
-            if ($p->kegiatan && $p->kegiatan->jenis_sbml === 'pendataan') {
-                $terpakaiPendataan += $honorTotal;
-            } else if ($p->kegiatan && $p->kegiatan->jenis_sbml === 'pengolahan') {
+            
+            // Cek jenis_sbml dari detil_kegiatan
+            $detils = $p->kegiatan?->akunKegiatan->flatMap(fn($a) => $a->detilKegiatan) ?? collect();
+            $hasPengolahan = $detils->contains(fn($d) => strtolower($d->jenis_sbml) === 'pengolahan');
+            
+            if ($hasPengolahan) {
                 $terpakaiPengolahan += $honorTotal;
+            } else {
+                $terpakaiPendataan += $honorTotal;
             }
         }
         

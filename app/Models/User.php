@@ -21,10 +21,25 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'username',
+        'sobat_id',
         'email',
         'password',
         'role',
+        'pegawai_id',
+        'is_locked',
     ];
+
+    protected $appends = ['nama_lengkap', 'status'];
+
+    public function getNamaLengkapAttribute()
+    {
+        return $this->name ?? $this->username;
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->is_locked ? 'Nonaktif' : 'Aktif';
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -54,7 +69,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return strtolower($this->role ?? '') === 'admin';
     }
 
     /**
@@ -62,7 +77,7 @@ class User extends Authenticatable
      */
     public function isOperator(): bool
     {
-        return $this->role === 'operator';
+        return strtolower($this->role ?? '') === 'operator';
     }
 
     /**
@@ -72,10 +87,11 @@ class User extends Authenticatable
      */
     public function hasRole(string|array $roles): bool
     {
+        $currentRole = strtolower($this->role ?? '');
         if (is_array($roles)) {
-            return in_array($this->role, $roles);
+            return in_array($currentRole, array_map('strtolower', $roles));
         }
 
-        return $this->role === $roles;
+        return $currentRole === strtolower($roles);
     }
 }

@@ -41,6 +41,11 @@ class SbmlLimitController extends Controller
      */
     public function update(Request $request)
     {
+        $userRole = strtolower($request->user()?->role ?? '');
+        if ($userRole !== 'admin') {
+            return redirect()->back()->with('error', 'Hanya role Admin yang diizinkan mengubah batas SBML.');
+        }
+
         $validated = $request->validate([
             'pendataan' => 'required|numeric|min:0',
             'pengolahan' => 'required|numeric|min:0',

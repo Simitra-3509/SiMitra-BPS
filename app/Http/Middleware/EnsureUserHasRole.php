@@ -17,8 +17,10 @@ class EnsureUserHasRole
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
+        $userRole = strtolower($user?->role ?? '');
+        $allowedRoles = array_map('strtolower', $roles);
 
-        if (! $user || (! empty($roles) && ! in_array($user->role, $roles))) {
+        if (! $user || (! empty($roles) && ! in_array($userRole, $allowedRoles))) {
             abort(Response::HTTP_FORBIDDEN, 'Anda tidak memiliki hak akses untuk membuka halaman ini.');
         }
 

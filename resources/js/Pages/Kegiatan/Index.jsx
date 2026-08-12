@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Head, router, Link, useForm } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Copy, Info } from 'lucide-react';
+import { Head, router, Link } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 
@@ -10,14 +10,14 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const [status, setStatus] = useState(filters?.status || '');
     const [tahun, setTahun] = useState(filters?.tahun || '');
     const [cari, setCari] = useState(filters?.cari || '');
-    
+
     // State untuk checklist (bulk delete)
     const [selectedIds, setSelectedIds] = useState([]);
 
     // State untuk modal duplikasi
     const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
     const [selectedKegiatan, setSelectedKegiatan] = useState(null);
-    
+
     const { data: duplicateData, setData: setDuplicateData, post: postDuplicate, processing: processingDuplicate, errors: errorsDuplicate, reset: resetDuplicate } = useForm({
         tgl_mulai: '',
         tgl_selesai: '',
@@ -137,7 +137,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                 {/* Filter & Search Bar Card */}
                 <form onSubmit={handleFilter} className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
-                        
+
                         {/* Filter Jenis SBML */}
                         <div>
                             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Jenis SBML</label>
@@ -239,8 +239,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-12 text-center">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
                                         checked={kegiatan?.data?.length > 0 && selectedIds.length === kegiatan.data.length}
                                         onChange={toggleSelectAll}
@@ -259,8 +259,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 kegiatan.data.map((item, index) => (
                                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                         <td className="p-4 text-center">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
                                                 checked={selectedIds.includes(item.id)}
                                                 onChange={() => toggleSelect(item.id)}
@@ -281,21 +281,36 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             </div>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${
-                                                (item.jenis_sbml || item.jenis_kegiatan) === 'pendataan' 
-                                                    ? 'bg-[#F26522]' 
-                                                    : 'bg-[#3dbcc9]'
-                                            }`}>
-                                                {(item.jenis_sbml || item.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
-                                            </span>
+                                            <div className="flex flex-wrap items-center justify-center gap-1">
+                                                {(() => {
+                                                    const types = new Set();
+                                                    (item.akun_kegiatan || []).forEach(a => {
+                                                        (a.detil_kegiatan || []).forEach(d => {
+                                                            if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
+                                                        });
+                                                    });
+                                                    const typeArr = Array.from(types);
+                                                    if (typeArr.length === 0) typeArr.push(item.jenis_kegiatan || 'pendataan');
+
+                                                    return typeArr.map(t => (
+                                                        <span
+                                                            key={t}
+                                                            className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${t === 'pendataan' ? 'bg-[#F26522]' : 'bg-[#3dbcc9]'
+                                                                }`}
+                                                        >
+                                                            {t === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
+                                                        </span>
+                                                    ));
+                                                })()}
+                                            </div>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-gray-900 dark:text-white">
-                                                    Rp {numberFormat(item.harga_satuan || (item.jenis_kegiatan === 'pendataan' ? 50000 : 30000))}
+                                                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                    Rp {numberFormat(item.total_anggaran || 0)}
                                                 </span>
                                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    / {item.satuan || (item.jenis_kegiatan === 'pendataan' ? 'Responden' : 'Dokumen')}
+                                                    Total Anggaran
                                                 </span>
                                             </div>
                                         </td>
@@ -306,6 +321,13 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-2">
+                                                <Link
+                                                    href={route('kegiatan.show', item.id)}
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
+                                                    title="Lihat Detail Rincian (Show)"
+                                                >
+                                                    <Eye size={14} />
+                                                </Link>
                                                 <Link
                                                     href={route('kegiatan.edit', item.id)}
                                                     className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
@@ -394,7 +416,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                         Duplikat Kegiatan {selectedKegiatan?.nama_kegiatan && `- ${selectedKegiatan.nama_kegiatan}`}
                     </h2>
-                    
+
                     <div className="bg-blue-50 text-blue-800 p-3 rounded-lg mb-6 text-sm flex items-start gap-2">
                         <Info size={18} className="shrink-0 mt-0.5" />
                         <p>Fitur ini akan menyalin data kegiatan terpilih. Silahkan sesuaikan waktu pelaksanaan yang baru.</p>
@@ -423,7 +445,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 />
                             </div>
                         </div>
-                        
+
                         <div>
                             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Status</label>
                             <select
