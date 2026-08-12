@@ -1,14 +1,14 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { 
-    Plus, 
-    Trash2, 
-    X, 
-    ArrowLeft, 
-    FolderEdit, 
-    Layers, 
-    Calculator, 
-    CheckCircle2 
+import {
+    Plus,
+    Trash2,
+    X,
+    ArrowLeft,
+    FolderEdit,
+    Layers,
+    Calculator,
+    CheckCircle2
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
@@ -309,8 +309,8 @@ export default function Edit({ auth, kegiatan }) {
                             const subtotalAkun = getAkunSubtotal(akunItem);
 
                             return (
-                                <div 
-                                    key={akunItem.id || akunIdx} 
+                                <div
+                                    key={akunItem.id || akunIdx}
                                     className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 overflow-hidden transition-all"
                                 >
                                     <div className="bg-gray-50 dark:bg-gray-900/60 p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -512,7 +512,7 @@ export default function Edit({ auth, kegiatan }) {
                         </div>
                     </div>
                 </form>
-            </div>
+            </div >
         </>
     );
 }

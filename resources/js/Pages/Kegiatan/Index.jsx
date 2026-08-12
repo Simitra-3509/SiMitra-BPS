@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, Link } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Modal from '@/Components/Modal';
 
 function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
@@ -9,9 +10,42 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const [status, setStatus] = useState(filters?.status || '');
     const [tahun, setTahun] = useState(filters?.tahun || '');
     const [cari, setCari] = useState(filters?.cari || '');
-    
+
     // State untuk checklist (bulk delete)
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State untuk modal duplikasi
+    const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+    const [selectedKegiatan, setSelectedKegiatan] = useState(null);
+
+    const { data: duplicateData, setData: setDuplicateData, post: postDuplicate, processing: processingDuplicate, errors: errorsDuplicate, reset: resetDuplicate } = useForm({
+        tgl_mulai: '',
+        tgl_selesai: '',
+        status_aktif: 1
+    });
+
+    const openDuplicateModal = (kegiatanItem) => {
+        setSelectedKegiatan(kegiatanItem);
+        // We will default to empty dates for them to pick
+        setDuplicateData({
+            tgl_mulai: '',
+            tgl_selesai: '',
+            status_aktif: 1
+        });
+        setIsDuplicateModalOpen(true);
+    };
+
+    const closeDuplicateModal = () => {
+        setIsDuplicateModalOpen(false);
+        setTimeout(() => resetDuplicate(), 300);
+    };
+
+    const handleDuplicateSubmit = (e) => {
+        e.preventDefault();
+        postDuplicate(route('kegiatan.duplicate', selectedKegiatan.id), {
+            onSuccess: () => closeDuplicateModal()
+        });
+    };
 
     const handleFilter = (e) => {
         e?.preventDefault();
@@ -103,7 +137,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                 {/* Filter & Search Bar Card */}
                 <form onSubmit={handleFilter} className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
-                        
+
                         {/* Filter Jenis SBML */}
                         <div>
                             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Jenis SBML</label>
@@ -205,8 +239,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-12 text-center">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
                                         checked={kegiatan?.data?.length > 0 && selectedIds.length === kegiatan.data.length}
                                         onChange={toggleSelectAll}
@@ -225,8 +259,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 kegiatan.data.map((item, index) => (
                                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                         <td className="p-4 text-center">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
                                                 checked={selectedIds.includes(item.id)}
                                                 onChange={() => toggleSelect(item.id)}
@@ -257,13 +291,12 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                                     });
                                                     const typeArr = Array.from(types);
                                                     if (typeArr.length === 0) typeArr.push(item.jenis_kegiatan || 'pendataan');
-                                                    
+
                                                     return typeArr.map(t => (
-                                                        <span 
+                                                        <span
                                                             key={t}
-                                                            className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${
-                                                                t === 'pendataan' ? 'bg-[#F26522]' : 'bg-[#3dbcc9]'
-                                                            }`}
+                                                            className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${t === 'pendataan' ? 'bg-[#F26522]' : 'bg-[#3dbcc9]'
+                                                                }`}
                                                         >
                                                             {t === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
                                                         </span>
@@ -303,6 +336,13 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                                     <Edit size={14} />
                                                 </Link>
                                                 <button
+                                                    onClick={() => openDuplicateModal(item)}
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
+                                                    title="Duplikat"
+                                                >
+                                                    <Copy size={14} />
+                                                </button>
+                                                <button
                                                     onClick={() => handleDelete(item.id)}
                                                     className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
                                                     title="Hapus"
@@ -323,6 +363,25 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination */}
+                {kegiatan?.last_page > 1 && (
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                            Menampilkan {kegiatan.from || 0} ke {kegiatan.to || 0} dari {kegiatan.total} data
+                        </div>
+                        <div className="flex items-center gap-1 overflow-x-auto">
+                            {kegiatan.links.map((link, i) => (
+                                <Link
+                                    key={i}
+                                    href={link.url || '#'}
+                                    className={`px-3 py-1 rounded-md text-sm whitespace-nowrap ${link.active ? 'bg-[#F26522] text-white font-semibold shadow-sm' : 'bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'} ${!link.url && 'opacity-50 cursor-not-allowed'}`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Floating Action Bar untuk Bulk Delete */}
                 {selectedIds.length > 0 && (
@@ -350,6 +409,75 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     </div>
                 )}
             </div>
+
+            {/* Modal Duplikat Kegiatan */}
+            <Modal show={isDuplicateModalOpen} onClose={closeDuplicateModal} maxWidth="md">
+                <form onSubmit={handleDuplicateSubmit} className="p-6">
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                        Duplikat Kegiatan {selectedKegiatan?.nama_kegiatan && `- ${selectedKegiatan.nama_kegiatan}`}
+                    </h2>
+
+                    <div className="bg-blue-50 text-blue-800 p-3 rounded-lg mb-6 text-sm flex items-start gap-2">
+                        <Info size={18} className="shrink-0 mt-0.5" />
+                        <p>Fitur ini akan menyalin data kegiatan terpilih. Silahkan sesuaikan waktu pelaksanaan yang baru.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Tanggal Mulai</label>
+                                <input
+                                    type="date"
+                                    value={duplicateData.tgl_mulai}
+                                    onChange={(e) => setDuplicateData('tgl_mulai', e.target.value)}
+                                    className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Tanggal Selesai</label>
+                                <input
+                                    type="date"
+                                    value={duplicateData.tgl_selesai}
+                                    onChange={(e) => setDuplicateData('tgl_selesai', e.target.value)}
+                                    className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                            <select
+                                value={duplicateData.status_aktif}
+                                onChange={(e) => setDuplicateData('status_aktif', parseInt(e.target.value))}
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]"
+                                required
+                            >
+                                <option value="1">Aktif</option>
+                                <option value="0">Non-Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={closeDuplicateModal}
+                            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={processingDuplicate}
+                            className="px-4 py-2 text-sm font-medium text-white bg-[#D9531E] rounded-lg hover:bg-orange-600 transition disabled:opacity-50"
+                        >
+                            {processingDuplicate ? 'Menyimpan...' : 'Duplikasi Kegiatan'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </>
     );
 }

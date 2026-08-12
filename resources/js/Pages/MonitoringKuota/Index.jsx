@@ -123,6 +123,7 @@ export default function Index({ data, filters, stats, batas }) {
                                 onChange={(e) => setBulan(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-[#F26522] focus:ring-[#F26522] rounded-md shadow-sm text-sm py-2 px-3"
                             >
+                                <option value="semua">Semua Bulan</option>
                                 {getBulanList().map(b => (
                                     <option key={b.id} value={b.id}>{b.name}</option>
                                 ))}
@@ -135,6 +136,7 @@ export default function Index({ data, filters, stats, batas }) {
                                 onChange={(e) => setTahun(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-[#F26522] focus:ring-[#F26522] rounded-md shadow-sm text-sm py-2 px-3"
                             >
+                                <option value="semua">Semua Tahun</option>
                                 {[2024, 2025, 2026, 2027].map(t => (
                                     <option key={t} value={t}>{t}</option>
                                 ))}
@@ -203,7 +205,7 @@ export default function Index({ data, filters, stats, batas }) {
                     
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <span>Tampilkan</span>
+                            <span>Show</span>
                             <select
                                 value={perPage}
                                 onChange={(e) => {
@@ -216,7 +218,7 @@ export default function Index({ data, filters, stats, batas }) {
                                 <option value={25}>25</option>
                                 <option value={50}>50</option>
                             </select>
-                            <span>data</span>
+                            <span>entries</span>
                         </div>
                         
                         <div className="flex items-center gap-4">
