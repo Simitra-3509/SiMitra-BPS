@@ -5,41 +5,57 @@ import {
     Trash2, 
     X, 
     ArrowLeft, 
-    FolderPlus, 
+    FolderEdit, 
     Layers, 
     Calculator, 
     CheckCircle2 
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function Create({ auth }) {
-    const { data, setData, post, processing, errors } = useForm({
-        nomor_kro: '',
-        nama_kegiatan: '',
-        bulan: 'Agustus',
-        tahun: new Date().getFullYear(),
-        tgl_mulai: '',
-        tgl_selesai: '',
-        deskripsi: '',
-        // Array bertingkat Akun -> Detil
-        akun: [
-            {
-                id: Date.now(),
-                kode_akun: '521213',
-                nama_akun: 'Belanja Honor Output Kegiatan',
-                detil: [
-                    {
-                        id: Date.now() + 1,
-                        nama_detil: '',
-                        jenis_sbml: 'pendataan',
-                        frekuensi_penugasan: 'bulanan',
-                        satuan: 'DOK',
-                        jumlah: 1,
-                        harga_satuan: 0,
-                    }
-                ]
-            }
-        ]
+export default function Edit({ auth, kegiatan }) {
+    const initialAkun = (kegiatan?.akun_kegiatan || []).map((a) => ({
+        id: a.id || Date.now(),
+        kode_akun: a.kode_akun || '',
+        nama_akun: a.nama_akun || '',
+        detil: (a.detil_kegiatan || []).map((d) => ({
+            id: d.id || Date.now() + Math.random(),
+            nama_detil: d.nama_detil || '',
+            jenis_sbml: d.jenis_sbml || 'pendataan',
+            frekuensi_penugasan: d.frekuensi_penugasan || 'bulanan',
+            satuan: d.satuan || 'DOK',
+            jumlah: parseFloat(d.jumlah) || 1,
+            harga_satuan: parseFloat(d.harga_satuan) || 0,
+        }))
+    }));
+
+    const defaultAkun = initialAkun.length > 0 ? initialAkun : [
+        {
+            id: Date.now(),
+            kode_akun: '521213',
+            nama_akun: 'Belanja Honor Output Kegiatan',
+            detil: [
+                {
+                    id: Date.now() + 1,
+                    nama_detil: '',
+                    jenis_sbml: 'pendataan',
+                    frekuensi_penugasan: 'bulanan',
+                    satuan: 'DOK',
+                    jumlah: 1,
+                    harga_satuan: 0,
+                }
+            ]
+        }
+    ];
+
+    const { data, setData, put, processing, errors } = useForm({
+        nomor_kro: kegiatan?.kro || '',
+        nama_kegiatan: kegiatan?.nama_kegiatan || '',
+        bulan: kegiatan?.bulan || 'Agustus',
+        tahun: kegiatan?.tahun || new Date().getFullYear(),
+        tgl_mulai: kegiatan?.tanggal_mulai || '',
+        tgl_selesai: kegiatan?.tanggal_selesai || '',
+        deskripsi: kegiatan?.deskripsi || '',
+        akun: defaultAkun,
     });
 
     const handleAddAkun = () => {
@@ -137,7 +153,7 @@ export default function Create({ auth }) {
             }
         }
 
-        post(route('kegiatan.store'));
+        put(route('kegiatan.update', kegiatan.id));
     };
 
     const formatRupiah = (val) => {
@@ -146,7 +162,7 @@ export default function Create({ auth }) {
 
     return (
         <>
-            <Head title="Tambah Kegiatan Baru - SIMITRA LITE" />
+            <Head title={`Edit Kegiatan: ${kegiatan.nama_kegiatan} - SIMITRA LITE`} />
 
             <div className="space-y-6 pb-12">
                 {/* Header Title */}
@@ -160,10 +176,10 @@ export default function Create({ auth }) {
                         </Link>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-                                Tambah Kegiatan Baru
+                                Edit Kegiatan
                             </h1>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Buat kegiatan baru dengan rincian Akun & Detil belanja (RKAKL / DIPA)
+                                Perbarui rincian Akun & Detil belanja kegiatan
                             </p>
                         </div>
                     </div>
@@ -181,7 +197,7 @@ export default function Create({ auth }) {
                     {/* SECTION 1: Informasi Utama */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 space-y-5">
                         <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-3">
-                            <FolderPlus size={18} className="text-[#D9531E]" />
+                            <FolderEdit size={18} className="text-[#D9531E]" />
                             Informasi Utama Kegiatan
                         </h3>
 
@@ -192,7 +208,6 @@ export default function Create({ auth }) {
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Contoh: Sensus Ekonomi 2026"
                                     value={data.nama_kegiatan}
                                     onChange={(e) => setData('nama_kegiatan', e.target.value)}
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -206,7 +221,6 @@ export default function Create({ auth }) {
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Contoh: 2898.BMA.007 / KRO-SE2026"
                                     value={data.nomor_kro}
                                     onChange={(e) => setData('nomor_kro', e.target.value)}
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -263,7 +277,6 @@ export default function Create({ auth }) {
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">Deskripsi / Catatan</label>
                                 <textarea
                                     rows="2"
-                                    placeholder="Catatan tambahan mengenai kegiatan ini (opsional)"
                                     value={data.deskripsi}
                                     onChange={(e) => setData('deskripsi', e.target.value)}
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -272,7 +285,7 @@ export default function Create({ auth }) {
                         </div>
                     </div>
 
-                    {/* SECTION 2: Rincian Akun & Detil Belanja */}
+                    {/* SECTION 2: Rincian Akun & Detil */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-1">
                             <div>
@@ -304,11 +317,10 @@ export default function Create({ auth }) {
                                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
                                             <div className="sm:col-span-1">
                                                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                                    Kode Akun (DIPA)
+                                                    Kode Akun
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    placeholder="Contoh: 521213"
                                                     value={akunItem.kode_akun}
                                                     onChange={(e) => handleAkunChange(akunIdx, 'kode_akun', e.target.value)}
                                                     className="w-full px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -320,7 +332,6 @@ export default function Create({ auth }) {
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    placeholder="Contoh: Belanja Honor Output Kegiatan"
                                                     value={akunItem.nama_akun}
                                                     onChange={(e) => handleAkunChange(akunIdx, 'nama_akun', e.target.value)}
                                                     className="w-full px-3 py-1.5 text-xs font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -344,7 +355,6 @@ export default function Create({ auth }) {
                                         </div>
                                     </div>
 
-                                    {/* Tabel Detil per Akun */}
                                     <div className="p-4 space-y-3">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left text-xs border-collapse">
@@ -373,7 +383,6 @@ export default function Create({ auth }) {
                                                                 <td className="py-2 px-2">
                                                                     <input
                                                                         type="text"
-                                                                        placeholder="Contoh: Honor Petugas Pendataan Lapangan"
                                                                         value={detilItem.nama_detil}
                                                                         onChange={(e) => handleDetilChange(akunIdx, detilIdx, 'nama_detil', e.target.value)}
                                                                         className="w-full px-2 py-1 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -483,7 +492,7 @@ export default function Create({ auth }) {
 
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="text-xs text-gray-500">
-                            * Pastikan Jenis SBML & Frekuensi penugasan telah dipilih di tiap baris Detil.
+                            * Perubahan rincian Akun & Detil akan langsung disimpan secara bersamaan.
                         </div>
                         <div className="flex items-center gap-3">
                             <Link
@@ -498,7 +507,7 @@ export default function Create({ auth }) {
                                 className="px-6 py-2.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-orange-600 rounded-xl transition shadow-md disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                             >
                                 <CheckCircle2 size={16} />
-                                <span>{processing ? 'Menyimpan...' : 'Simpan Kegiatan & Rincian'}</span>
+                                <span>{processing ? 'Memperbarui...' : 'Simpan Perubahan Kegiatan'}</span>
                             </button>
                         </div>
                     </div>
@@ -508,4 +517,4 @@ export default function Create({ auth }) {
     );
 }
 
-Create.layout = (page) => <AuthenticatedLayout user={page.props.auth?.user} header="Tambah Kegiatan">{page}</AuthenticatedLayout>;
+Edit.layout = (page) => <AuthenticatedLayout user={page.props.auth?.user} header="Edit Kegiatan">{page}</AuthenticatedLayout>;

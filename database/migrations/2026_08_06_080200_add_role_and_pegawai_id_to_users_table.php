@@ -22,9 +22,9 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'role')) {
-                $table->enum('role', ['admin', 'operator', 'viewer', 'mitra'])
+                $table->enum('role', ['Admin', 'Operator', 'Viewer', 'Mitra'])
                       ->notNull()
-                      ->default('operator')
+                      ->default('Operator')
                       ->after('password'); // MySQL/MariaDB only — diabaikan di SQLite
             }
 

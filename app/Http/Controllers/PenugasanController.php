@@ -20,9 +20,9 @@ class PenugasanController extends Controller
         $query = Penugasan::with(['mitra', 'kegiatan', 'honoraria'])
             ->whereNull('deleted_at');
 
-        // Filter jenis_sbml (kolom di DB: jenis_sbml)
+        // Filter jenis_sbml (kolom di DB: detil_kegiatan.jenis_sbml)
         if ($request->filled('jenis_sbml')) {
-            $query->whereHas('kegiatan', fn($q) =>
+            $query->whereHas('kegiatan.akunKegiatan.detilKegiatan', fn($q) =>
                 $q->where('jenis_sbml', $request->jenis_sbml)
             );
         }
@@ -57,9 +57,10 @@ class PenugasanController extends Controller
         $penugasan = $query->latest()->paginate(15)->withQueryString();
 
         // Kegiatan aktif tanpa mitra (untuk warning banner)
-        $kegiatanTanpaMitra = Kegiatan::where('status_aktif', true)
+        $kegiatanTanpaMitra = Kegiatan::with('akunKegiatan.detilKegiatan')
+            ->where('status_aktif', true)
             ->whereDoesntHave('penugasans')
-            ->get(['id', 'nama_kegiatan', 'jenis_sbml']);
+            ->get();
 
         // Data untuk filter dropdown
         $semuaKegiatan = Kegiatan::where('status_aktif', true)
@@ -78,7 +79,7 @@ class PenugasanController extends Controller
      */
     public function create()
     {
-        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'jenis_sbml']);
+        $kegiatan = Kegiatan::with('akunKegiatan.detilKegiatan')->where('status_aktif', true)->get();
         $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'nik']);
 
         return Inertia::render('Penugasan/Create', [

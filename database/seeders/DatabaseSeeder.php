@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Mitra;
 use App\Models\MasterKegiatan;
 use App\Models\Kegiatan;
+use App\Models\AkunKegiatan;
+use App\Models\DetilKegiatan;
 use App\Models\Penugasan;
 use App\Models\Honorarium;
 use App\Models\SbmlLimit;
@@ -20,14 +22,14 @@ class DatabaseSeeder extends Seeder
             'name' => 'Administrator',
             'username' => 'admin',
             'password' => Hash::make('password'),
-            'role' => 'admin',
+            'role' => 'Admin',
         ]);
 
         User::create([
             'name' => 'Operator Si-Mitra',
             'username' => 'operator',
             'password' => Hash::make('password'),
-            'role' => 'operator',
+            'role' => 'Operator',
         ]);
 
         // Sbml Limits
@@ -36,70 +38,98 @@ class DatabaseSeeder extends Seeder
 
         // Master Kegiatans
         $master1 = MasterKegiatan::create([
-            'kode_kegiatan' => 'KRO-SE2026-PEND',
-            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pendataan)',
+            'kode_kegiatan' => 'KRO-SE2026',
+            'nama_kegiatan' => 'Sensus Ekonomi 2026',
             'satuan_kegiatan' => 'Responden',
             'harga_satuan' => 50000,
             'kategori_kegiatan' => 'Sensus',
         ]);
 
         $master2 = MasterKegiatan::create([
-            'kode_kegiatan' => 'KRO-SE2026-PENG',
-            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pengolahan)',
-            'satuan_kegiatan' => 'Dokumen',
-            'harga_satuan' => 25000,
-            'kategori_kegiatan' => 'Sensus',
-        ]);
-
-        $master3 = MasterKegiatan::create([
-            'kode_kegiatan' => 'KRO-SAKERNAS-PEND',
-            'nama_kegiatan' => 'Survei Angkatan Kerja Nasional',
+            'kode_kegiatan' => 'KRO-SAKERNAS-2026',
+            'nama_kegiatan' => 'Survei Angkatan Kerja Nasional 2026',
             'satuan_kegiatan' => 'Dokumen',
             'harga_satuan' => 35000,
             'kategori_kegiatan' => 'Survei',
         ]);
 
-        // Kegiatans
+        // Kegiatans (1 Baris Kegiatan Sensus Ekonomi 2026)
         $kegiatan1 = Kegiatan::create([
             'master_kegiatan_id' => $master1->id,
-            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pendataan)',
-            'jenis_sbml' => 'pendataan',
+            'nama_kegiatan' => 'Sensus Ekonomi 2026',
             'bulan' => 8,
             'tahun' => 2026,
             'kode_kegiatan' => $master1->kode_kegiatan,
-            'satuan_kegiatan' => $master1->satuan_kegiatan,
-            'harga_satuan' => $master1->harga_satuan,
-            'jumlah_sampel' => 1500,
-            'total_anggaran' => 75000000,
-            'deskripsi' => 'Kegiatan pencacahan lapangan Sensus Ekonomi 2026',
+            'kro' => 'KRO-SE2026',
+            'satuan_kegiatan' => 'Dokumen',
+            'harga_satuan' => 50000,
+            'jumlah_sampel' => 3500,
+            'total_anggaran' => 125000000,
+            'deskripsi' => 'Kegiatan Sensus Ekonomi 2026 (Pendataan Lapangan dan Pengolahan Data)',
+            'status_aktif' => true,
         ]);
 
+        // Akun Kegiatan untuk Sensus Ekonomi 2026
+        $akun1 = AkunKegiatan::create([
+            'kegiatan_id' => $kegiatan1->id,
+            'kode_akun' => '521213',
+            'nama_akun' => 'Belanja Honor Output Kegiatan',
+        ]);
+
+        // 2 Detil Rincian (Pendataan & Pengolahan)
+        $detil1 = DetilKegiatan::create([
+            'akun_id' => $akun1->id,
+            'nama_detil' => 'Honor Petugas Pendataan Lapangan SE2026',
+            'jenis_sbml' => 'pendataan',
+            'frekuensi_penugasan' => 'bulanan',
+            'satuan' => 'Responden',
+            'jumlah' => 1500,
+            'harga_satuan' => 50000,
+            'total' => 75000000,
+        ]);
+
+        $detil2 = DetilKegiatan::create([
+            'akun_id' => $akun1->id,
+            'nama_detil' => 'Honor Petugas Pengolahan Data SE2026',
+            'jenis_sbml' => 'pengolahan',
+            'frekuensi_penugasan' => 'bulanan',
+            'satuan' => 'Dokumen',
+            'jumlah' => 2000,
+            'harga_satuan' => 25000,
+            'total' => 50000000,
+        ]);
+
+        // Kegiatan 2 (Sakernas)
         $kegiatan2 = Kegiatan::create([
             'master_kegiatan_id' => $master2->id,
-            'nama_kegiatan' => 'Sensus Ekonomi 2026 (Pengolahan)',
-            'jenis_sbml' => 'pengolahan',
+            'nama_kegiatan' => 'Survei Angkatan Kerja Nasional 2026',
             'bulan' => 8,
             'tahun' => 2026,
             'kode_kegiatan' => $master2->kode_kegiatan,
-            'satuan_kegiatan' => $master2->satuan_kegiatan,
-            'harga_satuan' => $master2->harga_satuan,
-            'jumlah_sampel' => 2000,
-            'total_anggaran' => 50000000,
-            'deskripsi' => 'Kegiatan pengolahan dan entri data Sensus Ekonomi 2026',
-        ]);
-
-        $kegiatan3 = Kegiatan::create([
-            'master_kegiatan_id' => $master3->id,
-            'nama_kegiatan' => 'Survei Angkatan Kerja Nasional',
-            'jenis_sbml' => 'pendataan',
-            'bulan' => 8,
-            'tahun' => 2026,
-            'kode_kegiatan' => $master3->kode_kegiatan,
-            'satuan_kegiatan' => $master3->satuan_kegiatan,
-            'harga_satuan' => $master3->harga_satuan,
+            'kro' => 'KRO-SAKERNAS-2026',
+            'satuan_kegiatan' => 'Dokumen',
+            'harga_satuan' => 35000,
             'jumlah_sampel' => 800,
             'total_anggaran' => 28000000,
-            'deskripsi' => 'Kegiatan pendataan Sakernas',
+            'deskripsi' => 'Kegiatan Pendataan Sakernas 2026',
+            'status_aktif' => true,
+        ]);
+
+        $akun2 = AkunKegiatan::create([
+            'kegiatan_id' => $kegiatan2->id,
+            'kode_akun' => '521213',
+            'nama_akun' => 'Belanja Honor Output Kegiatan',
+        ]);
+
+        DetilKegiatan::create([
+            'akun_id' => $akun2->id,
+            'nama_detil' => 'Honor Petugas Pendataan Sakernas',
+            'jenis_sbml' => 'pendataan',
+            'frekuensi_penugasan' => 'bulanan',
+            'satuan' => 'Dokumen',
+            'jumlah' => 800,
+            'harga_satuan' => 35000,
+            'total' => 28000000,
         ]);
 
         $sampleMitras = [

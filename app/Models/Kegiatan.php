@@ -13,10 +13,22 @@ class Kegiatan extends Model
     protected $fillable = [
         'nama_kegiatan',
         'kro',
-        'jenis_sbml',
         'bulan',
         'tahun',
         'status_aktif',
+        'kode_kegiatan',
+        'satuan_kegiatan',
+        'harga_satuan',
+        'tanggal_mulai',
+        'tanggal_selesai',
+        'master_kegiatan_id',
+        'jumlah_sampel',
+        'total_anggaran',
+        'deskripsi',
+        'tim_kerja_id',
+        'pic_kegiatan_id',
+        'pj_kegiatan_id',
+        'created_by',
     ];
 
     public function masterKegiatan()
@@ -27,5 +39,10 @@ class Kegiatan extends Model
     public function penugasans()
     {
         return $this->hasMany(Penugasan::class);
+    }
+
+    public function akunKegiatan()
+    {
+        return $this->hasMany(AkunKegiatan::class, 'kegiatan_id');
     }
 }

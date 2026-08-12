@@ -23,9 +23,9 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==========================================
-    // ROUTE UNTUK ADMIN DAN OPERATOR
+    // ROUTE UTAMA (ADMIN, OPERATOR, VIEWER, MITRA)
     // ==========================================
-    Route::middleware('role:admin,operator')->group(function () {
+    Route::middleware('role:admin,operator,viewer,mitra')->group(function () {
         Route::get('/dashboard', function () {
             $totalMitra = Mitra::where('status_aktif', true)->count();
             $kegiatanAktif = Kegiatan::where('status_aktif', true)->count();
@@ -135,15 +135,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/users', function (Illuminate\Http\Request $request) {
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:users,username',
-            'password' => 'required|string|min:6',
+            'password' => 'nullable|string|min:6',
             'nama_lengkap' => 'required|string|max:255',
-            'sobat_id' => 'nullable|string|max:12',
-            'role' => 'required|string',
+            'sobat_id' => 'nullable|string|max:50',
+            'role' => 'nullable|string',
         ]);
+        $sobatId = !empty($validated['sobat_id']) ? trim($validated['sobat_id']) : null;
+        $plainPassword = !empty($validated['password']) 
+            ? $validated['password'] 
+            : ($sobatId ?? $validated['username']);
+
+        $roleLower = strtolower($validated['role'] ?? 'operator');
+        $role = match ($roleLower) {
+            'admin', 'administrator' => 'Admin',
+            'viewer' => 'Viewer',
+            'mitra' => 'Mitra',
+            default => 'Operator',
+        };
+
         App\Models\User::create([
             'name' => $validated['nama_lengkap'],
             'username' => $validated['username'],
-            'password' => Illuminate\Support\Facades\Hash::make($validated['password']),
+            'sobat_id' => $sobatId,
+            'password' => Illuminate\Support\Facades\Hash::make($plainPassword),
+            'role' => $role,
         ]);
         return redirect()->route('users.index')->with('message', 'User berhasil ditambahkan.');
     })->name('user.store');

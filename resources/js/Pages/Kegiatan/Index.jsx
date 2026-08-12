@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, router, Link } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 function Index({ auth, kegiatan, kegiatanCount, filters }) {
@@ -247,21 +247,37 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             </div>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${
-                                                (item.jenis_sbml || item.jenis_kegiatan) === 'pendataan' 
-                                                    ? 'bg-[#F26522]' 
-                                                    : 'bg-[#3dbcc9]'
-                                            }`}>
-                                                {(item.jenis_sbml || item.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
-                                            </span>
+                                            <div className="flex flex-wrap items-center justify-center gap-1">
+                                                {(() => {
+                                                    const types = new Set();
+                                                    (item.akun_kegiatan || []).forEach(a => {
+                                                        (a.detil_kegiatan || []).forEach(d => {
+                                                            if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
+                                                        });
+                                                    });
+                                                    const typeArr = Array.from(types);
+                                                    if (typeArr.length === 0) typeArr.push(item.jenis_kegiatan || 'pendataan');
+                                                    
+                                                    return typeArr.map(t => (
+                                                        <span 
+                                                            key={t}
+                                                            className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${
+                                                                t === 'pendataan' ? 'bg-[#F26522]' : 'bg-[#3dbcc9]'
+                                                            }`}
+                                                        >
+                                                            {t === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
+                                                        </span>
+                                                    ));
+                                                })()}
+                                            </div>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-gray-900 dark:text-white">
-                                                    Rp {numberFormat(item.harga_satuan || (item.jenis_kegiatan === 'pendataan' ? 50000 : 30000))}
+                                                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                    Rp {numberFormat(item.total_anggaran || 0)}
                                                 </span>
                                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    / {item.satuan || (item.jenis_kegiatan === 'pendataan' ? 'Responden' : 'Dokumen')}
+                                                    Total Anggaran
                                                 </span>
                                             </div>
                                         </td>
@@ -272,6 +288,13 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-2">
+                                                <Link
+                                                    href={route('kegiatan.show', item.id)}
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
+                                                    title="Lihat Detail Rincian (Show)"
+                                                >
+                                                    <Eye size={14} />
+                                                </Link>
                                                 <Link
                                                     href={route('kegiatan.edit', item.id)}
                                                     className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
