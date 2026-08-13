@@ -234,14 +234,6 @@ class KegiatanController extends Controller
                 'total_anggaran' => $totalAnggaran,
             ]);
 
-            /*
-             |--------------------------------------------------------------------------
-             | CATATAN REVISI FUTURE:
-             | Pendekatan hapus-dan-buat-ulang ini disengaja disederhanakan untuk versi awal.
-             | PERLU DIREVISI jika tabel penugasans / fitur lain sudah merujuk ke detil_kegiatan_id,
-             | agar ID detil tidak berubah-ubah setiap kali update dan tidak merusak relasi penugasan.
-             |--------------------------------------------------------------------------
-             */
             $kegiatan->akunKegiatan()->delete();
 
             foreach ($validated['akun'] as $akunData) {
@@ -296,5 +288,56 @@ class KegiatanController extends Controller
         Kegiatan::whereIn('id', $request->ids)->delete();
 
         return redirect()->back()->with('success', count($request->ids) . ' kegiatan berhasil dihapus.');
+    }
+
+    /**
+     * Duplicate the specified resource in storage.
+     */
+    public function duplicate(Request $request, Kegiatan $kegiatan)
+    {
+        $request->validate([
+            'tgl_mulai' => 'required|date',
+            'tgl_selesai' => 'required|date',
+            'status_aktif' => 'required|boolean',
+        ]);
+
+        $kegiatan->load('akunKegiatan.detilKegiatan');
+
+        DB::transaction(function () use ($request, $kegiatan) {
+            $newKegiatan = $kegiatan->replicate();
+            
+            $bulanIndo = [
+                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            ];
+            
+            $mulai = \Carbon\Carbon::parse($request->tgl_mulai);
+            $selesai = \Carbon\Carbon::parse($request->tgl_selesai);
+
+            $newKegiatan->tanggal_mulai = $mulai->format('Y-m-d');
+            $newKegiatan->tanggal_selesai = $selesai->format('Y-m-d');
+            $newKegiatan->bulan = $bulanIndo[$mulai->month] ?? date('F');
+            $newKegiatan->tahun = $mulai->year;
+            $newKegiatan->status_aktif = $request->status_aktif;
+            $newKegiatan->nama_kegiatan = $kegiatan->nama_kegiatan . ' (' . ($bulanIndo[$mulai->month] ?? $mulai->format('M')) . ' ' . $mulai->year . ')';
+            $newKegiatan->created_by = auth()->id();
+            $newKegiatan->save();
+
+            // Duplikat relasi Akun & Detil
+            foreach ($kegiatan->akunKegiatan as $akun) {
+                $newAkun = $akun->replicate();
+                $newAkun->kegiatan_id = $newKegiatan->id;
+                $newAkun->save();
+
+                foreach ($akun->detilKegiatan as $detil) {
+                    $newDetil = $detil->replicate();
+                    $newDetil->akun_id = $newAkun->id;
+                    $newDetil->save();
+                }
+            }
+        });
+
+        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan beserta Akun & Detil berhasil diduplikasi');
     }
 }

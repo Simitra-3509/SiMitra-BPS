@@ -51,4 +51,9 @@ class DetilKegiatan extends Model
     {
         return $this->belongsTo(AkunKegiatan::class, 'akun_id');
     }
+
+    public function penugasans()
+    {
+        return $this->hasMany(Penugasan::class, 'detil_kegiatan_id');
+    }
 }

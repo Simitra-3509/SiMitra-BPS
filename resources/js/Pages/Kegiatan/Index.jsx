@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Head, router, Link } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Head, router, Link, useForm } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 
