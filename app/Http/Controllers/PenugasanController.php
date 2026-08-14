@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Penugasan;
 use App\Models\Kegiatan;
+use App\Models\AkunKegiatan;
+use App\Models\DetilKegiatan;
 use App\Models\Mitra;
 use App\Http\Requests\StorePenugasanRequest;
 use App\Http\Requests\UpdatePenugasanRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PenugasanController extends Controller
@@ -17,12 +20,12 @@ class PenugasanController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Penugasan::with(['mitra', 'kegiatan', 'honoraria'])
+        $query = Penugasan::with(['mitra', 'kegiatan', 'detilKegiatan', 'honoraria'])
             ->whereNull('deleted_at');
 
         // Filter jenis_sbml (kolom di DB: detil_kegiatan.jenis_sbml)
         if ($request->filled('jenis_sbml')) {
-            $query->whereHas('kegiatan.akunKegiatan.detilKegiatan', fn($q) =>
+            $query->whereHas('detilKegiatan', fn($q) =>
                 $q->where('jenis_sbml', $request->jenis_sbml)
             );
         }
@@ -79,12 +82,121 @@ class PenugasanController extends Controller
      */
     public function create()
     {
-        $kegiatan = Kegiatan::with('akunKegiatan.detilKegiatan')->where('status_aktif', true)->get();
-        $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'nik']);
+        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'kro']);
 
         return Inertia::render('Penugasan/Create', [
-            'kegiatan' => $kegiatan,
-            'mitra'    => $mitra,
+            'kegiatanList' => $kegiatan,
+        ]);
+    }
+
+    /**
+     * AJAX Endpoint 1: GET Akun by kegiatan_id
+     */
+    public function getAkunByKegiatan($kegiatan_id)
+    {
+        $akun = AkunKegiatan::where('kegiatan_id', $kegiatan_id)->get(['id', 'kode_akun', 'nama_akun']);
+        return response()->json($akun);
+    }
+
+    /**
+     * AJAX Endpoint 2: GET Detil by akun_id (with quota usage count)
+     */
+    public function getDetilByAkun($akun_id)
+    {
+        $detils = DetilKegiatan::where('akun_id', $akun_id)->get();
+        
+        $result = $detils->map(function ($detil) {
+            // Hitung berapa kombinasi (bulan, tahun) unik yang sudah punya penugasan untuk detil ini
+            $terpakaiBulan = Penugasan::where('detil_kegiatan_id', $detil->id)
+                ->selectRaw('COUNT(DISTINCT CONCAT(bulan, "-", tahun)) as total')
+                ->value('total') ?? 0;
+            
+            return [
+                'id' => $detil->id,
+                'nama_detil' => $detil->nama_detil,
+                'jenis_sbml' => $detil->jenis_sbml,
+                'frekuensi_penugasan' => $detil->frekuensi_penugasan,
+                'satuan' => $detil->satuan,
+                'harga_satuan' => (float)$detil->harga_satuan,
+                'jumlah' => (float)$detil->jumlah,
+                'total' => (float)$detil->total,
+                'terpakai_bulan' => (int)$terpakaiBulan,
+            ];
+        });
+
+        return response()->json($result);
+    }
+
+    /**
+     * AJAX Endpoint 3: Search Mitra by keyword
+     */
+    public function searchMitra(Request $request)
+    {
+        $q = trim($request->get('q', ''));
+
+        $mitras = Mitra::where('status_aktif', true)
+            ->when($q, function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('nama_lengkap', 'like', "%{$q}%")
+                        ->orWhere('nik', 'like', "%{$q}%");
+                });
+            })
+            ->limit(15)
+            ->get(['id', 'nama_lengkap', 'nik', 'email', 'posisi_role']);
+
+        return response()->json($mitras);
+    }
+
+    /**
+     * AJAX Endpoint 4: GET Previous Month Assignments for Copy Feature
+     */
+    public function getPrevMonthPenugasan(Request $request)
+    {
+        $detilId = $request->get('detil_kegiatan_id');
+        $bulanCurrent = $request->get('bulan');
+        $tahunCurrent = (int)$request->get('tahun', date('Y'));
+
+        if (!$detilId || !$bulanCurrent) {
+            return response()->json(['prev_bulan' => '', 'prev_tahun' => $tahunCurrent, 'data' => []]);
+        }
+
+        $months = [
+            'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
+            'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
+            'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
+        ];
+
+        $monthNum = $months[$bulanCurrent] ?? date('n');
+        if ($monthNum === 1) {
+            $prevMonthNum = 12;
+            $prevTahun = $tahunCurrent - 1;
+        } else {
+            $prevMonthNum = $monthNum - 1;
+            $prevTahun = $tahunCurrent;
+        }
+
+        $monthNames = array_flip($months);
+        $prevBulanName = $monthNames[$prevMonthNum] ?? 'Desember';
+
+        $penugasans = Penugasan::with('mitra')
+            ->where('detil_kegiatan_id', $detilId)
+            ->where('bulan', $prevBulanName)
+            ->where('tahun', $prevTahun)
+            ->get();
+
+        $result = $penugasans->map(function ($p) {
+            return [
+                'mitra_id' => $p->mitra_id,
+                'nama_lengkap' => $p->mitra->nama_lengkap ?? '',
+                'nik' => $p->mitra->nik ?? '',
+                'kuota_target' => $p->kuota_target ?? 1,
+            ];
+        });
+
+        return response()->json([
+            'prev_bulan' => $prevBulanName,
+            'prev_tahun' => $prevTahun,
+            'data' => $result,
         ]);
     }
 
@@ -95,28 +207,59 @@ class PenugasanController extends Controller
     {
         $request->validate([
             'kegiatan_id' => 'required|exists:kegiatans,id',
-            'mitra_id'    => 'required|exists:mitras,id',
+            'akun_id' => 'required|exists:akun_kegiatan,id',
+            'detil_kegiatan_id' => 'required|exists:detil_kegiatan,id',
+            'bulan' => 'required|string',
+            'tahun' => 'required|integer',
+            'mitras' => 'required|array|min:1',
+            'mitras.*.id' => 'required|exists:mitras,id',
+            'mitras.*.kuota_target' => 'required|numeric|min:1',
         ], [
             'kegiatan_id.required' => 'Kegiatan wajib dipilih.',
-            'mitra_id.required'    => 'Mitra wajib dipilih.',
+            'akun_id.required' => 'Akun kegiatan wajib dipilih.',
+            'detil_kegiatan_id.required' => 'Detil rincian wajib dipilih.',
+            'bulan.required' => 'Bulan wajib dipilih.',
+            'tahun.required' => 'Tahun wajib diisi.',
+            'mitras.required' => 'Minimal 1 mitra harus dipilih.',
+            'mitras.min' => 'Minimal 1 mitra harus dipilih.',
+            'mitras.*.kuota_target.required' => 'Kuota per mitra wajib diisi.',
+            'mitras.*.kuota_target.min' => 'Kuota per mitra minimal 1.',
         ]);
 
-        // Cegah duplikasi penugasan
-        $exists = Penugasan::where('kegiatan_id', $request->kegiatan_id)
-            ->where('mitra_id', $request->mitra_id)
-            ->exists();
+        try {
+            DB::transaction(function () use ($request) {
+                foreach ($request->mitras as $mitraItem) {
+                    $exists = Penugasan::where('detil_kegiatan_id', $request->detil_kegiatan_id)
+                        ->where('mitra_id', $mitraItem['id'])
+                        ->where('bulan', $request->bulan)
+                        ->where('tahun', $request->tahun)
+                        ->exists();
 
-        if ($exists) {
-            return back()->withErrors(['mitra_id' => 'Mitra ini sudah ditugaskan ke kegiatan tersebut.']);
+                    if ($exists) {
+                        $mitra = Mitra::find($mitraItem['id']);
+                        $namaMitra = $mitra ? $mitra->nama_lengkap : 'Mitra';
+                        throw new \Exception("Mitra {$namaMitra} sudah ditugaskan ke detil ini pada bulan {$request->bulan} {$request->tahun}.");
+                    }
+
+                    Penugasan::create([
+                        'kegiatan_id' => $request->kegiatan_id,
+                        'detil_kegiatan_id' => $request->detil_kegiatan_id,
+                        'mitra_id' => $mitraItem['id'],
+                        'bulan' => $request->bulan,
+                        'tahun' => $request->tahun,
+                        'kuota_target' => $mitraItem['kuota_target'] ?? 1,
+                        'status' => 'ditugaskan',
+                    ]);
+                }
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            return back()->withErrors(['mitras' => 'Terjadi duplikasi penugasan: Mitra sudah ditugaskan ke detil ini pada periode yang sama.']);
+        } catch (\Exception $e) {
+            return back()->withErrors(['mitras' => $e->getMessage()]);
         }
 
-        Penugasan::create([
-            'kegiatan_id' => $request->kegiatan_id,
-            'mitra_id'    => $request->mitra_id,
-        ]);
-
         return redirect()->route('penugasan.index')
-            ->with('success', 'Penugasan berhasil ditambahkan.');
+            ->with('success', count($request->mitras) . ' penugasan mitra berhasil ditambahkan.');
     }
 
     /**
@@ -133,7 +276,7 @@ class PenugasanController extends Controller
     public function edit(Penugasan $penugasan)
     {
         $penugasan->load(['kegiatan', 'mitra']);
-        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'jenis_sbml']);
+        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan']);
         $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'nik']);
 
         return Inertia::render('Penugasan/Edit', [
