@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
      * Round 4 — Perbaikan Constraint & Index hasil audit SQL dump.
      */
     public function up(): void

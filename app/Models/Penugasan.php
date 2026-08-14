@@ -23,6 +23,11 @@ class Penugasan extends Model
         return $this->belongsTo(Kegiatan::class);
     }
 
+    public function detilKegiatan()
+    {
+        return $this->belongsTo(DetilKegiatan::class, 'detil_kegiatan_id');
+    }
+
     public function honoraria()
     {
         return $this->hasMany(Honorarium::class);
