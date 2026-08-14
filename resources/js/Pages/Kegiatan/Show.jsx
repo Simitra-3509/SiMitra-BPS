@@ -14,7 +14,8 @@ import {
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Show({ auth, kegiatan, grandTotal }) {
-    const initialOpenState = (kegiatan?.akun_kegiatan || []).map((a) => a.id);
+    const akunList = kegiatan?.akun_kegiatan || kegiatan?.akunKegiatan || [];
+    const initialOpenState = akunList.map((a) => a.id);
     const [openAkunIds, setOpenAkunIds] = useState(initialOpenState);
 
     const toggleAccordion = (akunId) => {
@@ -29,8 +30,9 @@ export default function Show({ auth, kegiatan, grandTotal }) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val || 0);
     };
 
-    const totalBudget = grandTotal || (kegiatan?.akun_kegiatan || []).reduce((sum, akun) => {
-        return sum + (akun.detil_kegiatan || []).reduce((dSum, detil) => {
+    const totalBudget = grandTotal || akunList.reduce((sum, akun) => {
+        const detilList = akun.detil_kegiatan || akun.detilKegiatan || [];
+        return sum + detilList.reduce((dSum, detil) => {
             return dSum + (parseFloat(detil.total) || ((parseFloat(detil.jumlah) || 0) * (parseFloat(detil.harga_satuan) || 0)));
         }, 0);
     }, 0);
@@ -120,18 +122,19 @@ export default function Show({ auth, kegiatan, grandTotal }) {
                     <div className="flex items-center justify-between px-1">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Layers size={20} className="text-[#D9531E]" />
-                            Rincian Akun & Detil Belanja ({kegiatan.akun_kegiatan?.length || 0} Akun)
+                            Rincian Akun & Detil Belanja ({akunList.length} Akun)
                         </h3>
                     </div>
 
-                    {(!kegiatan.akun_kegiatan || kegiatan.akun_kegiatan.length === 0) ? (
+                    {akunList.length === 0 ? (
                         <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-200 dark:border-gray-700 text-center text-gray-400 text-xs">
                             Belum ada rincian Akun & Detil belanja pada kegiatan ini.
                         </div>
                     ) : (
-                        kegiatan.akun_kegiatan.map((akun, aIdx) => {
+                        akunList.map((akun, aIdx) => {
+                            const detilList = akun.detil_kegiatan || akun.detilKegiatan || [];
                             const isOpen = openAkunIds.includes(akun.id);
-                            const akunSubtotal = (akun.detil_kegiatan || []).reduce((sum, d) => {
+                            const akunSubtotal = detilList.reduce((sum, d) => {
                                 return sum + (parseFloat(d.total) || ((parseFloat(d.jumlah) || 0) * (parseFloat(d.harga_satuan) || 0)));
                             }, 0);
 
@@ -154,7 +157,7 @@ export default function Show({ auth, kegiatan, grandTotal }) {
                                                     {akun.nama_akun}
                                                 </h4>
                                                 <p className="text-[11px] text-gray-500">
-                                                    {akun.detil_kegiatan?.length || 0} Detil Baris Rincian
+                                                    {detilList.length} Detil Baris Rincian
                                                 </p>
                                             </div>
                                         </div>
@@ -186,7 +189,7 @@ export default function Show({ auth, kegiatan, grandTotal }) {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-                                                    {(akun.detil_kegiatan || []).map((detil, dIdx) => {
+                                                    {detilList.map((detil, dIdx) => {
                                                         const rowTotal = parseFloat(detil.total) || ((parseFloat(detil.jumlah) || 0) * (parseFloat(detil.harga_satuan) || 0));
                                                         const isPendataan = (detil.jenis_sbml || 'pendataan').toLowerCase() === 'pendataan';
 

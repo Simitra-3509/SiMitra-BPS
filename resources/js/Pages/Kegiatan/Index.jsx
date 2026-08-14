@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Head, router, Link } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Head, router, Link, useForm } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 
@@ -284,8 +284,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             <div className="flex flex-wrap items-center justify-center gap-1">
                                                 {(() => {
                                                     const types = new Set();
-                                                    (item.akun_kegiatan || []).forEach(a => {
-                                                        (a.detil_kegiatan || []).forEach(d => {
+                                                    (item.akun_kegiatan || item.akunKegiatan || []).forEach(a => {
+                                                        (a.detil_kegiatan || a.detilKegiatan || []).forEach(d => {
                                                             if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
                                                         });
                                                     });

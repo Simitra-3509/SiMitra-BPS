@@ -20,7 +20,12 @@ const getBulanList = () => {
     ];
 };
 
-export default function Index({ data, filters, stats, batas }) {
+export default function Index({ 
+    data = { data: [], from: 0, to: 0, total: 0, current_page: 1, last_page: 1, links: [] }, 
+    filters = {}, 
+    stats = { total: 0, normal: 0, warning: 0, kritis: 0 }, 
+    batas = { pendataan: 3085000, pengolahan: 2854000 } 
+}) {
     const [bulan, setBulan] = useState(filters?.bulan || new Date().getMonth() + 1);
     const [tahun, setTahun] = useState(filters?.tahun || new Date().getFullYear());
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || 'semua');
@@ -77,37 +82,37 @@ export default function Index({ data, filters, stats, batas }) {
 
                 {/* Dashboard Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-l-gray-300 dark:border-l-gray-600 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center">
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-gray-300 dark:border-l-gray-600 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center group cursor-pointer">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Mitra</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</h3>
                         </div>
-                        <Users size={28} className="text-[#F26522]" />
+                        <Users size={28} className="text-[#F26522] group-hover:scale-110 transition-transform duration-300" />
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-l-emerald-500 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center">
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-emerald-500 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center group cursor-pointer">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Kuota Normal</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.normal}</h3>
                         </div>
-                        <div className="h-10 w-10 rounded-full border border-emerald-500 flex items-center justify-center text-emerald-500">
+                        <div className="h-10 w-10 rounded-full border border-emerald-500 flex items-center justify-center text-emerald-500 group-hover:scale-110 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 transition-all duration-300">
                             <CheckCircle size={20} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-l-amber-400 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center">
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-amber-400 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center group cursor-pointer">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Peringatan (&gt;{threshold}%)</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.warning}</h3>
                         </div>
-                        <div className="h-10 w-10 text-amber-500 flex items-center justify-center">
+                        <div className="h-10 w-10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
                             <AlertTriangle size={24} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-l-red-500 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center">
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-red-500 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center group cursor-pointer">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Kritis (100%)</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.kritis}</h3>
                         </div>
-                        <div className="h-10 w-10 rounded-full border border-red-500 flex items-center justify-center text-red-500">
+                        <div className="h-10 w-10 rounded-full border border-red-500 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-50 dark:group-hover:bg-red-900/30 transition-all duration-300">
                             <XCircle size={20} />
                         </div>
                     </div>

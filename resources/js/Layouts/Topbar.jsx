@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { Link } from '@inertiajs/react';
-import { User, Sun, Moon, ChevronDown, ShieldCheck, LogOut } from 'lucide-react';
+import { User, Sun, Moon, ChevronDown, ShieldCheck, LogOut, Menu } from 'lucide-react';
 
-export default function Topbar({ user, header }) {
+const Topbar = forwardRef(function Topbar({ user, header, isCollapsed, toggleSidebar, setMobileOpen }, ref) {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -41,50 +41,71 @@ export default function Topbar({ user, header }) {
     const role = user?.role || 'Guest';
 
     return (
-        <header className="bg-simitra-orange text-white shadow h-14 flex items-center justify-between px-6 z-40 sticky top-0">
-            <div className="font-semibold text-lg">
-                {header || 'Dashboard'}
+        <header className="bg-simitra-orange text-white shadow h-14 flex items-center justify-between px-4 sm:px-6 z-40 sticky top-0 transition-colors">
+            <div className="flex items-center gap-3">
+                {/* Desktop Toggle Button */}
+                <button
+                    ref={ref}
+                    type="button"
+                    onClick={toggleSidebar}
+                    className="hidden md:flex items-center justify-center p-2 rounded-lg bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white cursor-pointer"
+                    title={isCollapsed ? "Buka Sidebar Lengkap" : "Tutup Sidebar (Hanya Ikon)"}
+                >
+                    <Menu size={18} />
+                </button>
+
+                {/* Mobile Toggle Button */}
+                <button
+                    type="button"
+                    onClick={() => setMobileOpen(true)}
+                    className="md:hidden flex items-center justify-center p-2 rounded-lg bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white cursor-pointer"
+                    title="Buka Menu"
+                >
+                    <Menu size={18} />
+                </button>
+
+                <div className="font-bold text-base sm:text-lg tracking-wide">
+                    {header || 'Dashboard'}
+                </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
                 {/* Dark mode toggle */}
                 <button
                     onClick={toggleDarkMode}
-                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-md text-sm transition-colors cursor-pointer"
+                    className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-lg text-sm font-medium transition-all active:scale-95 cursor-pointer"
                 >
-                    {isDarkMode ? <><Sun size={16} /> Light Mode</> : <><Moon size={16} /> Dark Mode</>}
+                    {isDarkMode ? <><Sun size={16} /> <span className="hidden sm:inline">Light Mode</span></> : <><Moon size={16} /> <span className="hidden sm:inline">Dark Mode</span></>}
                 </button>
-                <div className="text-sm border-l border-white/30 pl-4 hidden md:block">
+                <div className="text-sm border-l border-white/30 pl-4 hidden lg:block">
                     Mode saat ini: <strong>{isDarkMode ? 'Dark' : 'Light'}</strong>
                 </div>
 
                 {/* User dropdown */}
-                <div className="relative ml-2" ref={dropdownRef}>
+                <div className="relative ml-1 sm:ml-2" ref={dropdownRef}>
                     <button
                         onClick={() => setDropdownOpen((o) => !o)}
-                        className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors cursor-pointer focus:outline-none"
+                        className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all active:scale-95 cursor-pointer focus:outline-none"
                     >
                         <div className="w-7 h-7 bg-white/30 rounded-full flex items-center justify-center shrink-0">
                             <User size={16} />
                         </div>
-                        <span className="font-medium text-sm hidden md:block">
+                        <span className="font-semibold text-sm hidden md:block">
                             {displayName}
                         </span>
                         <ChevronDown size={14} className={`transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {dropdownOpen && (
-                        <div className="absolute right-0 top-full mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+                        <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
                             {/* Role info */}
-                            <div className="px-4 py-3.5">
-                                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Role</p>
+                            <div className="px-4 py-3.5 bg-gray-50/60 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
+                                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Role Aktif</p>
                                 <div className="flex items-center gap-2">
                                     <ShieldCheck size={16} className="text-[#d9531e]" />
-                                    <span className="text-sm font-semibold text-gray-800 dark:text-white capitalize">{role}</span>
+                                    <span className="text-sm font-bold text-gray-800 dark:text-white capitalize">{role}</span>
                                 </div>
                             </div>
-
-                            <div className="border-t border-gray-100 dark:border-gray-700" />
 
                             {/* Logout */}
                             <Link
@@ -92,9 +113,9 @@ export default function Topbar({ user, header }) {
                                 method="post"
                                 as="button"
                                 onClick={() => setDropdownOpen(false)}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                             >
-                                <LogOut size={15} className="text-gray-400" />
+                                <LogOut size={15} className="text-red-500" />
                                 Logout
                             </Link>
                         </div>
@@ -103,4 +124,6 @@ export default function Topbar({ user, header }) {
             </div>
         </header>
     );
-}
+});
+
+export default Topbar;

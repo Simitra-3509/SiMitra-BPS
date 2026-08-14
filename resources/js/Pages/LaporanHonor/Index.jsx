@@ -45,8 +45,8 @@ const Index = () => {
                 <div className="space-y-4">
                     {/* Top Row Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-orange-500 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 rounded-lg">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-orange-500 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
+                            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <Users size={24} />
                             </div>
                             <div>
@@ -54,8 +54,8 @@ const Index = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-0.5">Total Mitra</p>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-emerald-500 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-emerald-500 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
+                            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <CreditCard size={24} />
                             </div>
                             <div>
@@ -63,8 +63,8 @@ const Index = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-0.5">Total Transaksi</p>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-blue-500 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 rounded-lg">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-blue-500 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
+                            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <Wallet size={24} />
                             </div>
                             <div>
@@ -72,8 +72,8 @@ const Index = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-0.5">Total Honor</p>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-yellow-500 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-yellow-500 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
+                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <TrendingUp size={24} />
                             </div>
                             <div>
@@ -85,8 +85,8 @@ const Index = () => {
 
                     {/* Bottom Row Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-orange-400 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 rounded-lg">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-orange-400 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
+                            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <ClipboardList size={24} />
                             </div>
                             <div>
@@ -94,8 +94,8 @@ const Index = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-0.5">Total Honor Pendataan</p>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-cyan-400 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500 dark:text-cyan-400 rounded-lg">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-cyan-400 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
+                            <div className="p-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500 dark:text-cyan-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <ClipboardCheck size={24} />
                             </div>
                             <div>

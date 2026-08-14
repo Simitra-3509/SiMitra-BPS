@@ -1,7 +1,7 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, User, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, Calendar, CheckCircle2, AlertCircle, FileSpreadsheet } from 'lucide-react';
 
 const formatRupiah = (number) => {
     return new Intl.NumberFormat('id-ID', {

@@ -68,14 +68,21 @@ class MonitoringKuotaController extends Controller
             if ($usagePengolahan >= 100) $statusPengolahan = 'Kritis';
             elseif ($usagePengolahan >= $threshold) $statusPengolahan = 'Warning';
 
+            $sisaPendataan = max(0, $batasPendataan - (float)$mitra->terpakai_pendataan);
+            $sisaPengolahan = max(0, $batasPengolahan - (float)$mitra->terpakai_pengolahan);
+
             return [
                 'id' => $mitra->id,
                 'nik' => $mitra->nik,
                 'nama_lengkap' => $mitra->nama_lengkap,
                 'terpakai_pendataan' => (float)$mitra->terpakai_pendataan,
                 'terpakai_pengolahan' => (float)$mitra->terpakai_pengolahan,
+                'sisa_pendataan' => $sisaPendataan,
+                'sisa_pengolahan' => $sisaPengolahan,
                 'transaksi_pendataan' => (int)$mitra->transaksi_pendataan,
                 'transaksi_pengolahan' => (int)$mitra->transaksi_pengolahan,
+                'usage_pendataan' => round($usagePendataan, 1),
+                'usage_pengolahan' => round($usagePengolahan, 1),
                 'usage_pendataan_pct' => round($usagePendataan, 1),
                 'usage_pengolahan_pct' => round($usagePengolahan, 1),
                 'status_pendataan' => $statusPendataan,
@@ -83,10 +90,19 @@ class MonitoringKuotaController extends Controller
             ];
         });
 
+        // Hitung stats ringkasan dashboard sebelum filtering status
+        $stats = [
+            'total' => $processedMitras->count(),
+            'normal' => $processedMitras->filter(fn($m) => $m['status_pendataan'] === 'OK' && $m['status_pengolahan'] === 'OK')->count(),
+            'warning' => $processedMitras->filter(fn($m) => $m['status_pendataan'] === 'Warning' || $m['status_pengolahan'] === 'Warning')->count(),
+            'kritis' => $processedMitras->filter(fn($m) => $m['status_pendataan'] === 'Kritis' || $m['status_pengolahan'] === 'Kritis')->count(),
+        ];
+
         // Filtering berdasarkan status
         if ($status !== 'semua') {
-            $processedMitras = $processedMitras->filter(function($mitra) use ($status) {
-                return $mitra['status_pendataan'] === $status || $mitra['status_pengolahan'] === $status;
+            $statusNormalized = strtolower($status);
+            $processedMitras = $processedMitras->filter(function($mitra) use ($statusNormalized) {
+                return strtolower($mitra['status_pendataan']) === $statusNormalized || strtolower($mitra['status_pengolahan']) === $statusNormalized;
             });
         }
 
@@ -106,8 +122,14 @@ class MonitoringKuotaController extends Controller
         );
 
         return Inertia::render('MonitoringKuota/Index', [
+            'data' => $mitras,
             'mitras' => $mitras,
             'filters' => $request->only(['bulan', 'tahun', 'jenis_sbml', 'status', 'threshold', 'per_page', 'cari']),
+            'stats' => $stats,
+            'batas' => [
+                'pendataan' => $batasPendataan,
+                'pengolahan' => $batasPengolahan,
+            ],
             'limits' => [
                 'pendataan' => $batasPendataan,
                 'pengolahan' => $batasPengolahan,

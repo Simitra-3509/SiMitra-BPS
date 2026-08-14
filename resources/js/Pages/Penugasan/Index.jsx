@@ -46,7 +46,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
     const handleBulkDelete = () => {
         if (confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} penugasan yang dipilih?`)) {
-            router.post(route('penugasan.bulkDelete'), { ids: selectedIds }, {
+            router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
                 onSuccess: () => setSelectedIds([]),
             });
         }

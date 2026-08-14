@@ -13,11 +13,11 @@ import {
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Edit({ auth, kegiatan }) {
-    const initialAkun = (kegiatan?.akun_kegiatan || []).map((a) => ({
+    const initialAkun = (kegiatan?.akun_kegiatan || kegiatan?.akunKegiatan || []).map((a) => ({
         id: a.id || Date.now(),
         kode_akun: a.kode_akun || '',
         nama_akun: a.nama_akun || '',
-        detil: (a.detil_kegiatan || []).map((d) => ({
+        detil: (a.detil_kegiatan || a.detilKegiatan || []).map((d) => ({
             id: d.id || Date.now() + Math.random(),
             nama_detil: d.nama_detil || '',
             jenis_sbml: d.jenis_sbml || 'pendataan',

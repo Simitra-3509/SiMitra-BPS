@@ -79,31 +79,31 @@ export default function Dashboard({ stats, sbml, chartData }) {
 
                 {/* Stat Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
                         <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Total Mitra Aktif</div>
                         <div className="text-3xl font-bold text-simitra-orange">{stats.totalMitra}</div>
-                        <div className="absolute right-4 top-6 opacity-10 text-gray-800 dark:text-white">
+                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
                             <Users size={40} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
                         <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Kegiatan Aktif</div>
                         <div className="text-3xl font-bold text-simitra-orange">{stats.kegiatanAktif}</div>
-                        <div className="absolute right-4 top-6 opacity-10 text-gray-800 dark:text-white">
+                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
                             <Calendar size={40} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
                         <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Honor Bulan Ini</div>
                         <div className="text-3xl font-bold text-simitra-orange">{formatRp(stats.honorBulanIni)}</div>
-                        <div className="absolute right-4 top-6 opacity-10 text-gray-800 dark:text-white">
+                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
                             <Banknote size={40} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
                         <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Jumlah Input Honor</div>
                         <div className="text-3xl font-bold text-simitra-orange">{stats.jumlahInputHonor}</div>
-                        <div className="absolute right-4 top-6 opacity-10 text-gray-800 dark:text-white">
+                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
                             <FileSpreadsheet size={40} />
                         </div>
                     </div>
@@ -111,7 +111,7 @@ export default function Dashboard({ stats, sbml, chartData }) {
 
                 {/* SBML Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 dark:border-gray-700 overflow-hidden group">
                         <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2 text-sm">
                             <TrendingUp size={16} /> Batas SBML Pendataan
                         </div>
@@ -121,7 +121,7 @@ export default function Dashboard({ stats, sbml, chartData }) {
                         </div>
                     </div>
                     
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 dark:border-gray-700 overflow-hidden group">
                         <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2 text-sm">
                             <TrendingUp size={16} /> Batas SBML Pengolahan
                         </div>
@@ -135,7 +135,7 @@ export default function Dashboard({ stats, sbml, chartData }) {
                 {/* Charts */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Line Chart */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
                         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2 text-sm">
                             <LineChartIcon size={16} className="text-simitra-orange" /> Performa Bulanan
                         </h3>
@@ -154,7 +154,7 @@ export default function Dashboard({ stats, sbml, chartData }) {
                     </div>
 
                     {/* Donut Chart */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
                         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2 text-sm">
                             <PieChartIcon size={16} className="text-simitra-orange" /> Komposisi Data
                         </h3>
@@ -171,7 +171,7 @@ export default function Dashboard({ stats, sbml, chartData }) {
                                         dataKey="value"
                                     >
                                         {chartData.komposisi.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
                                     <RechartsTooltip />
