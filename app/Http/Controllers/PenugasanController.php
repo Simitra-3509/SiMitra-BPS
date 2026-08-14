@@ -70,10 +70,10 @@ class PenugasanController extends Controller
             ->get(['id', 'nama_kegiatan']);
 
         return Inertia::render('Penugasan/Index', [
-            'penugasan'         => $penugasan,
+            'penugasan'          => $penugasan,
             'kegiatanTanpaMitra' => $kegiatanTanpaMitra,
-            'semuaKegiatan'     => $semuaKegiatan,
-            'filters'           => $request->only(['jenis_sbml', 'kegiatan_id', 'status_honor', 'search']),
+            'semuaKegiatan'      => $semuaKegiatan,
+            'filters'            => $request->only(['jenis_sbml', 'kegiatan_id', 'status_honor', 'search']),
         ]);
     }
 
@@ -83,9 +83,16 @@ class PenugasanController extends Controller
     public function create()
     {
         $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan', 'kro']);
+        $kecamatanList = Mitra::whereNotNull('kecamatan')
+            ->where('kecamatan', '!=', '')
+            ->distinct()
+            ->pluck('kecamatan')
+            ->sort()
+            ->values();
 
         return Inertia::render('Penugasan/Create', [
-            'kegiatanList' => $kegiatan,
+            'kegiatanList'  => $kegiatan,
+            'kecamatanList' => $kecamatanList,
         ]);
     }
 
@@ -106,21 +113,24 @@ class PenugasanController extends Controller
         $detils = DetilKegiatan::where('akun_id', $akun_id)->get();
         
         $result = $detils->map(function ($detil) {
-            // Hitung berapa kombinasi (bulan, tahun) unik yang sudah punya penugasan untuk detil ini
             $terpakaiBulan = Penugasan::where('detil_kegiatan_id', $detil->id)
                 ->selectRaw('COUNT(DISTINCT CONCAT(bulan, "-", tahun)) as total')
                 ->value('total') ?? 0;
             
+            // Total volume kuota_target yang sudah ditugaskan untuk detil ini (di semua periode)
+            $totalKuotaTerpakai = (float)Penugasan::where('detil_kegiatan_id', $detil->id)->sum('kuota_target');
+
             return [
-                'id' => $detil->id,
-                'nama_detil' => $detil->nama_detil,
-                'jenis_sbml' => $detil->jenis_sbml,
-                'frekuensi_penugasan' => $detil->frekuensi_penugasan,
-                'satuan' => $detil->satuan,
-                'harga_satuan' => (float)$detil->harga_satuan,
-                'jumlah' => (float)$detil->jumlah,
-                'total' => (float)$detil->total,
-                'terpakai_bulan' => (int)$terpakaiBulan,
+                'id'                   => $detil->id,
+                'nama_detil'           => $detil->nama_detil,
+                'jenis_sbml'           => $detil->jenis_sbml,
+                'frekuensi_penugasan'   => $detil->frekuensi_penugasan,
+                'satuan'               => $detil->satuan,
+                'harga_satuan'         => (float)$detil->harga_satuan,
+                'jumlah'               => (float)$detil->jumlah,
+                'total'                => (float)$detil->total,
+                'terpakai_bulan'       => (int)$terpakaiBulan,
+                'total_kuota_terpakai' => $totalKuotaTerpakai,
             ];
         });
 
@@ -128,21 +138,37 @@ class PenugasanController extends Controller
     }
 
     /**
-     * AJAX Endpoint 3: Search Mitra by keyword
+     * AJAX Endpoint 3: Search Mitra by keyword & filters for Modal Picker
      */
     public function searchMitra(Request $request)
     {
         $q = trim($request->get('q', ''));
+        $kecamatan = trim($request->get('kecamatan', ''));
+        $status = $request->get('status_aktif', '1');
 
-        $mitras = Mitra::where('status_aktif', true)
-            ->when($q, function ($query) use ($q) {
-                $query->where(function ($sub) use ($q) {
-                    $sub->where('nama_lengkap', 'like', "%{$q}%")
-                        ->orWhere('nik', 'like', "%{$q}%");
-                });
-            })
-            ->limit(15)
-            ->get(['id', 'nama_lengkap', 'nik', 'email', 'posisi_role']);
+        $query = Mitra::query();
+
+        if ($status !== '' && $status !== null && $status !== 'all') {
+            $query->where('status_aktif', filter_var($status, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($kecamatan !== '') {
+            $query->where('kecamatan', $kecamatan);
+        }
+
+        if (mb_strlen($q) >= 2) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nama_lengkap', 'like', "%{$q}%")
+                    ->orWhere('sobat_id', 'like', "%{$q}%");
+            });
+        } elseif ($q !== '') {
+            // Kalau kurang dari 2 karakter, kembalikan array kosong
+            return response()->json([]);
+        }
+
+        $mitras = $query->limit(20)->get([
+            'id', 'sobat_id', 'nama_lengkap', 'kecamatan', 'desa', 'status_aktif'
+        ]);
 
         return response()->json($mitras);
     }
@@ -186,9 +212,9 @@ class PenugasanController extends Controller
 
         $result = $penugasans->map(function ($p) {
             return [
-                'mitra_id' => $p->mitra_id,
+                'mitra_id'     => $p->mitra_id,
+                'sobat_id'     => $p->mitra->sobat_id ?? '',
                 'nama_lengkap' => $p->mitra->nama_lengkap ?? '',
-                'nik' => $p->mitra->nik ?? '',
                 'kuota_target' => $p->kuota_target ?? 1,
             ];
         });
@@ -196,7 +222,7 @@ class PenugasanController extends Controller
         return response()->json([
             'prev_bulan' => $prevBulanName,
             'prev_tahun' => $prevTahun,
-            'data' => $result,
+            'data'       => $result,
         ]);
     }
 
@@ -206,24 +232,24 @@ class PenugasanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kegiatan_id' => 'required|exists:kegiatans,id',
-            'akun_id' => 'required|exists:akun_kegiatan,id',
-            'detil_kegiatan_id' => 'required|exists:detil_kegiatan,id',
-            'bulan' => 'required|string',
-            'tahun' => 'required|integer',
-            'mitras' => 'required|array|min:1',
-            'mitras.*.id' => 'required|exists:mitras,id',
+            'kegiatan_id'           => 'required|exists:kegiatans,id',
+            'akun_id'               => 'required|exists:akun_kegiatan,id',
+            'detil_kegiatan_id'     => 'required|exists:detil_kegiatan,id',
+            'bulan'                 => 'required|string',
+            'tahun'                 => 'required|integer',
+            'mitras'                => 'required|array|min:1',
+            'mitras.*.id'           => 'required|exists:mitras,id',
             'mitras.*.kuota_target' => 'required|numeric|min:1',
         ], [
-            'kegiatan_id.required' => 'Kegiatan wajib dipilih.',
-            'akun_id.required' => 'Akun kegiatan wajib dipilih.',
-            'detil_kegiatan_id.required' => 'Detil rincian wajib dipilih.',
-            'bulan.required' => 'Bulan wajib dipilih.',
-            'tahun.required' => 'Tahun wajib diisi.',
-            'mitras.required' => 'Minimal 1 mitra harus dipilih.',
-            'mitras.min' => 'Minimal 1 mitra harus dipilih.',
+            'kegiatan_id.required'           => 'Kegiatan wajib dipilih.',
+            'akun_id.required'               => 'Akun kegiatan wajib dipilih.',
+            'detil_kegiatan_id.required'     => 'Detil rincian wajib dipilih.',
+            'bulan.required'                 => 'Bulan wajib dipilih.',
+            'tahun.required'                 => 'Tahun wajib diisi.',
+            'mitras.required'                => 'Minimal 1 mitra harus dipilih.',
+            'mitras.min'                     => 'Minimal 1 mitra harus dipilih.',
             'mitras.*.kuota_target.required' => 'Kuota per mitra wajib diisi.',
-            'mitras.*.kuota_target.min' => 'Kuota per mitra minimal 1.',
+            'mitras.*.kuota_target.min'      => 'Kuota per mitra minimal 1.',
         ]);
 
         try {
@@ -242,13 +268,13 @@ class PenugasanController extends Controller
                     }
 
                     Penugasan::create([
-                        'kegiatan_id' => $request->kegiatan_id,
+                        'kegiatan_id'       => $request->kegiatan_id,
                         'detil_kegiatan_id' => $request->detil_kegiatan_id,
-                        'mitra_id' => $mitraItem['id'],
-                        'bulan' => $request->bulan,
-                        'tahun' => $request->tahun,
-                        'kuota_target' => $mitraItem['kuota_target'] ?? 1,
-                        'status' => 'ditugaskan',
+                        'mitra_id'          => $mitraItem['id'],
+                        'bulan'             => $request->bulan,
+                        'tahun'             => $request->tahun,
+                        'kuota_target'      => $mitraItem['kuota_target'] ?? 1,
+                        'status'            => 'ditugaskan',
                     ]);
                 }
             });
