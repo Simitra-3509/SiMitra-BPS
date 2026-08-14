@@ -85,6 +85,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         Route::resource('penugasan', PenugasanController::class);
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
+        Route::get('api/penugasan/akun-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getAkunByKegiatan'])->name('api.penugasan.akun');
+        Route::get('api/penugasan/detil-by-akun/{akun_id}', [PenugasanController::class, 'getDetilByAkun'])->name('api.penugasan.detil');
+        Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
+        Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
         Route::resource('honorarium', HonorariumController::class);
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
         Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
