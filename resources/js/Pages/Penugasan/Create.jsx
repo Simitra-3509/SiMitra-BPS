@@ -20,21 +20,22 @@ import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 
-export default function Create({ kegiatanList }) {
+export default function Create({ kegiatan, kegiatanList }) {
+    const listKegiatan = kegiatanList || kegiatan || [];
+
     const namaBulanList = [
         'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
-    const currentMonthIndex = new Date().getMonth();
-    const currentBulanDefault = namaBulanList[currentMonthIndex];
+    const currentMonthNum = new Date().getMonth() + 1;
     const currentTahunDefault = new Date().getFullYear();
 
     const { data, setData, post, processing, errors } = useForm({
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
-        bulan: currentBulanDefault,
+        bulan: currentMonthNum,
         tahun: currentTahunDefault,
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
     });
@@ -58,41 +59,20 @@ export default function Create({ kegiatanList }) {
     const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
     const [selectedPrevMitraIds, setSelectedPrevMitraIds] = useState([]);
 
-    // 1. Handling Pilih Kegiatan -> Fetch Akun
+    // 1. Handling Pilih Kegiatan -> Fetch Detil langsung
     const handleKegiatanChange = (e) => {
         const selectedId = e.target.value;
         setData((prev) => ({
             ...prev,
             kegiatan_id: selectedId,
-            akun_id: '',
             detil_kegiatan_id: '',
         }));
-        setAkunList([]);
         setDetilList([]);
         setSelectedDetilInfo(null);
         setPrevMonthData([]);
 
         if (selectedId) {
-            axios.get(route('api.penugasan.akun', selectedId))
-                .then((res) => setAkunList(res.data || []))
-                .catch((err) => console.error('Error fetching akun:', err));
-        }
-    };
-
-    // 2. Handling Pilih Akun -> Fetch Detil
-    const handleAkunChange = (e) => {
-        const selectedAkunId = e.target.value;
-        setData((prev) => ({
-            ...prev,
-            akun_id: selectedAkunId,
-            detil_kegiatan_id: '',
-        }));
-        setDetilList([]);
-        setSelectedDetilInfo(null);
-        setPrevMonthData([]);
-
-        if (selectedAkunId) {
-            axios.get(route('api.penugasan.detil', selectedAkunId))
+            axios.get(route('api.penugasan.detil', selectedId))
                 .then((res) => setDetilList(res.data || []))
                 .catch((err) => console.error('Error fetching detil:', err));
         }
@@ -127,7 +107,7 @@ export default function Create({ kegiatanList }) {
         .then((res) => {
             const list = res.data?.data || [];
             setPrevMonthData(list);
-            setPrevBulanName(res.data?.prev_bulan || '');
+            setPrevBulanName(res.data?.prev_bulan_nama || namaBulanList[(res.data?.prev_bulan || 1) - 1] || '');
             setPrevTahunNum(res.data?.prev_tahun || tahunVal);
         })
         .catch((err) => console.error('Error fetching prev month:', err));
@@ -389,13 +369,17 @@ export default function Create({ kegiatanList }) {
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* General Errors Banner */}
-                    {errors.mitras && (
-                        <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 p-4 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start gap-3">
-                            <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="font-bold">Gagal Menyimpan Penugasan:</h4>
-                                <p className="mt-0.5">{errors.mitras}</p>
+                    {Object.keys(errors).length > 0 && (
+                        <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 p-4 rounded-xl text-xs text-red-700 dark:text-red-300 space-y-1">
+                            <div className="font-bold flex items-center gap-1.5 text-sm">
+                                <AlertTriangle size={18} className="shrink-0 text-red-600" />
+                                Gagal Menyimpan Penugasan:
                             </div>
+                            <ul className="list-disc list-inside space-y-0.5 font-medium pl-1">
+                                {Object.values(errors).map((err, idx) => (
+                                    <li key={idx}>{err}</li>
+                                ))}
+                            </ul>
                         </div>
                     )}
 
@@ -406,7 +390,7 @@ export default function Create({ kegiatanList }) {
                             1. Rincian Kegiatan & Detil Belanja
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             {/* Dropdown 1: Kegiatan */}
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
@@ -418,43 +402,16 @@ export default function Create({ kegiatanList }) {
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
                                 >
                                     <option value="">-- Pilih Kegiatan --</option>
-                                    {kegiatanList?.map((k) => (
+                                    {listKegiatan?.map((k) => (
                                         <option key={k.id} value={k.id}>
-                                            {k.nama_kegiatan} {k.kro ? `(KRO: ${k.kro})` : ''}
+                                            {k.nama_kegiatan} {k.kode_kegiatan ? `(Kode: ${k.kode_kegiatan})` : ''}
                                         </option>
                                     ))}
                                 </select>
                                 {errors.kegiatan_id && <p className="text-xs text-red-500">{errors.kegiatan_id}</p>}
                             </div>
 
-                            {/* Dropdown 2: Akun */}
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Pilih Akun Kegiatan <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={data.akun_id}
-                                    onChange={handleAkunChange}
-                                    disabled={!data.kegiatan_id || akunList.length === 0}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
-                                >
-                                    <option value="">
-                                        {!data.kegiatan_id 
-                                            ? '-- Pilih Kegiatan Terlebih Dahulu --' 
-                                            : akunList.length === 0 
-                                            ? 'Tidak ada Akun pada kegiatan ini' 
-                                            : '-- Pilih Akun --'}
-                                    </option>
-                                    {akunList.map((a) => (
-                                        <option key={a.id} value={a.id}>
-                                            {a.kode_akun ? `${a.kode_akun} - ` : ''}{a.nama_akun}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.akun_id && <p className="text-xs text-red-500">{errors.akun_id}</p>}
-                            </div>
-
-                            {/* Dropdown 3: Detil */}
+                            {/* Dropdown 2: Detil */}
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
                                     Pilih Detil Rincian <span className="text-red-500">*</span>
@@ -462,14 +419,14 @@ export default function Create({ kegiatanList }) {
                                 <select
                                     value={data.detil_kegiatan_id}
                                     onChange={handleDetilChange}
-                                    disabled={!data.akun_id || detilList.length === 0}
+                                    disabled={!data.kegiatan_id || detilList.length === 0}
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
                                 >
                                     <option value="">
-                                        {!data.akun_id 
-                                            ? '-- Pilih Akun Terlebih Dahulu --' 
+                                        {!data.kegiatan_id 
+                                            ? '-- Pilih Kegiatan Terlebih Dahulu --' 
                                             : detilList.length === 0 
-                                            ? 'Tidak ada Detil pada Akun ini' 
+                                            ? 'Tidak ada Detil pada Kegiatan ini' 
                                             : '-- Pilih Detil Rincian --'}
                                     </option>
                                     {detilList.map((d) => (
@@ -549,11 +506,11 @@ export default function Create({ kegiatanList }) {
                                 </label>
                                 <select
                                     value={data.bulan}
-                                    onChange={(e) => setData('bulan', e.target.value)}
+                                    onChange={(e) => setData('bulan', parseInt(e.target.value))}
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
                                 >
-                                    {namaBulanList.map((m) => (
-                                        <option key={m} value={m}>{m}</option>
+                                    {namaBulanList.map((m, idx) => (
+                                        <option key={idx + 1} value={idx + 1}>{m}</option>
                                     ))}
                                 </select>
                                 {errors.bulan && <p className="text-xs text-red-500">{errors.bulan}</p>}

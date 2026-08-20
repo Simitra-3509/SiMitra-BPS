@@ -25,7 +25,9 @@ export default function Sidebar() {
 
     const isAnyRecycleBinActive = Boolean(
         (typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin')) ||
-        (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin'))
+        (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin')) ||
+        (typeof route === 'function' && route().has('kegiatan.recycle-bin') && route().current('kegiatan.recycle-bin')) ||
+        (typeof route === 'function' && route().has('penugasan.recycle-bin') && route().current('penugasan.recycle-bin'))
     );
 
     const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(isAnyRecycleBinActive);
@@ -185,7 +187,7 @@ export default function Sidebar() {
                                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors cursor-pointer ${
                                     isRecycleBinOpen || isAnyRecycleBinActive
                                         ? 'bg-gray-800 text-white font-medium'
-                                        : 'text-gray-300 hover:bg-gray-800'
+                                        : 'text-[#D9531E] hover:bg-gray-800 font-medium'
                                 }`}
                             >
                                 <div className="flex items-center gap-3">
@@ -245,9 +247,13 @@ export default function Sidebar() {
                                     </Link>
 
                                     {/* Recycle Bin Kegiatan */}
-                                    <a
-                                        href="#"
-                                        className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                    <Link
+                                        href={route('kegiatan.recycle-bin')}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                                            route().current('kegiatan.recycle-bin')
+                                                ? 'bg-[#D9531E] text-white font-bold'
+                                                : 'text-gray-300 hover:bg-gray-800'
+                                        }`}
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <CalendarDays size={14} className="text-gray-400" />
@@ -258,12 +264,16 @@ export default function Sidebar() {
                                                 {counts.recycleBinKegiatan}
                                             </span>
                                         )}
-                                    </a>
+                                    </Link>
 
                                     {/* Recycle Bin Penugasan */}
-                                    <a
-                                        href="#"
-                                        className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                    <Link
+                                        href={route('penugasan.recycle-bin')}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                                            route().current('penugasan.recycle-bin')
+                                                ? 'bg-[#D9531E] text-white font-bold'
+                                                : 'text-gray-300 hover:bg-gray-800'
+                                        }`}
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <UserCheck size={14} className="text-gray-400" />
@@ -274,7 +284,7 @@ export default function Sidebar() {
                                                 {counts.recycleBinPenugasan}
                                             </span>
                                         )}
-                                    </a>
+                                    </Link>
 
                                     {/* Recycle Bin Honorarium */}
                                     <a
