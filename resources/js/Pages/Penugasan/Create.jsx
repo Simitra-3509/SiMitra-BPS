@@ -28,15 +28,14 @@ export default function Create({ kegiatan, kegiatanList }) {
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
-    const currentMonthIndex = new Date().getMonth();
-    const currentBulanDefault = namaBulanList[currentMonthIndex];
+    const currentMonthNum = new Date().getMonth() + 1;
     const currentTahunDefault = new Date().getFullYear();
 
     const { data, setData, post, processing, errors } = useForm({
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
-        bulan: currentBulanDefault,
+        bulan: currentMonthNum,
         tahun: currentTahunDefault,
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
     });
@@ -108,7 +107,7 @@ export default function Create({ kegiatan, kegiatanList }) {
         .then((res) => {
             const list = res.data?.data || [];
             setPrevMonthData(list);
-            setPrevBulanName(res.data?.prev_bulan || '');
+            setPrevBulanName(res.data?.prev_bulan_nama || namaBulanList[(res.data?.prev_bulan || 1) - 1] || '');
             setPrevTahunNum(res.data?.prev_tahun || tahunVal);
         })
         .catch((err) => console.error('Error fetching prev month:', err));
@@ -507,11 +506,11 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 </label>
                                 <select
                                     value={data.bulan}
-                                    onChange={(e) => setData('bulan', e.target.value)}
+                                    onChange={(e) => setData('bulan', parseInt(e.target.value))}
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
                                 >
-                                    {namaBulanList.map((m) => (
-                                        <option key={m} value={m}>{m}</option>
+                                    {namaBulanList.map((m, idx) => (
+                                        <option key={idx + 1} value={idx + 1}>{m}</option>
                                     ))}
                                 </select>
                                 {errors.bulan && <p className="text-xs text-red-500">{errors.bulan}</p>}
