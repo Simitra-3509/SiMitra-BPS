@@ -39,7 +39,7 @@ class KegiatanController extends Controller
         return Inertia::render('Kegiatan/Index', [
             'kegiatan'      => $kegiatan,
             'kegiatanCount' => $kegiatan->total(),
-            'filters'       => $request->only(['jenis_sbml', 'status', 'cari'])
+            'filters'       => $request->only(['jenis_sbml', 'bulan', 'tahun', 'status', 'cari'])
         ]);
     }
 
@@ -316,5 +316,152 @@ class KegiatanController extends Controller
         });
 
         return redirect()->route('kegiatan.index')->with('success', "Kegiatan '{$kegiatan->nama_kegiatan}' beserta Detil Belanja berhasil diduplikasi.");
+    }
+
+    /**
+     * Import data kegiatan beserta detil belanja dari file CSV/Excel.
+     */
+    public function import(Request $request)
+    {
+        $rows = $request->input('rows', []);
+
+        if (empty($rows) && $request->hasFile('file')) {
+            $file = $request->file('file');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            if (in_array($extension, ['csv', 'txt'])) {
+                $handle = fopen($file->getRealPath(), 'r');
+                $header = null;
+                while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                    if (count($row) === 1 && str_contains($row[0], ';')) {
+                        $row = explode(';', $row[0]);
+                    }
+                    if (!$header) {
+                        $header = array_map(function ($h) {
+                            return strtolower(trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $h)));
+                        }, $row);
+                    } else {
+                        if (count($row) === count($header)) {
+                            $rows[] = array_combine($header, array_map('trim', $row));
+                        }
+                    }
+                }
+                fclose($handle);
+            }
+        }
+
+        if (empty($rows)) {
+            return redirect()->back()->with('error', 'File import kosong atau data tidak dapat dibaca.');
+        }
+
+        $importedKegiatans = 0;
+        $importedDetils = 0;
+
+        // Helper: konversi nilai tanggal Excel (serial number, string, dll) ke format Y-m-d
+        $parseExcelDate = function ($value) {
+            if (empty($value) && $value !== 0) return null;
+            // Sudah format YYYY-MM-DD
+            if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+                return \Carbon\Carbon::parse($value)->format('Y-m-d');
+            }
+            // Excel serial number (angka bulat > 1000)
+            if (is_numeric($value) && intval($value) == $value && intval($value) > 1000) {
+                // Epoch Excel = 1899-12-30
+                return \Carbon\Carbon::create(1899, 12, 30)->addDays(intval($value))->format('Y-m-d');
+            }
+            // String tanggal lain, coba parse
+            try {
+                return \Carbon\Carbon::parse((string)$value)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        };
+
+        DB::transaction(function () use ($rows, $parseExcelDate, &$importedKegiatans, &$importedDetils) {
+            $grouped = [];
+            foreach ($rows as $row) {
+                $kodeKro = $row['Kode KRO'] ?? $row['kode kro'] ?? $row['kode_kro'] ?? $row['kro'] ?? $row['kode_kegiatan'] ?? '';
+                $namaKegiatan = $row['Nama Kegiatan'] ?? $row['nama kegiatan'] ?? $row['nama_kegiatan'] ?? '';
+
+                if (empty($namaKegiatan)) continue;
+
+                // Kelompokkan berdasarkan KRO / Nama Kegiatan
+                $groupKey = !empty($kodeKro) ? trim($kodeKro) . '|' . trim($namaKegiatan) : md5(trim($namaKegiatan));
+
+                if (!isset($grouped[$groupKey])) {
+                    $rawMulai   = $row['Tanggal Mulai']   ?? $row['tanggal mulai']   ?? $row['tanggal_mulai']   ?? $row['tgl_mulai']   ?? null;
+                    $rawSelesai = $row['Tanggal Selesai'] ?? $row['tanggal selesai'] ?? $row['tanggal_selesai'] ?? $row['tgl_selesai'] ?? null;
+                    $grouped[$groupKey] = [
+                        'kode_kro'      => trim($kodeKro),
+                        'nama_kegiatan' => trim($namaKegiatan),
+                        'tgl_mulai'     => $parseExcelDate($rawMulai),
+                        'tgl_selesai'   => $parseExcelDate($rawSelesai),
+                        'detils'        => []
+                    ];
+                }
+
+                $namaDetil = $row['Nama Detil'] ?? $row['nama detil'] ?? $row['nama_detil'] ?? '';
+                if (!empty($namaDetil)) {
+                    $grouped[$groupKey]['detils'][] = [
+                        'nama_detil' => trim($namaDetil),
+                        'jenis_sbml' => strtolower($row['Jenis SBML'] ?? $row['jenis sbml'] ?? $row['jenis_sbml'] ?? 'pendataan'),
+                        'frekuensi_penugasan' => strtolower($row['Frekuensi'] ?? $row['frekuensi'] ?? $row['frekuensi_penugasan'] ?? 'bulanan'),
+                        'satuan' => trim($row['Satuan'] ?? $row['satuan'] ?? 'DOK'),
+                        'jumlah' => (float)($row['Jumlah'] ?? $row['jumlah'] ?? 1),
+                        'harga_satuan' => (float)($row['Harga Satuan'] ?? $row['harga satuan'] ?? $row['harga_satuan'] ?? 0),
+                    ];
+                }
+            }
+
+            foreach ($grouped as $group) {
+                $totalAnggaranGroup = 0;
+                foreach ($group['detils'] as $d) {
+                    $totalAnggaranGroup += $d['jumlah'] * $d['harga_satuan'];
+                }
+
+                // Cari atau buat kegiatan baru (mencegah Kegiatan ganda/dobel)
+                $kegiatan = Kegiatan::firstOrCreate(
+                    [
+                        'nama_kegiatan' => $group['nama_kegiatan'],
+                    ],
+                    [
+                        'kode_kegiatan' => !empty($group['kode_kro']) ? $group['kode_kro'] : null,
+                        'tanggal_mulai' => !empty($group['tgl_mulai']) ? $group['tgl_mulai'] : null,
+                        'tanggal_selesai' => !empty($group['tgl_selesai']) ? $group['tgl_selesai'] : null,
+                        'status_aktif' => true,
+                        'total_anggaran' => $totalAnggaranGroup,
+                        'created_by' => auth()->id(),
+                    ]
+                );
+
+                if ($kegiatan->wasRecentlyCreated) {
+                    $importedKegiatans++;
+                } else {
+                    // Update total anggaran jika kegiatan sudah ada
+                    $kegiatan->total_anggaran += $totalAnggaranGroup;
+                    if (!empty($group['kode_kro'])) $kegiatan->kode_kegiatan = $group['kode_kro'];
+                    if (!empty($group['tgl_mulai'])) $kegiatan->tanggal_mulai = $group['tgl_mulai'];
+                    if (!empty($group['tgl_selesai'])) $kegiatan->tanggal_selesai = $group['tgl_selesai'];
+                    $kegiatan->save();
+                }
+
+                // Tambahkan semua baris detil ke Kegiatan tersebut
+                foreach ($group['detils'] as $d) {
+                    DetilKegiatan::create([
+                        'kegiatan_id' => $kegiatan->id,
+                        'nama_detil' => $d['nama_detil'],
+                        'jenis_sbml' => in_array($d['jenis_sbml'], ['pendataan', 'pengolahan']) ? $d['jenis_sbml'] : 'pendataan',
+                        'frekuensi_penugasan' => in_array($d['frekuensi_penugasan'], ['bulanan', 'triwulanan', 'tahunan']) ? $d['frekuensi_penugasan'] : 'bulanan',
+                        'satuan' => $d['satuan'],
+                        'jumlah' => $d['jumlah'],
+                        'harga_satuan' => $d['harga_satuan'],
+                        'total' => $d['jumlah'] * $d['harga_satuan'],
+                    ]);
+                    $importedDetils++;
+                }
+            }
+        });
+
+        return redirect()->route('kegiatan.index')->with('success', "Berhasil mengimpor {$importedKegiatans} kegiatan beserta {$importedDetils} rincian detil belanja.");
     }
 }
