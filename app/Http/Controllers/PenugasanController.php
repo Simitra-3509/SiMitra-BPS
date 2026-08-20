@@ -261,7 +261,7 @@ class PenugasanController extends Controller
     {
         $penugasan->update($request->validated());
 
-        return redirect()->route('penugasan.index')->with('success', 'Penugasan berhasil diperbarui.');
+        return redirect()->route('penugasan.index')->with('success', 'Perubahan data penugasan mitra berhasil disimpan.');
     }
 
     /**
@@ -271,7 +271,7 @@ class PenugasanController extends Controller
     {
         $penugasan->delete();
 
-        return back()->with('success', 'Penugasan berhasil dipindahkan ke Recycle Bin.');
+        return back()->with('success', '1 penugasan mitra berhasil dipindahkan ke Recycle Bin.');
     }
 
     /**
@@ -286,7 +286,7 @@ class PenugasanController extends Controller
 
         Penugasan::whereIn('id', $request->ids)->delete();
 
-        return back()->with('success', count($request->ids) . ' penugasan berhasil dipindahkan ke Recycle Bin.');
+        return back()->with('success', count($request->ids) . ' data penugasan mitra berhasil dipindahkan ke Recycle Bin.');
     }
 
     /**
@@ -319,7 +319,7 @@ class PenugasanController extends Controller
         $penugasan = Penugasan::onlyTrashed()->findOrFail($id);
         $penugasan->restore();
 
-        return redirect()->back()->with('message', 'Penugasan berhasil dipulihkan.');
+        return redirect()->back()->with('success', 'Penugasan mitra berhasil dipulihkan dari Recycle Bin.');
     }
 
     /**
@@ -330,6 +330,6 @@ class PenugasanController extends Controller
         $penugasan = Penugasan::onlyTrashed()->findOrFail($id);
         $penugasan->forceDelete();
 
-        return redirect()->back()->with('message', 'Penugasan berhasil dihapus secara permanen.');
+        return redirect()->back()->with('success', 'Penugasan mitra telah dihapus secara permanen.');
     }
 }

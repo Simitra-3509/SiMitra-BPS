@@ -25,7 +25,9 @@ export default function Sidebar() {
 
     const isAnyRecycleBinActive = Boolean(
         (typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin')) ||
-        (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin'))
+        (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin')) ||
+        (typeof route === 'function' && route().has('kegiatan.recycle-bin') && route().current('kegiatan.recycle-bin')) ||
+        (typeof route === 'function' && route().has('penugasan.recycle-bin') && route().current('penugasan.recycle-bin'))
     );
 
     const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(isAnyRecycleBinActive);
@@ -185,7 +187,7 @@ export default function Sidebar() {
                                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors cursor-pointer ${
                                     isRecycleBinOpen || isAnyRecycleBinActive
                                         ? 'bg-gray-800 text-white font-medium'
-                                        : 'text-gray-300 hover:bg-gray-800'
+                                        : 'text-[#D9531E] hover:bg-gray-800 font-medium'
                                 }`}
                             >
                                 <div className="flex items-center gap-3">
@@ -248,8 +250,8 @@ export default function Sidebar() {
                                     <Link
                                         href={route('kegiatan.recycle-bin')}
                                         className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                                            url.startsWith('/recycle-bin/kegiatan')
-                                                ? 'bg-[#D9531E] text-white'
+                                            route().current('kegiatan.recycle-bin')
+                                                ? 'bg-[#D9531E] text-white font-bold'
                                                 : 'text-gray-300 hover:bg-gray-800'
                                         }`}
                                     >
@@ -268,8 +270,8 @@ export default function Sidebar() {
                                     <Link
                                         href={route('penugasan.recycle-bin')}
                                         className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                                            url.startsWith('/recycle-bin/penugasan')
-                                                ? 'bg-[#D9531E] text-white'
+                                            route().current('penugasan.recycle-bin')
+                                                ? 'bg-[#D9531E] text-white font-bold'
                                                 : 'text-gray-300 hover:bg-gray-800'
                                         }`}
                                     >

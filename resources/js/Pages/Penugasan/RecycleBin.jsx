@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage, Link } from '@inertiajs/react';
-import { Search, RotateCcw, Trash2, ArrowLeft, Users } from 'lucide-react';
+import { Search, RotateCcw, Trash2, ArrowLeft, Users, CheckCircle2 } from 'lucide-react';
 
 export default function RecycleBin({ penugasans, filters }) {
     const { flash } = usePage().props;
+    const flashMessage = flash?.message || flash?.success;
     const [search, setSearch] = useState(filters?.search || '');
 
     const handleSearch = (e) => {
@@ -30,9 +31,12 @@ export default function RecycleBin({ penugasans, filters }) {
 
             <div className="space-y-6">
                 {/* Flash Message */}
-                {flash?.message && (
-                    <div className="bg-emerald-100 border border-emerald-400 text-emerald-800 px-4 py-3 rounded-xl text-xs font-semibold">
-                        {flash.message}
+                {flashMessage && (
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CheckCircle2 size={18} />
+                        </div>
+                        <span className="text-sm font-semibold">{flashMessage}</span>
                     </div>
                 )}
 

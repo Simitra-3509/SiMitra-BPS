@@ -49,7 +49,9 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'flash' => [
-                'message' => fn () => $request->session()->get('message')
+                'message' => fn () => $request->session()->get('message') ?? $request->session()->get('success'),
+                'success' => fn () => $request->session()->get('success') ?? $request->session()->get('message'),
+                'error'   => fn () => $request->session()->get('error'),
             ],
             'counts' => [
                 'recycleBinMitra' => fn () => $request->user() ? Mitra::onlyTrashed()->count() : 0,

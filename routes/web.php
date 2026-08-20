@@ -92,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/recycle-bin/penugasan/{id}/restore', [PenugasanController::class, 'restore'])->name('penugasan.restore');
         Route::delete('/recycle-bin/penugasan/{id}/force-delete', [PenugasanController::class, 'forceDelete'])->name('penugasan.force-delete');
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
+        Route::post('penugasan/bulk-delete', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulkDelete');
         Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');

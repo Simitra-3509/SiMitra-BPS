@@ -117,7 +117,7 @@ class KegiatanController extends Controller
             }
         });
 
-        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan berhasil ditambahkan beserta rincian Detil Belanja.');
+        return redirect()->route('kegiatan.index')->with('success', "Kegiatan '{$kegiatan->nama_kegiatan}' berhasil disimpan beserta rincian Detil Belanja.");
     }
 
     /**
@@ -206,7 +206,7 @@ class KegiatanController extends Controller
             }
         });
 
-        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan berhasil diperbarui.');
+        return redirect()->route('kegiatan.index')->with('success', "Perubahan data kegiatan '{$kegiatan->nama_kegiatan}' berhasil disimpan.");
     }
 
     /**
@@ -214,9 +214,10 @@ class KegiatanController extends Controller
      */
     public function destroy(Kegiatan $kegiatan)
     {
+        $nama = $kegiatan->nama_kegiatan;
         $kegiatan->delete();
 
-        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan berhasil dipindahkan ke Recycle Bin.');
+        return redirect()->route('kegiatan.index')->with('success', "Kegiatan '{$nama}' berhasil dipindahkan ke Recycle Bin.");
     }
 
     /**
@@ -262,9 +263,10 @@ class KegiatanController extends Controller
     public function restore($id)
     {
         $kegiatan = Kegiatan::onlyTrashed()->findOrFail($id);
+        $nama = $kegiatan->nama_kegiatan;
         $kegiatan->restore();
 
-        return redirect()->back()->with('message', 'Kegiatan berhasil dipulihkan.');
+        return redirect()->back()->with('success', "Kegiatan '{$nama}' berhasil dipulihkan dari Recycle Bin.");
     }
 
     /**
@@ -273,9 +275,10 @@ class KegiatanController extends Controller
     public function forceDelete($id)
     {
         $kegiatan = Kegiatan::onlyTrashed()->findOrFail($id);
+        $nama = $kegiatan->nama_kegiatan;
         $kegiatan->forceDelete();
 
-        return redirect()->back()->with('message', 'Kegiatan berhasil dihapus secara permanen.');
+        return redirect()->back()->with('success', "Kegiatan '{$nama}' telah dihapus secara permanen.");
     }
 
     /**
@@ -312,6 +315,6 @@ class KegiatanController extends Controller
             }
         });
 
-        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan beserta Detil Belanja berhasil diduplikasi.');
+        return redirect()->route('kegiatan.index')->with('success', "Kegiatan '{$kegiatan->nama_kegiatan}' beserta Detil Belanja berhasil diduplikasi.");
     }
 }
