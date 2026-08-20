@@ -221,44 +221,6 @@ class KegiatanController extends Controller
     }
 
     /**
-     * Duplicate a kegiatan with all its akun and detil.
-     */
-    public function duplicate(Request $request, Kegiatan $kegiatan)
-    {
-        $validated = $request->validate([
-            'tgl_mulai' => 'nullable|date',
-            'tgl_selesai' => 'nullable|date',
-            'status_aktif' => 'nullable|boolean',
-        ]);
-
-        $kegiatan->load('akunKegiatan.detilKegiatan');
-
-        DB::transaction(function () use ($kegiatan, $validated) {
-            $newKegiatan = $kegiatan->replicate();
-            $newKegiatan->nama_kegiatan = $kegiatan->nama_kegiatan . ' (Salinan)';
-            $newKegiatan->tanggal_mulai = $validated['tgl_mulai'] ?? $kegiatan->tanggal_mulai;
-            $newKegiatan->tanggal_selesai = $validated['tgl_selesai'] ?? $kegiatan->tanggal_selesai;
-            $newKegiatan->status_aktif = $validated['status_aktif'] ?? true;
-            $newKegiatan->created_by = auth()->id();
-            $newKegiatan->save();
-
-            foreach ($kegiatan->akunKegiatan as $akun) {
-                $newAkun = $akun->replicate();
-                $newAkun->kegiatan_id = $newKegiatan->id;
-                $newAkun->save();
-
-                foreach ($akun->detilKegiatan as $detil) {
-                    $newDetil = $detil->replicate();
-                    $newDetil->akun_id = $newAkun->id;
-                    $newDetil->save();
-                }
-            }
-        });
-
-        return redirect()->route('kegiatan.index')->with('message', 'Kegiatan berhasil diduplikat.');
-    }
-
-    /**
      * Remove multiple resources from storage.
      */
     public function bulkDestroy(Request $request)

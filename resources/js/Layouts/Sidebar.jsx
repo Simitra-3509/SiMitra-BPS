@@ -137,23 +137,32 @@ const Sidebar = forwardRef(function Sidebar({
             title={isCollapsed ? "Klik area kosong untuk membuka sidebar" : undefined}
         >
             {/* Header / Logo */}
-            <div className={`h-20 flex items-center border-b border-gray-800/80 bg-simitra-dark shrink-0 relative transition-all duration-300 ${isCollapsed ? 'justify-center px-2' : 'justify-between px-5'
+            <div className={`h-20 flex items-center border-b border-gray-800/80 bg-simitra-dark shrink-0 relative transition-all duration-300 ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
                 }`}>
                 {isCollapsed ? (
                     <button
                         onClick={toggleSidebar}
-                        className="group flex flex-col items-center justify-center cursor-pointer p-2 rounded-xl hover:bg-gray-800/80 transition-colors"
+                        className="group flex flex-col items-center justify-center cursor-pointer p-1 rounded-xl hover:bg-gray-800/80 transition-colors"
                         title="Buka Sidebar"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-simitra-orange to-orange-600 flex items-center justify-center font-black text-xl text-white shadow-md shadow-orange-500/30 group-hover:scale-105 transition-transform">
-                            S
-                        </div>
+                        <img
+                            src="/logo.png"
+                            alt="SIMITRA"
+                            className="w-12 h-12 rounded-xl object-contain shadow-md group-hover:scale-105 transition-transform"
+                        />
                     </button>
                 ) : (
                     <>
-                        <div className="flex flex-col">
-                            <span className="text-2xl font-black tracking-wider text-white">SIMITRA</span>
-                            <span className="text-[11px] text-simitra-orange font-bold tracking-widest uppercase">LITE V1.0</span>
+                        <div className="flex items-center gap-3">
+                            <img
+                                src="/logo.png"
+                                alt="SIMITRA Logo"
+                                className="w-12 h-12 rounded-xl object-contain shadow-md"
+                            />
+                            <div className="flex flex-col">
+                                <span className="text-xl font-black tracking-wider text-white">SIMITRA</span>
+                                <span className="text-[11px] text-simitra-orange font-bold tracking-widest uppercase">VERSI 2.0</span>
+                            </div>
                         </div>
                         <button
                             onClick={toggleSidebar}
@@ -253,166 +262,12 @@ const Sidebar = forwardRef(function Sidebar({
                         active={route().current('penugasan.*')}
                     />
 
-                    {/* TRANSAKSI */}
-                    <div className="pt-5 pb-1 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        TRANSAKSI
-                    </div>
-                    <Link
-                        href={route('honorarium.index')}
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('honorarium.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <Banknote size={18} />
-                            Input Honor
-                        </div>
-                    </Link>
-                    <Link
-                        href={route('laporan-honor.index')}
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('laporan-honor.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <FileText size={18} />
-                            Laporan Detail Honor Mitra
-                        </div>
-                    </Link>
-                    <Link
-                        href={route('monitoring-kuota.index')}
-                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${route().current('monitoring-kuota.*') ? 'bg-[#D9531E] text-white' : 'text-gray-300 hover:bg-gray-800'}`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <Gauge size={18} />
-                            Monitoring Kuota
-                        </div>
-                    </Link>
-                    <a href="#" className="flex items-center justify-between px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <TrendingUp size={18} />
-                            Monitoring SBML
-                        </div>
-                    </a>
-
-                    {/* RECYCLE BINS (GRUP DROPDOWN UNTUK SEMUA RECYCLE BIN) */}
-                    {isAdmin && (
-                        <div className="pt-4 pb-1">
-                            <div className="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                RECYCLE BINS
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsRecycleBinOpen(!isRecycleBinOpen)}
-                                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors cursor-pointer ${isRecycleBinOpen || isAnyRecycleBinActive
-                                        ? 'bg-gray-800 text-white font-medium'
-                                        : 'text-[#D9531E] hover:bg-gray-800 font-medium'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Trash2 size={18} className="text-red-400" />
-                                    <span>Recycle Bins</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    {totalRecycleBinBadge > 0 && (
-                                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-                                            {totalRecycleBinBadge}
-                                        </span>
-                                    )}
-                                    <ChevronDown
-                                        size={16}
-                                        className={`transition-transform duration-200 text-gray-400 ${isRecycleBinOpen ? 'rotate-180' : ''
-                                            }`}
-                                    />
-                                </div>
-                            </button>
-
-                            {isRecycleBinOpen && (
-                                <div className="pl-4 pr-1 mt-1 space-y-1 border-l-2 border-gray-700 ml-5">
-                                    {/* Recycle Bin User */}
-                                    <Link
-                                        href={route('users.recycle-bin')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('users.recycle-bin')
-                                                ? 'bg-simitra-orange text-white font-bold'
-                                                : 'text-gray-300 hover:bg-gray-800'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <User size={14} className="text-gray-400" />
-                                            <span>Recycle Bin User</span>
-                                        </div>
-                                    </Link>
-
-                                    {/* Recycle Bin Mitra */}
-                                    <Link
-                                        href={route('mitra.recycle-bin')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('mitra.recycle-bin')
-                                                ? 'bg-simitra-orange text-white font-bold'
-                                                : 'text-gray-300 hover:bg-gray-800'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <Contact size={14} className="text-gray-400" />
-                                            <span>Recycle Bin Mitra</span>
-                                        </div>
-                                        {counts?.recycleBinMitra > 0 && (
-                                            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                {counts.recycleBinMitra}
-                                            </span>
-                                        )}
-                                    </Link>
-
-                                    {/* Recycle Bin Kegiatan */}
-                                    <Link
-                                        href={route('kegiatan.recycle-bin')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin')
-                                                ? 'bg-[#D9531E] text-white font-bold'
-                                                : 'text-gray-300 hover:bg-gray-800'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <CalendarDays size={14} className="text-gray-400" />
-                                            <span>Recycle Bin Kegiatan</span>
-                                        </div>
-                                        {counts?.recycleBinKegiatan > 0 && (
-                                            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                {counts.recycleBinKegiatan}
-                                            </span>
-                                        )}
-                                    </Link>
-
-                                    {/* Recycle Bin Penugasan */}
-                                    <Link
-                                        href={route('penugasan.recycle-bin')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin')
-                                                ? 'bg-[#D9531E] text-white font-bold'
-                                                : 'text-gray-300 hover:bg-gray-800'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <UserCheck size={14} className="text-gray-400" />
-                                            <span>Recycle Bin Penugasan</span>
-                                        </div>
-                                        {counts?.recycleBinPenugasan > 0 && (
-                                            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                {counts.recycleBinPenugasan}
-                                            </span>
-                                        )}
-                                    </Link>
-
-                                    {/* Recycle Bin Honorarium */}
-                                    <a
-                                        href="#"
-                                        className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <Banknote size={14} className="text-gray-400" />
-                                            <span>Recycle Bin Honorarium</span>
-                                        </div>
-                                        {counts?.recycleBinHonorarium > 0 && (
-                                            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                {counts.recycleBinHonorarium}
-                                            </span>
-                                        )}
-                                    </a>
-                                </div>
-                            )}
+                    {/* SECTION: TRANSAKSI */}
+                    {isCollapsed ? (
+                        <div className="my-3 border-t border-gray-800/80 mx-2" />
+                    ) : (
+                        <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                            TRANSAKSI
                         </div>
                     )}
 
@@ -477,10 +332,12 @@ const Sidebar = forwardRef(function Sidebar({
                                             <Link
                                                 href={route('users.recycle-bin')}
                                                 onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('users.recycle-bin') ? 'bg-simitra-orange text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('users.recycle-bin') ? 'bg-simitra-orange text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
                                                     }`}
                                             >
-                                                <User size={14} /> Recycle Bin User
+                                                <div className="flex items-center gap-2.5">
+                                                    <User size={14} /> Recycle Bin User
+                                                </div>
                                             </Link>
                                             <Link
                                                 href={route('mitra.recycle-bin')}
@@ -497,6 +354,50 @@ const Sidebar = forwardRef(function Sidebar({
                                                     </span>
                                                 )}
                                             </Link>
+                                            <Link
+                                                href={route('kegiatan.recycle-bin')}
+                                                onClick={() => setCollapsedRecycleFlyout(false)}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <CalendarDays size={14} /> Recycle Bin Kegiatan
+                                                </div>
+                                                {counts?.recycleBinKegiatan > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                        {counts.recycleBinKegiatan}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                            <Link
+                                                href={route('penugasan.recycle-bin')}
+                                                onClick={() => setCollapsedRecycleFlyout(false)}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <UserCheck size={14} /> Recycle Bin Penugasan
+                                                </div>
+                                                {counts?.recycleBinPenugasan > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                        {counts.recycleBinPenugasan}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                            <a
+                                                href="#"
+                                                onClick={() => setCollapsedRecycleFlyout(false)}
+                                                className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <Banknote size={14} /> Recycle Bin Honorarium
+                                                </div>
+                                                {counts?.recycleBinHonorarium > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                        {counts.recycleBinHonorarium}
+                                                    </span>
+                                                )}
+                                            </a>
                                         </div>
                                     ) : (
                                         <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900/95 backdrop-blur-sm text-white text-xs font-semibold rounded-lg shadow-2xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50 border border-gray-700 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -576,9 +477,12 @@ const Sidebar = forwardRef(function Sidebar({
                                             </Link>
 
                                             {/* Recycle Bin Kegiatan */}
-                                            <a
-                                                href="#"
-                                                className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                            <Link
+                                                href={route('kegiatan.recycle-bin')}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin')
+                                                        ? 'bg-[#D9531E] text-white font-bold'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
                                                     <CalendarDays size={14} className="text-gray-400" />
@@ -589,12 +493,15 @@ const Sidebar = forwardRef(function Sidebar({
                                                         {counts.recycleBinKegiatan}
                                                     </span>
                                                 )}
-                                            </a>
+                                            </Link>
 
                                             {/* Recycle Bin Penugasan */}
-                                            <a
-                                                href="#"
-                                                className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                            <Link
+                                                href={route('penugasan.recycle-bin')}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin')
+                                                        ? 'bg-[#D9531E] text-white font-bold'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
                                                     <UserCheck size={14} className="text-gray-400" />
@@ -605,7 +512,7 @@ const Sidebar = forwardRef(function Sidebar({
                                                         {counts.recycleBinPenugasan}
                                                     </span>
                                                 )}
-                                            </a>
+                                            </Link>
 
                                             {/* Recycle Bin Honorarium */}
                                             <a
