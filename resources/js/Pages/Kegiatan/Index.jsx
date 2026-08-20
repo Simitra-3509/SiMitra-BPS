@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Head, router, Link, useForm, usePage } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info, CheckCircle2 } from 'lucide-react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info, CheckCircle2, Download, Upload, FileText, Settings, Crown, Wrench, ChevronDown, ChevronRight, List } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
+import * as XLSX from 'xlsx';
 
 function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const { flash } = usePage().props;
@@ -16,9 +17,167 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     // State untuk checklist (bulk delete)
     const [selectedIds, setSelectedIds] = useState([]);
 
+    // State untuk expand row
+    const [expandedRowId, setExpandedRowId] = useState(null);
+
+    const toggleExpand = (id) => {
+        setExpandedRowId(prev => prev === id ? null : id);
+    };
+
     // State untuk modal duplikasi
     const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
     const [selectedKegiatan, setSelectedKegiatan] = useState(null);
+
+    // State untuk Modal Import Excel/CSV
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+
+    const { data: importData, setData: setImportData, post: postImport, processing: processingImport, errors: importErrors, reset: resetImport } = useForm({
+        file: null,
+        rows: []
+    });
+
+    const openImportModal = () => {
+        setIsImportModalOpen(true);
+    };
+
+    const closeImportModal = () => {
+        setIsImportModalOpen(false);
+        setTimeout(() => resetImport(), 300);
+    };
+
+    const handleDownloadTemplate = () => {
+        const data = [
+            ["Kode KRO", "Nama Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Nama Detil", "Jenis SBML", "Satuan", "Jumlah", "Harga Satuan"],
+            ["2026.BMA.001", "Sensus Ekonomi 2026", "2026-09-01", "2026-09-30", "Honor SKLNP", "pendataan", "DOK", 40, 91000],
+            ["2026.BMA.001", "Sensus Ekonomi 2026", "2026-09-01", "2026-09-30", "Honor sksppi", "pendataan", "DOK", 60, 75000]
+        ];
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+        worksheet['!cols'] = [
+            { wch: 18 },
+            { wch: 35 },
+            { wch: 16 },
+            { wch: 16 },
+            { wch: 22 },
+            { wch: 15 },
+            { wch: 12 },
+            { wch: 10 },
+            { wch: 16 }
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template Import Kegiatan");
+
+        XLSX.writeFile(workbook, "Template_Import_Kegiatan.xlsx");
+    };
+
+    // Konversi nilai tanggal (JS Date, serial number, atau string) ke format YYYY-MM-DD
+    const toDateString = (val) => {
+        if (!val && val !== 0) return null;
+        // Sudah string format YYYY-MM-DD
+        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
+        // JS Date object (dari cellDates:true)
+        if (val instanceof Date) {
+            const y = val.getFullYear();
+            const m = String(val.getMonth() + 1).padStart(2, '0');
+            const d = String(val.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        // Excel serial number (angka bulat, misal 46387)
+        if (typeof val === 'number' && Number.isInteger(val) && val > 1000) {
+            // Konversi Excel serial ke Date (epoch Excel = 1899-12-30)
+            const epoch = new Date(1899, 11, 30);
+            epoch.setDate(epoch.getDate() + val);
+            const y = epoch.getFullYear();
+            const m = String(epoch.getMonth() + 1).padStart(2, '0');
+            const d = String(epoch.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        // String format lain coba parse
+        if (typeof val === 'string' && val.trim()) {
+            const parsed = new Date(val);
+            if (!isNaN(parsed)) {
+                const y = parsed.getFullYear();
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const d = String(parsed.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+        }
+        return null;
+    };
+
+    // Normalisasi semua kolom tanggal dalam setiap baris hasil parsing Excel
+    const normalizeDateFields = (rows) => {
+        const dateKeys = ['Tanggal Mulai', 'Tanggal Selesai', 'tanggal mulai', 'tanggal selesai',
+                          'tanggal_mulai', 'tanggal_selesai', 'tgl_mulai', 'tgl_selesai'];
+        return rows.map(row => {
+            const normalized = { ...row };
+            dateKeys.forEach(key => {
+                if (key in normalized) {
+                    normalized[key] = toDateString(normalized[key]);
+                }
+            });
+            return normalized;
+        });
+    };
+
+    const processFile = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                // cellDates:true agar serial number Excel otomatis jadi JS Date
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                const normalizedRows = normalizeDateFields(jsonData);
+                setImportData({ file, rows: normalizedRows });
+            } catch (err) {
+                console.error("Gagal membaca file excel:", err);
+                setImportData({ file, rows: [] });
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            processFile(file);
+        }
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            processFile(file);
+        }
+    };
+
+    const handleImportSubmit = (e) => {
+        e.preventDefault();
+        if (!importData.file) return;
+        postImport(route('kegiatan.import'), {
+            onSuccess: () => closeImportModal()
+        });
+    };
 
     const { data: duplicateData, setData: setDuplicateData, post: postDuplicate, processing: processingDuplicate, errors: errorsDuplicate, reset: resetDuplicate } = useForm({
         tgl_mulai: '',
@@ -122,7 +281,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
+                            onClick={openImportModal}
+                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2 cursor-pointer"
                         >
                             <FileSpreadsheet size={16} /> Import Excel
                         </button>
@@ -250,6 +410,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
+                                <th className="p-4 w-8"></th>
                                 <th className="p-4 w-12 text-center">
                                     <input
                                         type="checkbox"
@@ -260,114 +421,194 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 </th>
                                 <th className="p-4 w-12 text-center">No</th>
                                 <th className="p-4">Kegiatan</th>
-                                <th className="p-4 text-center">Jenis SBML</th>
-                                <th className="p-4">Harga Satuan</th>
+                                <th className="p-4 text-center">Detil</th>
+                                <th className="p-4">Total Anggaran</th>
                                 <th className="p-4 text-center">Status</th>
                                 <th className="p-4 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
                             {kegiatan?.data && kegiatan.data.length > 0 ? (
-                                kegiatan.data.map((item, index) => (
-                                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                        <td className="p-4 text-center">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
-                                                checked={selectedIds.includes(item.id)}
-                                                onChange={() => toggleSelect(item.id)}
-                                            />
-                                        </td>
-                                        <td className="p-4 text-center font-medium text-gray-500 dark:text-gray-400">
-                                            {(kegiatan.current_page - 1) * kegiatan.per_page + index + 1}
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="font-bold text-gray-900 dark:text-white">{item.nama_kegiatan}</span>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {item.tgl_mulai && item.tgl_selesai ? `${item.tgl_mulai} - ${item.tgl_selesai}` : '01 - 30 September 2026'}
-                                                </span>
-                                                <span className="text-xs text-orange-600 font-medium mt-0.5">
-                                                    KRO: {item.nomor_kro || item.kro || '2026.BMA.001'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <div className="flex flex-wrap items-center justify-center gap-1">
-                                                {(() => {
-                                                    const types = new Set();
-                                                    (item.akun_kegiatan || item.akunKegiatan || []).forEach(a => {
-                                                        (a.detil_kegiatan || a.detilKegiatan || []).forEach(d => {
-                                                            if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
-                                                        });
-                                                    });
-                                                    const typeArr = Array.from(types);
-                                                    if (typeArr.length === 0) typeArr.push(item.jenis_kegiatan || 'pendataan');
+                                kegiatan.data.map((item, index) => {
+                                    const isExpanded = expandedRowId === item.id;
+                                    const detils = item.detil_kegiatan || item.detilKegiatan || [];
+                                    const detilCount = detils.length;
 
-                                                    return typeArr.map(t => (
-                                                        <span
-                                                            key={t}
-                                                            className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${t === 'pendataan' ? 'bg-[#F26522]' : 'bg-[#3dbcc9]'
-                                                                }`}
-                                                        >
-                                                            {t === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
+                                    return (
+                                        <React.Fragment key={item.id}>
+                                            {/* — Main Row — */}
+                                            <tr
+                                                className={`cursor-pointer transition-colors ${
+                                                    isExpanded
+                                                        ? 'bg-orange-50 dark:bg-orange-900/10'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                                }`}
+                                                onClick={() => toggleExpand(item.id)}
+                                            >
+                                                {/* Chevron */}
+                                                <td className="pl-4 pr-1 py-4 text-gray-400 dark:text-gray-500">
+                                                    {isExpanded
+                                                        ? <ChevronDown size={16} className="text-orange-500" />
+                                                        : <ChevronRight size={16} />}
+                                                </td>
+
+                                                {/* Checkbox */}
+                                                <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
+                                                        checked={selectedIds.includes(item.id)}
+                                                        onChange={() => toggleSelect(item.id)}
+                                                    />
+                                                </td>
+
+                                                {/* No */}
+                                                <td className="p-4 text-center font-medium text-gray-500 dark:text-gray-400">
+                                                    {(kegiatan.current_page - 1) * kegiatan.per_page + index + 1}
+                                                </td>
+
+                                                {/* Kegiatan */}
+                                                <td className="p-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="font-bold text-gray-900 dark:text-white">{item.nama_kegiatan}</span>
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                            {item.tanggal_mulai && item.tanggal_selesai
+                                                                ? `${item.tanggal_mulai} - ${item.tanggal_selesai}`
+                                                                : (item.tgl_mulai && item.tgl_selesai
+                                                                    ? `${item.tgl_mulai} - ${item.tgl_selesai}`
+                                                                    : '-')}
                                                         </span>
-                                                    ));
-                                                })()}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                                    Rp {numberFormat(item.total_anggaran || 0)}
-                                                </span>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    Total Anggaran
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${item.status_aktif !== 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                                {item.status_aktif !== 0 ? 'Aktif' : 'Non-Aktif'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Link
-                                                    href={route('kegiatan.show', item.id)}
-                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
-                                                    title="Lihat Detail Rincian (Show)"
-                                                >
-                                                    <Eye size={14} />
-                                                </Link>
-                                                <Link
-                                                    href={route('kegiatan.edit', item.id)}
-                                                    className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
-                                                    title="Edit"
-                                                >
-                                                    <Edit size={14} />
-                                                </Link>
-                                                <button
-                                                    onClick={() => openDuplicateModal(item)}
-                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
-                                                    title="Duplikat"
-                                                >
-                                                    <Copy size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(item.id)}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
-                                                    title="Hapus"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                                        <span className="text-xs text-orange-600 font-medium mt-0.5">
+                                                            KRO: {item.kode_kegiatan || item.nomor_kro || item.kro || '-'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+
+                                                {/* Detil Badge */}
+                                                <td className="p-4 text-center">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full ${
+                                                        detilCount > 0
+                                                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                                    }`}>
+                                                        <List size={11} />
+                                                        {detilCount} Detil
+                                                    </span>
+                                                </td>
+
+                                                {/* Total Anggaran */}
+                                                <td className="p-4">
+                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                        Rp {numberFormat(item.total_anggaran || 0)}
+                                                    </span>
+                                                </td>
+
+                                                {/* Status */}
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
+                                                        item.status_aktif !== 0
+                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                    }`}>
+                                                        {item.status_aktif !== 0 ? 'Aktif' : 'Non-Aktif'}
+                                                    </span>
+                                                </td>
+
+                                                {/* Aksi — Edit, Duplicate, Delete (NO Eye) */}
+                                                <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Link
+                                                            href={route('kegiatan.edit', item.id)}
+                                                            className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit size={14} />
+                                                        </Link>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); openDuplicateModal(item); }}
+                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
+                                                            title="Duplikat"
+                                                        >
+                                                            <Copy size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
+                                                            title="Hapus"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            {/* — Expand Drawer Row — */}
+                                            {isExpanded && (
+                                                <tr className="bg-gray-50/80 dark:bg-gray-900/40">
+                                                    <td colSpan="8" className="px-0 py-0">
+                                                        <div className="border-t border-orange-200 dark:border-orange-800/50">
+                                                            {detilCount === 0 ? (
+                                                                <div className="px-10 py-5 text-sm text-gray-400 dark:text-gray-500 italic flex items-center gap-2">
+                                                                    <List size={14} />
+                                                                    Belum ada detil belanja untuk kegiatan ini.
+                                                                </div>
+                                                            ) : (
+                                                                <div
+                                                                    className="overflow-y-auto"
+                                                                    style={{ maxHeight: detilCount > 8 ? '320px' : 'none' }}
+                                                                >
+                                                                    <table className="w-full text-xs">
+                                                                        <thead className="sticky top-0 bg-orange-50 dark:bg-orange-950/40 border-b border-orange-200 dark:border-orange-800/40">
+                                                                            <tr>
+                                                                                <th className="px-4 py-2.5 text-left font-bold text-gray-600 dark:text-gray-300 w-8">No</th>
+                                                                                <th className="px-4 py-2.5 text-left font-bold text-gray-600 dark:text-gray-300">Nama Detil</th>
+                                                                                <th className="px-4 py-2.5 text-center font-bold text-gray-600 dark:text-gray-300">Jenis SBML</th>
+                                                                                <th className="px-4 py-2.5 text-center font-bold text-gray-600 dark:text-gray-300">Satuan</th>
+                                                                                <th className="px-4 py-2.5 text-right font-bold text-gray-600 dark:text-gray-300">Jumlah</th>
+                                                                                <th className="px-4 py-2.5 text-right font-bold text-gray-600 dark:text-gray-300">Harga Satuan</th>
+                                                                                <th className="px-4 py-2.5 text-right font-bold text-gray-600 dark:text-gray-300">Subtotal</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                                                            {detils.map((d, di) => (
+                                                                                <tr key={d.id || di} className="hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition">
+                                                                                    <td className="px-4 py-2.5 text-gray-400 dark:text-gray-500 text-center">{di + 1}</td>
+                                                                                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{d.nama_detil}</td>
+                                                                                    <td className="px-4 py-2.5 text-center">
+                                                                                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded text-white ${
+                                                                                            (d.jenis_sbml || '').toLowerCase() === 'pendataan'
+                                                                                                ? 'bg-[#F26522]'
+                                                                                                : 'bg-[#3dbcc9]'
+                                                                                        }`}>
+                                                                                            {d.jenis_sbml || '-'}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-4 py-2.5 text-center text-gray-600 dark:text-gray-400">{d.satuan || '-'}</td>
+                                                                                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">{numberFormat(d.jumlah || 0)}</td>
+                                                                                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">Rp {numberFormat(d.harga_satuan || 0)}</td>
+                                                                                    <td className="px-4 py-2.5 text-right font-semibold text-emerald-600 dark:text-emerald-400">Rp {numberFormat((d.jumlah || 0) * (d.harga_satuan || 0))}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                        <tfoot className="border-t-2 border-orange-200 dark:border-orange-800/50 bg-orange-50/60 dark:bg-orange-950/30">
+                                                                            <tr>
+                                                                                <td colSpan="6" className="px-4 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 text-xs">Total Anggaran Kegiatan:</td>
+                                                                                <td className="px-4 py-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400 text-xs">Rp {numberFormat(item.total_anggaran || 0)}</td>
+                                                                            </tr>
+                                                                        </tfoot>
+                                                                    </table>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                    <td colSpan="8" className="p-8 text-center text-gray-400 dark:text-gray-500">
                                         Tidak ada data kegiatan yang ditemukan.
                                     </td>
                                 </tr>
@@ -488,6 +729,111 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                             {processingDuplicate ? 'Menyimpan...' : 'Duplikasi Kegiatan'}
                         </button>
                     </div>
+                </form>
+            </Modal>
+
+            {/* Modal Import Excel / CSV */}
+            <Modal show={isImportModalOpen} onClose={closeImportModal} maxWidth="lg">
+                <form onSubmit={handleImportSubmit} className="bg-[#182232] text-white p-6 rounded-2xl shadow-2xl border border-gray-700/60 relative space-y-5">
+                    
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-950/60 border border-emerald-800/50 text-emerald-400 rounded-xl">
+                                <FileSpreadsheet size={24} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-white">Import Kegiatan Excel</h2>
+                                <p className="text-xs text-gray-400">Unggah data kolektif kegiatan survei dan sensus BPS</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={closeImportModal}
+                            className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition cursor-pointer"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+
+                    {/* Blue Info Box */}
+                    <div className="bg-[#132238] border border-blue-800/40 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
+                            <FileText size={16} />
+                            <span>Ketentuan Format File Excel (.xlsx):</span>
+                        </div>
+                        <ul className="space-y-1.5 text-xs text-gray-300 list-disc list-inside leading-relaxed pl-1">
+                            <li>
+                                Format kolom header: <span className="font-mono text-blue-300 font-bold">Kode KRO, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, Nama Detil, Jenis SBML, Satuan, Jumlah, Harga Satuan</span>
+                            </li>
+                            <li>
+                                Nilai Jenis SBML: <span className="font-bold text-white">pendataan atau pengolahan</span>
+                            </li>
+                            <li>
+                                <span className="font-bold text-white">Format Tanggal:</span> YYYY-MM-DD (contoh: <span className="font-mono text-blue-300">2026-09-01</span>).
+                            </li>
+                        </ul>
+
+                        <button
+                            type="button"
+                            onClick={handleDownloadTemplate}
+                            className="w-full sm:w-auto px-4 py-2 bg-blue-900/40 hover:bg-blue-900/60 border border-blue-600/60 text-blue-300 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer mt-1"
+                        >
+                            <Download size={14} /> Download Format Template Excel (.xlsx)
+                        </button>
+                    </div>
+
+                    {/* File Dropzone */}
+                    <div
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                        className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${
+                            dragActive ? 'border-emerald-400 bg-emerald-950/20' : 'border-gray-700/80 bg-gray-900/40 hover:border-emerald-500/70 hover:bg-gray-900/70'
+                        }`}
+                    >
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls, .csv"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                            <Upload className="text-emerald-500" size={32} />
+                            {importData.file ? (
+                                <div className="space-y-0.5">
+                                    <span className="text-sm font-bold text-emerald-400 block">{importData.file.name}</span>
+                                    <span className="text-xs text-gray-400">{(importData.file.size / 1024).toFixed(1)} KB ({importData.rows?.length || 0} baris data)</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="text-sm font-bold text-emerald-400">Pilih File Excel (.xlsx / .xls)</span>
+                                    <span className="text-xs text-gray-400">Format didukung: .xlsx, .xls, .csv</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={closeImportModal}
+                            className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition cursor-pointer"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!importData.file || processingImport}
+                            className="px-5 py-2.5 text-sm font-bold text-white bg-[#059669] hover:bg-[#047857] rounded-xl shadow-lg transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            <Upload size={16} />
+                            <span>{processingImport ? 'Memproses...' : 'Proses Import'}</span>
+                        </button>
+                    </div>
+
                 </form>
             </Modal>
         </>

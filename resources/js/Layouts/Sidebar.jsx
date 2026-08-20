@@ -41,7 +41,17 @@ const Sidebar = forwardRef(function Sidebar({
 
     const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(isAnyRecycleBinActive);
     const [collapsedRecycleFlyout, setCollapsedRecycleFlyout] = useState(false);
+    const [flyoutTop, setFlyoutTop] = useState(200);
     const flyoutRef = useRef(null);
+
+    const handleCollapsedTrashClick = (e) => {
+        e.stopPropagation();
+        if (e.currentTarget) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setFlyoutTop(rect.top);
+        }
+        setCollapsedRecycleFlyout((prev) => !prev);
+    };
 
     const totalRecycleBinBadge =
         (counts?.recycleBinMitra || 0) +
@@ -306,11 +316,12 @@ const Sidebar = forwardRef(function Sidebar({
                                 <div className="relative group flex justify-center my-1" ref={flyoutRef}>
                                     <button
                                         type="button"
-                                        onClick={() => setCollapsedRecycleFlyout(!collapsedRecycleFlyout)}
+                                        onClick={handleCollapsedTrashClick}
                                         className={`flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200 cursor-pointer ${isAnyRecycleBinActive || collapsedRecycleFlyout
                                                 ? 'bg-gray-800 text-red-400 shadow-md'
                                                 : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/80'
                                             }`}
+                                        title="Buka Pilihan Recycle Bin"
                                     >
                                         <Trash2 size={20} />
                                         {totalRecycleBinBadge > 0 && (
@@ -319,12 +330,15 @@ const Sidebar = forwardRef(function Sidebar({
                                     </button>
 
                                     {/* Flyout Submenu on Collapsed Mode */}
-                                    {collapsedRecycleFlyout ? (
-                                        <div className="absolute left-full ml-3 w-56 bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700 p-2 z-50 space-y-1">
-                                            <div className="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase border-b border-gray-800 flex justify-between items-center">
+                                    {collapsedRecycleFlyout && (
+                                        <div
+                                            className="fixed left-20 ml-2 w-60 bg-simitra-dark/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700 p-2.5 z-[9999] space-y-1 text-left"
+                                            style={{ top: Math.max(10, Math.min(flyoutTop, (typeof window !== 'undefined' ? window.innerHeight : 800) - 260)) }}
+                                        >
+                                            <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase border-b border-gray-800 flex justify-between items-center mb-1">
                                                 <span>Recycle Bins</span>
                                                 {totalRecycleBinBadge > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                                                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
                                                         {totalRecycleBinBadge}
                                                     </span>
                                                 )}
@@ -398,15 +412,6 @@ const Sidebar = forwardRef(function Sidebar({
                                                     </span>
                                                 )}
                                             </a>
-                                        </div>
-                                    ) : (
-                                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900/95 backdrop-blur-sm text-white text-xs font-semibold rounded-lg shadow-2xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50 border border-gray-700 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                            <span>Recycle Bins</span>
-                                            {totalRecycleBinBadge > 0 && (
-                                                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                                                    {totalRecycleBinBadge}
-                                                </span>
-                                            )}
                                         </div>
                                     )}
                                 </div>
