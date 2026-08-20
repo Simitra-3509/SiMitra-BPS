@@ -296,8 +296,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             <div className="flex flex-wrap items-center justify-center gap-1">
                                                 {(() => {
                                                     const types = new Set();
-                                                    (item.akun_kegiatan || []).forEach(a => {
-                                                        (a.detil_kegiatan || []).forEach(d => {
+                                                    (item.akun_kegiatan || item.akunKegiatan || []).forEach(a => {
+                                                        (a.detil_kegiatan || a.detilKegiatan || []).forEach(d => {
                                                             if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
                                                         });
                                                     });

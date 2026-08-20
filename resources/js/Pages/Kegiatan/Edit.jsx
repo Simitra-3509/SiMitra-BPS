@@ -137,7 +137,7 @@ export default function Edit({ auth, kegiatan }) {
 
                 {/* Form Main - UNIFIED CARD */}
                 <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 space-y-6">
-                    
+
                     {/* Error Banner */}
                     {Object.keys(errors).length > 0 && (
                         <div className="p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300 rounded-xl space-y-1">

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    ArrowLeft, 
-    Edit, 
-    Calendar, 
-    Layers, 
-    Calculator, 
-    Tag, 
-    BadgeCheck 
+import {
+    ArrowLeft,
+    Edit,
+    Calendar,
+    Layers,
+    Calculator,
+    Tag,
+    BadgeCheck
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
