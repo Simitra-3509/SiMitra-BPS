@@ -245,9 +245,13 @@ export default function Sidebar() {
                                     </Link>
 
                                     {/* Recycle Bin Kegiatan */}
-                                    <a
-                                        href="#"
-                                        className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                    <Link
+                                        href={route('kegiatan.recycle-bin')}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                                            url.startsWith('/recycle-bin/kegiatan')
+                                                ? 'bg-[#D9531E] text-white'
+                                                : 'text-gray-300 hover:bg-gray-800'
+                                        }`}
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <CalendarDays size={14} className="text-gray-400" />
@@ -258,12 +262,16 @@ export default function Sidebar() {
                                                 {counts.recycleBinKegiatan}
                                             </span>
                                         )}
-                                    </a>
+                                    </Link>
 
                                     {/* Recycle Bin Penugasan */}
-                                    <a
-                                        href="#"
-                                        className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                    <Link
+                                        href={route('penugasan.recycle-bin')}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                                            url.startsWith('/recycle-bin/penugasan')
+                                                ? 'bg-[#D9531E] text-white'
+                                                : 'text-gray-300 hover:bg-gray-800'
+                                        }`}
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <UserCheck size={14} className="text-gray-400" />
@@ -274,7 +282,7 @@ export default function Sidebar() {
                                                 {counts.recycleBinPenugasan}
                                             </span>
                                         )}
-                                    </a>
+                                    </Link>
 
                                     {/* Recycle Bin Honorarium */}
                                     <a
