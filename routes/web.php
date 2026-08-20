@@ -81,15 +81,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['auth'])->group(function () {
         Route::resource('kegiatan', KegiatanController::class);
+        Route::get('/recycle-bin/kegiatan', [KegiatanController::class, 'recycleBin'])->name('kegiatan.recycle-bin');
+        Route::post('/recycle-bin/kegiatan/{id}/restore', [KegiatanController::class, 'restore'])->name('kegiatan.restore');
+        Route::delete('/recycle-bin/kegiatan/{id}/force-delete', [KegiatanController::class, 'forceDelete'])->name('kegiatan.force-delete');
         Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
+        
         Route::resource('penugasan', PenugasanController::class);
+        Route::get('/recycle-bin/penugasan', [PenugasanController::class, 'recycleBin'])->name('penugasan.recycle-bin');
+        Route::post('/recycle-bin/penugasan/{id}/restore', [PenugasanController::class, 'restore'])->name('penugasan.restore');
+        Route::delete('/recycle-bin/penugasan/{id}/force-delete', [PenugasanController::class, 'forceDelete'])->name('penugasan.force-delete');
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
-        Route::get('api/penugasan/akun-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getAkunByKegiatan'])->name('api.penugasan.akun');
-        Route::get('api/penugasan/detil-by-akun/{akun_id}', [PenugasanController::class, 'getDetilByAkun'])->name('api.penugasan.detil');
+        Route::post('penugasan/bulk-delete', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulkDelete');
+        Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
         Route::resource('honorarium', HonorariumController::class);
+        Route::post('honorarium/{honorarium}/ajukan', [HonorariumController::class, 'ajukanPersetujuan'])->name('honorarium.ajukan');
+        Route::post('honorarium/{honorarium}/setujui', [HonorariumController::class, 'setujui'])->name('honorarium.setujui');
+        Route::post('honorarium/{honorarium}/tolak', [HonorariumController::class, 'tolak'])->name('honorarium.tolak');
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
         Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
         Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');

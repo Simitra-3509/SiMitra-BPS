@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 const namaBulan = [
@@ -9,6 +9,9 @@ const namaBulan = [
 ];
 
 function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
+    const { flash } = usePage().props;
+    const flashMessage = flash?.message || flash?.success;
+
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [kegiatanId, setKegiatanId] = useState(filters?.kegiatan_id || '');
     const [statusHonor, setStatusHonor] = useState(filters?.status_honor || '');
@@ -99,6 +102,16 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                         </Link>
                     </div>
                 </div>
+
+                {/* Flash Success Notification */}
+                {flashMessage && (
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CheckCircle2 size={18} />
+                        </div>
+                        <span className="text-sm font-semibold">{flashMessage}</span>
+                    </div>
+                )}
 
                 {/* Warning Banner: Kegiatan tanpa mitra */}
                 {showBanner && kegiatanTanpaMitra?.length > 0 && (

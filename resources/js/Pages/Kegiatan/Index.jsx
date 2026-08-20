@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Head, router, Link, useForm } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info } from 'lucide-react';
+import { Head, router, Link, useForm, usePage } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info, CheckCircle2 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 
 function Index({ auth, kegiatan, kegiatanCount, filters }) {
+    const { flash } = usePage().props;
+    const flashMessage = flash?.message || flash?.success;
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [bulan, setBulan] = useState(filters?.bulan || '');
     const [status, setStatus] = useState(filters?.status || '');
@@ -133,6 +135,16 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         </Link>
                     </div>
                 </div>
+
+                {/* Flash Success Notification */}
+                {flashMessage && (
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CheckCircle2 size={18} />
+                        </div>
+                        <span className="text-sm font-semibold">{flashMessage}</span>
+                    </div>
+                )}
 
                 {/* Filter & Search Bar Card */}
                 <form onSubmit={handleFilter} className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">

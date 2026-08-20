@@ -41,8 +41,8 @@ class Kegiatan extends Model
         return $this->hasMany(Penugasan::class);
     }
 
-    public function akunKegiatan()
+    public function detilKegiatan()
     {
-        return $this->hasMany(AkunKegiatan::class, 'kegiatan_id');
+        return $this->hasMany(DetilKegiatan::class, 'kegiatan_id');
     }
 }

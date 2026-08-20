@@ -13,7 +13,7 @@ class DetilKegiatan extends Model
     protected $table = 'detil_kegiatan';
 
     protected $fillable = [
-        'akun_id',
+        'kegiatan_id',
         'nama_detil',
         'jenis_sbml',
         'frekuensi_penugasan',
@@ -45,11 +45,11 @@ class DetilKegiatan extends Model
     }
 
     /**
-     * Relationship to parent AkunKegiatan.
+     * Relationship to parent Kegiatan.
      */
-    public function akunKegiatan(): BelongsTo
+    public function kegiatan(): BelongsTo
     {
-        return $this->belongsTo(AkunKegiatan::class, 'akun_id');
+        return $this->belongsTo(Kegiatan::class, 'kegiatan_id');
     }
 
     public function penugasans()
