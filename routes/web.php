@@ -143,6 +143,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Mitra Routes
     Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+    Route::post('/mitra/import', [MitraController::class, 'import'])->name('mitra.import');
     Route::post('/mitra', [MitraController::class, 'store'])->name('mitra.store');
     Route::put('/mitra/{mitra}', [MitraController::class, 'update'])->name('mitra.update');
     Route::delete('/mitra/{mitra}', [MitraController::class, 'destroy'])->name('mitra.destroy');

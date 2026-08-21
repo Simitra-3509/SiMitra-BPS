@@ -64,8 +64,6 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
             });
         }
     }; 
-        ? trashedUsers 
-        : (trashedUsers?.data || []);
 
     const totalItems = Array.isArray(trashedUsers) 
         ? trashedUsers.length 
