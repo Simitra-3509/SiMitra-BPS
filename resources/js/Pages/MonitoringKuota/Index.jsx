@@ -85,9 +85,9 @@ export default function Index({
                         <button
                             type="button"
                             onClick={exportExcel}
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-2 shadow-md cursor-pointer"
                         >
-                            <FileSpreadsheet size={16} /> Export Excel
+                            <FileSpreadsheet size={18} /> Export Excel
                         </button>
                     </div>
                 </div>

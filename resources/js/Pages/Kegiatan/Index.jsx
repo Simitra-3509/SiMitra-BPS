@@ -2,11 +2,14 @@ import React, { useState, useRef } from 'react';
 import { Head, router, Link, useForm, usePage } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info, CheckCircle2, Download, Upload, FileText, Settings, Crown, Wrench, ChevronDown, ChevronRight, List } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import * as XLSX from 'xlsx';
 
 function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [bulan, setBulan] = useState(filters?.bulan || '');
@@ -19,6 +22,10 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
     // State untuk expand row
     const [expandedRowId, setExpandedRowId] = useState(null);
+
+    // State untuk ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     const toggleExpand = (id) => {
         setExpandedRowId(prev => prev === id ? null : id);
@@ -229,18 +236,29 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) {
-            router.delete(route('kegiatan.destroy', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Kegiatan',
+            message: 'Apakah Anda yakin ingin menghapus kegiatan ini? Data akan dipindahkan ke Recycle Bin.',
+            onConfirm: () => {
+                router.delete(route('kegiatan.destroy', id));
+                setConfirmOpen(false);
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} kegiatan yang dipilih?`)) {
-            router.post(route('kegiatan.bulk-destroy'), { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Hapus ${selectedIds.length} Kegiatan`,
+            message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} kegiatan yang dipilih? Semua data akan dipindahkan ke Recycle Bin.`,
+            onConfirm: () => {
+                router.post(route('kegiatan.bulk-destroy'), { ids: selectedIds }, {
+                    onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); }
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const toggleSelectAll = (e) => {
@@ -281,18 +299,17 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     </div>
 
                     <div className="flex items-center gap-3">
-
                         <button
                             type="button"
                             onClick={openImportModal}
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2 cursor-pointer"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-2 shadow-md cursor-pointer"
                         >
-                            <FileSpreadsheet size={16} /> Import Excel
+                            <FileSpreadsheet size={18} /> Import Excel
                         </button>
 
                         <Link
                             href={route('kegiatan.create')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#D9531E] rounded-lg hover:bg-orange-600 transition flex items-center gap-1.5"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center gap-1.5 shadow-md"
                         >
                             <Plus size={18} /> Tambah Kegiatan
                         </Link>
@@ -839,6 +856,18 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
                 </form>
             </Modal>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                variant="danger"
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </>
     );
 }

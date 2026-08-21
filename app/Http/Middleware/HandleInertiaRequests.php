@@ -8,6 +8,7 @@ use App\Models\Mitra;
 use App\Models\Kegiatan;
 use App\Models\Penugasan;
 use App\Models\Honorarium;
+use App\Models\User;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -54,10 +55,11 @@ class HandleInertiaRequests extends Middleware
                 'error'   => fn () => $request->session()->get('error'),
             ],
             'counts' => [
-                'recycleBinMitra' => fn () => $request->user() ? Mitra::onlyTrashed()->count() : 0,
-                'recycleBinKegiatan' => fn () => $request->user() ? Kegiatan::onlyTrashed()->count() : 0,
+                'recycleBinUser'      => fn () => $request->user() ? User::onlyTrashed()->count() : 0,
+                'recycleBinMitra'     => fn () => $request->user() ? Mitra::onlyTrashed()->count() : 0,
+                'recycleBinKegiatan'  => fn () => $request->user() ? Kegiatan::onlyTrashed()->count() : 0,
                 'recycleBinPenugasan' => fn () => $request->user() ? Penugasan::onlyTrashed()->count() : 0,
-                'recycleBinHonorarium' => fn () => $request->user() ? Honorarium::onlyTrashed()->count() : 0,
+                'recycleBinHonorarium'=> fn () => $request->user() ? Honorarium::onlyTrashed()->count() : 0,
             ],
         ];
     }

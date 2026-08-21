@@ -15,6 +15,7 @@ import {
     MessageSquare 
 } from 'lucide-react';
 import Modal from '@/Components/Modal';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 const Index = ({ honorarium, semuaKegiatan, filters }) => {
     const { auth, flash } = usePage().props;
@@ -35,6 +36,17 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
     const [isDetailCatatanOpen, setIsDetailCatatanOpen] = useState(false);
     const [viewCatatan, setViewCatatan] = useState('');
 
+    // Confirm Dialog State
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({
+        title: '',
+        message: '',
+        confirmText: 'Ya',
+        cancelText: 'Batal',
+        variant: 'info',
+        onConfirm: null,
+    });
+
     const handleFilter = (e) => {
         e?.preventDefault();
         router.get(
@@ -53,15 +65,33 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
     };
 
     const handleAjukan = (id) => {
-        if (confirm('Ajukan honorarium ini ke PPK untuk persetujuan?')) {
-            router.post(route('honorarium.ajukan', id));
-        }
+        setConfirmConfig({
+            title: 'Ajukan Honorarium',
+            message: 'Apakah Anda yakin ingin mengajukan honorarium ini ke PPK untuk persetujuan?',
+            confirmText: 'Ya, Ajukan',
+            cancelText: 'Batal',
+            variant: 'info',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('honorarium.ajukan', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleSetujui = (id) => {
-        if (confirm('Setujui pembayaran honorarium ini sebagai PPK?')) {
-            router.post(route('honorarium.setujui', id));
-        }
+        setConfirmConfig({
+            title: 'Setujui Honorarium',
+            message: 'Apakah Anda yakin ingin menyetujui pembayaran honorarium ini sebagai PPK?',
+            confirmText: 'Ya, Setujui',
+            cancelText: 'Batal',
+            variant: 'info',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('honorarium.setujui', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const openTolakModal = (id) => {
@@ -138,13 +168,13 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                     <div className="flex gap-2">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-2 shadow-md cursor-pointer"
                         >
-                            <FileSpreadsheet size={16} /> Import Excel
+                            <FileSpreadsheet size={18} /> Import Excel
                         </button>
                         <Link
                             href={route('honorarium.create')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#D9531E] rounded-lg hover:bg-orange-600 transition flex items-center gap-1.5"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center gap-1.5 shadow-md"
                         >
                             <Plus size={18} /> Input Honor Baru
                         </Link>
@@ -421,6 +451,18 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                onCancel={() => setConfirmOpen(false)}
+                onConfirm={confirmConfig.onConfirm}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.confirmText}
+                cancelText={confirmConfig.cancelText}
+                variant={confirmConfig.variant}
+            />
         </>
     );
 };

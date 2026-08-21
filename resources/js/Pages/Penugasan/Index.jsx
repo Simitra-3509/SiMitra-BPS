@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 const namaBulan = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -10,6 +12,7 @@ const namaBulan = [
 
 function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
 
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
@@ -19,6 +22,10 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     // State for the Assign Mitra modal
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
@@ -42,17 +49,29 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus penugasan ini?')) {
-            router.delete(route('penugasan.destroy', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Penugasan',
+            message: 'Apakah Anda yakin ingin menghapus penugasan ini? Data akan dipindahkan ke Recycle Bin.',
+            onConfirm: () => {
+                router.delete(route('penugasan.destroy', id));
+                setConfirmOpen(false);
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkDelete = () => {
-        if (confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} penugasan yang dipilih?`)) {
-            router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([]),
-            });
-        }
+        if (selectedIds.length === 0) return;
+        setConfirmConfig({
+            title: `Hapus ${selectedIds.length} Penugasan`,
+            message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} penugasan yang dipilih?`,
+            onConfirm: () => {
+                router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
+                    onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); },
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const toggleSelectAll = () => {
@@ -90,15 +109,15 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-1.5 shadow-sm"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-1.5 shadow-md cursor-pointer"
                         >
-                            <FileSpreadsheet size={16} /> Import Excel
+                            <FileSpreadsheet size={18} /> Import Excel
                         </button>
                         <Link
                             href={route('penugasan.create')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#D9531E] rounded-lg hover:bg-orange-600 transition flex items-center gap-1.5 shadow-sm"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center gap-1.5 shadow-md"
                         >
-                            <Plus size={16} /> Tambah Penugasan
+                            <Plus size={18} /> Tambah Penugasan
                         </Link>
                     </div>
                 </div>
@@ -520,6 +539,18 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                     </div>
                 )}
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                variant="danger"
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </>
     );
 }

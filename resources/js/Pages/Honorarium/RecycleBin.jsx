@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import { Search, RotateCcw, Trash2, ArrowLeft, Banknote, CheckCircle2 } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function RecycleBin({ honorariums, filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
     const [search, setSearch] = useState(filters?.search || '');
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null, variant: 'warning' });
 
     const toggleSelectAll = (e) => {
         if (e.target.checked) {
@@ -27,21 +34,35 @@ export default function RecycleBin({ honorariums, filters }) {
 
     const handleBulkRestore = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} data honorarium yang dipilih?`)) {
-            router.post(route('honorarium.bulk-restore'), { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Pulihkan ${selectedIds.length} Honorarium`,
+            message: `Apakah Anda yakin ingin memulihkan ${selectedIds.length} data honorarium yang dipilih?`,
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('honorarium.bulk-restore'), { ids: selectedIds }, {
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkForceDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`PERINGATAN: ${selectedIds.length} data honorarium ini akan dihapus secara PERMANEN! Apakah Anda yakin?`)) {
-            router.delete(route('honorarium.bulk-force-delete'), {
-                data: { ids: selectedIds },
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Hapus Permanen ${selectedIds.length} Honorarium`,
+            message: `PERINGATAN: ${selectedIds.length} data honorarium ini akan dihapus secara PERMANEN!`,
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('honorarium.bulk-force-delete'), {
+                    data: { ids: selectedIds },
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleSearch = (e) => {
@@ -50,15 +71,29 @@ export default function RecycleBin({ honorariums, filters }) {
     };
 
     const handleRestore = (id) => {
-        if (confirm('Apakah Anda yakin ingin memulihkan data honorarium ini?')) {
-            router.post(route('honorarium.restore', id));
-        }
+        setConfirmConfig({
+            title: 'Pulihkan Honorarium',
+            message: 'Apakah Anda yakin ingin memulihkan data honorarium ini?',
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('honorarium.restore', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleForceDelete = (id) => {
-        if (confirm('PERINGATAN: Data honorarium ini akan dihapus secara PERMANEN! Apakah Anda yakin?')) {
-            router.delete(route('honorarium.force-delete', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Permanen Honorarium',
+            message: 'PERINGATAN: Data honorarium ini akan dihapus secara PERMANEN!',
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('honorarium.force-delete', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const formatRupiah = (val) => {
@@ -247,6 +282,18 @@ export default function RecycleBin({ honorariums, filters }) {
                     )}
                 </div>
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.variant === 'danger' ? 'Ya, Hapus Permanen' : 'Ya, Pulihkan'}
+                cancelText="Batal"
+                variant={confirmConfig.variant}
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

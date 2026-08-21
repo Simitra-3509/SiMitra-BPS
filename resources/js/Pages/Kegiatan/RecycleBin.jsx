@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import { Search, RotateCcw, Trash2, ArrowLeft, Folder, CheckCircle2 } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function RecycleBin({ kegiatans, filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
     const [search, setSearch] = useState(filters?.search || '');
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null, variant: 'warning' });
 
     const toggleSelectAll = (e) => {
         if (e.target.checked) {
@@ -27,21 +34,35 @@ export default function RecycleBin({ kegiatans, filters }) {
 
     const handleBulkRestore = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} data kegiatan yang dipilih?`)) {
-            router.post(route('kegiatan.bulk-restore'), { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Pulihkan ${selectedIds.length} Kegiatan`,
+            message: `Apakah Anda yakin ingin memulihkan ${selectedIds.length} data kegiatan yang dipilih?`,
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('kegiatan.bulk-restore'), { ids: selectedIds }, {
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkForceDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`PERINGATAN: ${selectedIds.length} data kegiatan ini akan dihapus secara PERMANEN beserta seluruh rinciannya! Apakah Anda yakin?`)) {
-            router.delete(route('kegiatan.bulk-force-delete'), {
-                data: { ids: selectedIds },
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Hapus Permanen ${selectedIds.length} Kegiatan`,
+            message: `PERINGATAN: ${selectedIds.length} data kegiatan ini akan dihapus secara PERMANEN beserta seluruh rinciannya!`,
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('kegiatan.bulk-force-delete'), {
+                    data: { ids: selectedIds },
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleSearch = (e) => {
@@ -50,15 +71,29 @@ export default function RecycleBin({ kegiatans, filters }) {
     };
 
     const handleRestore = (id) => {
-        if (confirm('Apakah Anda yakin ingin memulihkan data Kegiatan ini?')) {
-            router.post(route('kegiatan.restore', id));
-        }
+        setConfirmConfig({
+            title: 'Pulihkan Data Kegiatan',
+            message: 'Apakah Anda yakin ingin memulihkan data Kegiatan ini?',
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('kegiatan.restore', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleForceDelete = (id) => {
-        if (confirm('PERINGATAN: Data Kegiatan ini akan dihapus secara PERMANEN beserta seluruh rinciannya! Apakah Anda yakin?')) {
-            router.delete(route('kegiatan.force-delete', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Permanen Kegiatan',
+            message: 'PERINGATAN: Data Kegiatan ini akan dihapus secara PERMANEN beserta seluruh rinciannya!',
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('kegiatan.force-delete', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const formatRupiah = (val) => {
@@ -247,6 +282,18 @@ export default function RecycleBin({ kegiatans, filters }) {
                     )}
                 </div>
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.variant === 'danger' ? 'Ya, Hapus Permanen' : 'Ya, Pulihkan'}
+                cancelText="Batal"
+                variant={confirmConfig.variant}
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import {
     Plus,
@@ -20,12 +21,18 @@ import {
     CheckCircle2,
 } from 'lucide-react';
 import api from '@/services/api';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function UserManagement() {
+    const { toast } = useAppToast();
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
     const [successMsg, setSuccessMsg] = useState(null);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     const [roleFilter, setRoleFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -129,6 +136,9 @@ export default function UserManagement() {
         if (role === 'operator') {
             return { backgroundColor: '#68b92e', color: '#ffffff' }; // BPS Green
         }
+        if (role === 'ppk') {
+            return { backgroundColor: '#8b5cf6', color: '#ffffff' }; // PPK Purple/Indigo
+        }
         if (role === 'viewer') {
             return { backgroundColor: '#0093dd', color: '#ffffff' }; // BPS Blue
         }
@@ -178,31 +188,43 @@ export default function UserManagement() {
 
     const handleDeleteAllSelected = async () => {
         if (selectedUserIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin menghapus ${selectedUserIds.length} user yang dipilih?`)) {
-            try {
-                await Promise.all(selectedUserIds.map((id) => api.delete(`/users/${id}`)));
-                setUsers(users.filter((u) => !selectedUserIds.includes(u.id)));
-                setSelectedUserIds([]);
-                setSuccessMsg('User terpilih berhasil dihapus.');
-            } catch (err) {
-                console.error('Gagal menghapus user:', err);
-                alert('Gagal menghapus beberapa user dari server.');
-            }
-        }
+        setConfirmConfig({
+            title: `Hapus ${selectedUserIds.length} User`,
+            message: `Apakah Anda yakin ingin menghapus ${selectedUserIds.length} user yang dipilih? Tindakan ini tidak dapat dibatalkan.`,
+            onConfirm: async () => {
+                setConfirmOpen(false);
+                try {
+                    await Promise.all(selectedUserIds.map((id) => api.delete(`/users/${id}`)));
+                    setUsers(users.filter((u) => !selectedUserIds.includes(u.id)));
+                    setSelectedUserIds([]);
+                    toast.success('User terpilih berhasil dihapus.');
+                } catch (err) {
+                    console.error('Gagal menghapus user:', err);
+                    toast.error('Gagal menghapus beberapa user dari server.');
+                }
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleDeleteSingle = async (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus user ini?')) {
-            try {
-                await api.delete(`/users/${id}`);
-                setUsers(users.filter((u) => u.id !== id));
-                setSelectedUserIds(selectedUserIds.filter((itemId) => itemId !== id));
-                setSuccessMsg('User berhasil dihapus.');
-            } catch (err) {
-                console.error('Gagal menghapus user:', err);
-                alert('Gagal menghapus user dari server.');
-            }
-        }
+        setConfirmConfig({
+            title: 'Hapus User',
+            message: 'Apakah Anda yakin ingin menghapus user ini? Tindakan ini tidak dapat dibatalkan.',
+            onConfirm: async () => {
+                setConfirmOpen(false);
+                try {
+                    await api.delete(`/users/${id}`);
+                    setUsers(users.filter((u) => u.id !== id));
+                    setSelectedUserIds(selectedUserIds.filter((itemId) => itemId !== id));
+                    toast.success('User berhasil dihapus.');
+                } catch (err) {
+                    console.error('Gagal menghapus user:', err);
+                    toast.error('Gagal menghapus user dari server.');
+                }
+            },
+        });
+        setConfirmOpen(true);
     };
 
     // Open Modal Handlers
@@ -232,13 +254,27 @@ export default function UserManagement() {
         setIsEditModalOpen(true);
     };
 
+    const extractErrorMessage = (err, fallback) => {
+        if (err.response?.data?.errors) {
+            const errList = Object.values(err.response.data.errors).flat();
+            if (errList.length > 0) {
+                return `Validasi gagal: ${errList.join(' | ')}`;
+            }
+        }
+        return err.response?.data?.message || fallback;
+    };
+
     // Handle Create Submit
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setModalError(null);
         try {
-            const response = await api.post('/users', createForm);
+            const payload = { ...createForm };
+            if (!payload.password || payload.password.trim() === '') {
+                delete payload.password;
+            }
+            const response = await api.post('/users', payload);
             if (response.status === 201 || (response.data && response.data.success)) {
                 setSuccessMsg('User baru berhasil ditambahkan!');
                 setIsCreateModalOpen(false);
@@ -246,7 +282,7 @@ export default function UserManagement() {
             }
         } catch (err) {
             console.error('Gagal menambah user:', err);
-            setModalError(err.response?.data?.message || 'Gagal menyimpan user baru. Periksa kembali form.');
+            setModalError(extractErrorMessage(err, 'Gagal menyimpan user baru. Periksa kembali form.'));
         } finally {
             setIsSubmitting(false);
         }
@@ -258,7 +294,11 @@ export default function UserManagement() {
         setIsSubmitting(true);
         setModalError(null);
         try {
-            const response = await api.put(`/users/${editForm.id}`, editForm);
+            const payload = { ...editForm };
+            if (!payload.password || payload.password.trim() === '') {
+                delete payload.password;
+            }
+            const response = await api.put(`/users/${editForm.id}`, payload);
             if (response.status === 200 || (response.data && response.data.success)) {
                 setSuccessMsg('Data pengguna berhasil diperbarui!');
                 setIsEditModalOpen(false);
@@ -266,7 +306,7 @@ export default function UserManagement() {
             }
         } catch (err) {
             console.error('Gagal mengedit user:', err);
-            setModalError(err.response?.data?.message || 'Gagal memperbarui data user.');
+            setModalError(extractErrorMessage(err, 'Gagal memperbarui data user.'));
         } finally {
             setIsSubmitting(false);
         }
@@ -355,30 +395,31 @@ export default function UserManagement() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                        {/* Tombol Recycle Bin (Oranye - Sensus Ekonomi BPS) */}
                         <button
                             type="button"
                             onClick={() => router.get('/recycle-bin/users')}
-                            className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer"
+                            className="bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md cursor-pointer"
                         >
                             <Trash2 size={18} />
                             <span>Recycle Bin</span>
                         </button>
 
-                        {/* Tombol Import Excel tepat disebelah kiri Tambah User */}
+                        {/* Tombol Import Excel (Hijau - Sensus Pertanian BPS) */}
                         <button
                             type="button"
                             onClick={() => { setModalError(null); setImportFile(null); setIsImportModalOpen(true); }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md cursor-pointer"
+                            className="bg-[#00AA55] hover:bg-[#008844] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md cursor-pointer"
                         >
                             <FileSpreadsheet size={18} />
                             <span>Import Excel</span>
                         </button>
 
-                        {/* Tombol Tambah User */}
+                        {/* Tombol Tambah User (Biru - Sensus Penduduk BPS) */}
                         <button
                             type="button"
                             onClick={openCreateModal}
-                            className="bg-simitra-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
+                            className="bg-[#0080FF] hover:bg-[#0066CC] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
                         >
                             <Plus size={18} />
                             <span>Tambah User</span>
@@ -402,6 +443,7 @@ export default function UserManagement() {
                                 <option value="">Semua Role</option>
                                 <option value="Admin">Admin</option>
                                 <option value="Operator">Operator</option>
+                                <option value="PPK">PPK</option>
                                 <option value="Viewer">Viewer</option>
                                 <option value="Mitra">Mitra</option>
                             </select>
@@ -473,18 +515,6 @@ export default function UserManagement() {
                             </select>
                             <span>data</span>
                         </div>
-
-                        <button
-                            type="button"
-                            onClick={handleDeleteAllSelected}
-                            disabled={selectedUserIds.length === 0}
-                            className={`border border-red-500 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                                selectedUserIds.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                        >
-                            <Trash size={14} />
-                            <span>Hapus Semua</span>
-                        </button>
                     </div>
 
                     <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
@@ -608,6 +638,36 @@ export default function UserManagement() {
                         </table>
                     </div>
                 </div>
+
+                {/* Floating Action Bar untuk Bulk Delete */}
+                {selectedUserIds.length > 0 && (
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-[#1a2435] text-white px-5 py-3 rounded-2xl shadow-2xl border border-gray-700/60 flex items-center gap-5 animate-in slide-in-from-bottom-5 fade-in duration-200">
+                        <div className="flex items-center gap-3 border-r border-gray-700/80 pr-5">
+                            <span className="w-7 h-7 bg-[#D9531E] text-white rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
+                                {selectedUserIds.length}
+                            </span>
+                            <span className="text-sm font-semibold text-gray-200">Data Terpilih</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedUserIds([])}
+                                className="px-3.5 py-1.5 text-sm font-medium text-gray-300 hover:text-white transition cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteAllSelected}
+                                className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer"
+                            >
+                                <Trash2 size={16} />
+                                <span>Hapus Data</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* ==================== POP-UP MODAL: TAMBAH USER ==================== */}
@@ -684,6 +744,7 @@ export default function UserManagement() {
                                 >
                                     <option value="Admin">Admin</option>
                                     <option value="Operator">Operator</option>
+                                    <option value="PPK">PPK</option>
                                     <option value="Viewer">Viewer (Atasan / Monitoring)</option>
                                     <option value="Mitra">Mitra</option>
                                 </select>
@@ -796,6 +857,7 @@ export default function UserManagement() {
                                     >
                                         <option value="Admin">Admin</option>
                                         <option value="Operator">Operator</option>
+                                        <option value="PPK">PPK</option>
                                         <option value="Viewer">Viewer</option>
                                         <option value="Mitra">Mitra</option>
                                     </select>
@@ -883,7 +945,7 @@ export default function UserManagement() {
                                 </p>
                                 <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300">
                                     <li>Format kolom header: <code>username</code>, <code>nama_lengkap</code>, <code>sobat_id</code>, <code>role</code></li>
-                                    <li>Nilai <code>role</code>: Admin, Operator, Viewer, atau Mitra</li>
+                                    <li>Nilai <code>role</code>: Admin, Operator, PPK, Viewer, atau Mitra</li>
                                     <li><strong>Password Otomatis:</strong> Password bawaan diambil dari nilai <code>sobat_id</code> masing-masing user dan <strong>otomatis di-hash secara aman</strong> oleh sistem.</li>
                                 </ul>
 
@@ -944,6 +1006,21 @@ export default function UserManagement() {
                                     >
                                         <span>🛠️ Operator</span>
                                         {importRoleOption === 'Operator' && <CheckCircle2 size={14} className="shrink-0 text-white" />}
+                                    </button>
+
+                                    {/* 4. PPK */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setImportRoleOption('PPK')}
+                                        style={{ backgroundColor: importRoleOption === 'PPK' ? '#8b5cf6' : undefined }}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between border cursor-pointer ${
+                                            importRoleOption === 'PPK'
+                                                ? 'text-white border-purple-600 shadow-md ring-2 ring-purple-300'
+                                                : 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 hover:bg-purple-100'
+                                        }`}
+                                    >
+                                        <span>📋 PPK</span>
+                                        {importRoleOption === 'PPK' && <CheckCircle2 size={14} className="shrink-0 text-white" />}
                                     </button>
 
                                     {/* 4. Viewer */}
@@ -1019,6 +1096,18 @@ export default function UserManagement() {
                     </div>
                 </div>
             )}
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                variant="danger"
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }
