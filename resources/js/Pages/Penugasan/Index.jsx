@@ -290,8 +290,10 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                             <tr>
                                 <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
                                 <th className="p-4 w-10 text-center">No</th>
-                                <th className="p-4">Kegiatan</th>
+                                <th className="p-4">Kegiatan & Detil</th>
+                                <th className="p-4">Periode</th>
                                 <th className="p-4">Mitra</th>
+                                <th className="p-4 text-center">Kuota Target</th>
                                 <th className="p-4 text-center">Status</th>
                                 <th className="p-4 text-center">Honorarium</th>
                                 <th className="p-4 text-center">Aksi</th>
@@ -303,32 +305,39 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                     const totalHonor = item.honoraria?.reduce((sum, h) => sum + (h.jumlah_honor ?? 0), 0) ?? 0;
                                     const sudahInput = item.honoraria?.length > 0;
                                     const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
+                                    const detilObj = item.detil_kegiatan || item.detilKegiatan;
 
                                     return (
                                         <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                             <td className="p-4 text-center"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="rounded text-orange-600" /></td>
                                             <td className="p-4 text-center font-medium text-gray-400 dark:text-gray-500">{nomorUrut}</td>
                                             <td className="p-4">
-                                                <p className="font-semibold text-gray-900 dark:text-white leading-snug">
-                                                    {item.kegiatan?.nama_kegiatan ?? '-'}
-                                                    {item.bulan && item.tahun && (
-                                                        <span className="text-gray-500 dark:text-gray-400 font-medium text-xs ml-1">
-                                                            ({namaBulan[item.bulan - 1]} {item.tahun})
-                                                        </span>
-                                                    )}
-                                                </p>
-                                                {(item.kegiatan?.jenis_sbml || item.kegiatan?.jenis_kegiatan) && (
-                                                        <span className={`mt-1.5 inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan'
-                                                            ? 'bg-[#F26522]'
-                                                            : 'bg-[#3dbcc9]'
-                                                        }`}>
-                                                        {(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
-                                                    </span>
-                                                )}
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="font-bold text-gray-900 dark:text-white leading-snug">
+                                                        {item.kegiatan?.nama_kegiatan ?? '-'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                        {detilObj?.nama_detil ?? 'Semua Detil'}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 font-medium text-gray-800 dark:text-gray-200">
+                                                {item.bulan && item.tahun
+                                                    ? `${namaBulan[item.bulan - 1] || item.bulan} ${item.tahun}`
+                                                    : '-'}
                                             </td>
                                             <td className="p-4">
-                                                <p className="font-semibold text-gray-900 dark:text-white">{item.mitra?.nama ?? '-'}</p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.mitra?.nik ?? ''}</p>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="font-bold text-gray-900 dark:text-white">
+                                                        {item.mitra?.nama_lengkap ?? '-'}
+                                                    </p>
+                                                    <p className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                                                        Sobat ID: {item.mitra?.sobat_id ?? '-'}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                {item.kuota_target ?? 0} {(detilObj?.satuan ?? '').toUpperCase()}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
@@ -344,7 +353,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
                                                             ✓ Sudah Input
                                                         </span>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-1">
                                                             Rp {totalHonor.toLocaleString('id-ID')}
                                                         </p>
                                                     </div>
@@ -373,7 +382,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                                     <button
                                                         onClick={() => handleDelete(item.id)}
                                                         title="Hapus"
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                                                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
                                                     >
                                                         <Trash2 size={15} />
                                                     </button>
@@ -384,11 +393,8 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="p-10 text-center text-gray-400 dark:text-gray-500">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <span className="text-3xl">📋</span>
-                                            <span className="text-sm">Tidak ada data penugasan yang ditemukan.</span>
-                                        </div>
+                                    <td colSpan="9" className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                        Tidak ada data penugasan yang ditemukan.
                                     </td>
                                 </tr>
                             )}
