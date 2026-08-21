@@ -36,7 +36,9 @@ function Edit({ penugasan, kegiatan, mitra, auth }) {
                         >
                             <option value="">-- Pilih Kegiatan --</option>
                             {kegiatan.map((kg) => (
-                                <option key={kg.id} value={kg.id}>{kg.nama_kegiatan}</option>
+                                <option key={kg.id} value={kg.id}>
+                                    {kg.kode_kegiatan ? `${kg.kode_kegiatan} - ` : ''}{kg.nama_kegiatan}
+                                </option>
                             ))}
                         </select>
                         {errors.kegiatan_id && <p className="text-xs text-red-500 mt-1">{errors.kegiatan_id}</p>}

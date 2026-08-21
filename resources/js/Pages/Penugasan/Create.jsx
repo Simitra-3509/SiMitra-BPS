@@ -404,7 +404,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     <option value="">-- Pilih Kegiatan --</option>
                                     {listKegiatan?.map((k) => (
                                         <option key={k.id} value={k.id}>
-                                            {k.nama_kegiatan} {k.kode_kegiatan ? `(Kode: ${k.kode_kegiatan})` : ''}
+                                            {k.kode_kegiatan ? `${k.kode_kegiatan} - ` : ''}{k.nama_kegiatan}
                                         </option>
                                     ))}
                                 </select>

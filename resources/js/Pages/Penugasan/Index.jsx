@@ -8,13 +8,15 @@ const namaBulan = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
+function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], filters }) {
     const { flash } = usePage().props;
     const flashMessage = flash?.message || flash?.success;
 
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [kegiatanId, setKegiatanId] = useState(filters?.kegiatan_id || '');
     const [statusHonor, setStatusHonor] = useState(filters?.status_honor || '');
+    const [bulan, setBulan] = useState(filters?.bulan || '');
+    const [tahun, setTahun] = useState(filters?.tahun || '');
     const [search, setSearch] = useState(filters?.search || '');
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
@@ -29,6 +31,8 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
             jenis_sbml: jenisSbml,
             kegiatan_id: kegiatanId,
             status_honor: statusHonor,
+            bulan,
+            tahun,
             search,
         }, { preserveState: true, replace: true });
     };
@@ -37,6 +41,8 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
         setJenisSbml('');
         setKegiatanId('');
         setStatusHonor('');
+        setBulan('');
+        setTahun('');
         setSearch('');
         router.get(route('penugasan.index'));
     };
@@ -225,13 +231,45 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                             >
                                 <option value="">Semua Kegiatan</option>
                                 {semuaKegiatan?.map((kg) => (
-                                    <option key={kg.id} value={kg.id}>{kg.nama_kegiatan}</option>
+                                    <option key={kg.id} value={kg.id}>
+                                        {kg.kode_kegiatan ? `${kg.kode_kegiatan} - ` : ''}{kg.nama_kegiatan}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Bulan */}
+                        <div className="flex flex-col gap-1 min-w-[130px]">
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Bulan</label>
+                            <select
+                                value={bulan}
+                                onChange={(e) => setBulan(e.target.value)}
+                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                            >
+                                <option value="">Semua Bulan</option>
+                                {namaBulan.map((name, idx) => (
+                                    <option key={idx + 1} value={idx + 1}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Tahun */}
+                        <div className="flex flex-col gap-1 min-w-[110px]">
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Tahun</label>
+                            <select
+                                value={tahun}
+                                onChange={(e) => setTahun(e.target.value)}
+                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                            >
+                                <option value="">Semua Tahun</option>
+                                {(tahunList.length > 0 ? tahunList : [2025, 2026, 2027]).map((yr) => (
+                                    <option key={yr} value={yr}>{yr}</option>
                                 ))}
                             </select>
                         </div>
 
                         {/* Status Honor */}
-                        <div className="flex flex-col gap-1 min-w-[160px]">
+                        <div className="flex flex-col gap-1 min-w-[140px]">
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Status Honor</label>
                             <select
                                 value={statusHonor}

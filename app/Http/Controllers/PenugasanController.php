@@ -45,12 +45,19 @@ class PenugasanController extends Controller
         }
 
         $penugasan = $query->latest()->paginate(15)->withQueryString();
-        $semuaKegiatan = Kegiatan::orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan']);
+        $semuaKegiatan = Kegiatan::orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
+
+        $tahunList = Penugasan::distinct()->whereNotNull('tahun')->pluck('tahun')->map(fn($t) => (int)$t)->sort()->values()->toArray();
+        if (empty($tahunList)) {
+            $currentYr = (int) date('Y');
+            $tahunList = [$currentYr - 1, $currentYr, $currentYr + 1];
+        }
 
         return Inertia::render('Penugasan/Index', [
             'penugasan'     => $penugasan,
             'semuaKegiatan' => $semuaKegiatan,
-            'filters'       => $request->only(['kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun', 'search']),
+            'tahunList'     => $tahunList,
+            'filters'       => $request->only(['kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun', 'search', 'jenis_sbml', 'status_honor']),
         ]);
     }
 
@@ -244,7 +251,7 @@ class PenugasanController extends Controller
     public function edit(Penugasan $penugasan)
     {
         $penugasan->load(['kegiatan', 'mitra']);
-        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan']);
+        $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
         $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'sobat_id']);
 
         return Inertia::render('Penugasan/Edit', [
