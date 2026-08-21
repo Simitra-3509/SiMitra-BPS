@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Mitra;
 use App\Models\MasterKegiatan;
 use App\Models\Kegiatan;
-use App\Models\AkunKegiatan;
 use App\Models\DetilKegiatan;
 use App\Models\Penugasan;
 use App\Models\Honorarium;
@@ -18,7 +17,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
+        $admin = User::create([
             'name' => 'Administrator',
             'username' => 'admin',
             'password' => Hash::make('password'),
@@ -30,6 +29,13 @@ class DatabaseSeeder extends Seeder
             'username' => 'operator',
             'password' => Hash::make('password'),
             'role' => 'Operator',
+        ]);
+
+        User::create([
+            'name' => 'PPK Si-Mitra',
+            'username' => 'ppk',
+            'password' => Hash::make('password'),
+            'role' => 'PPK',
         ]);
 
         // Sbml Limits
@@ -53,32 +59,22 @@ class DatabaseSeeder extends Seeder
             'kategori_kegiatan' => 'Survei',
         ]);
 
-        // Kegiatans (1 Baris Kegiatan Sensus Ekonomi 2026)
+        // Kegiatans 1 (Sensus Ekonomi 2026)
         $kegiatan1 = Kegiatan::create([
             'master_kegiatan_id' => $master1->id,
             'nama_kegiatan' => 'Sensus Ekonomi 2026',
-            'bulan' => 8,
-            'tahun' => 2026,
             'kode_kegiatan' => $master1->kode_kegiatan,
-            'kro' => 'KRO-SE2026',
-            'satuan_kegiatan' => 'Dokumen',
-            'harga_satuan' => 50000,
-            'jumlah_sampel' => 3500,
+            'tanggal_mulai' => '2026-08-01',
+            'tanggal_selesai' => '2026-08-31',
             'total_anggaran' => 125000000,
             'deskripsi' => 'Kegiatan Sensus Ekonomi 2026 (Pendataan Lapangan dan Pengolahan Data)',
             'status_aktif' => true,
+            'created_by' => $admin->id,
         ]);
 
-        // Akun Kegiatan untuk Sensus Ekonomi 2026
-        $akun1 = AkunKegiatan::create([
-            'kegiatan_id' => $kegiatan1->id,
-            'kode_akun' => '521213',
-            'nama_akun' => 'Belanja Honor Output Kegiatan',
-        ]);
-
-        // 2 Detil Rincian (Pendataan & Pengolahan)
+        // Detil Rincian for Kegiatan 1
         $detil1 = DetilKegiatan::create([
-            'akun_id' => $akun1->id,
+            'kegiatan_id' => $kegiatan1->id,
             'nama_detil' => 'Honor Petugas Pendataan Lapangan SE2026',
             'jenis_sbml' => 'pendataan',
             'frekuensi_penugasan' => 'bulanan',
@@ -89,7 +85,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $detil2 = DetilKegiatan::create([
-            'akun_id' => $akun1->id,
+            'kegiatan_id' => $kegiatan1->id,
             'nama_detil' => 'Honor Petugas Pengolahan Data SE2026',
             'jenis_sbml' => 'pengolahan',
             'frekuensi_penugasan' => 'bulanan',
@@ -103,26 +99,17 @@ class DatabaseSeeder extends Seeder
         $kegiatan2 = Kegiatan::create([
             'master_kegiatan_id' => $master2->id,
             'nama_kegiatan' => 'Survei Angkatan Kerja Nasional 2026',
-            'bulan' => 8,
-            'tahun' => 2026,
             'kode_kegiatan' => $master2->kode_kegiatan,
-            'kro' => 'KRO-SAKERNAS-2026',
-            'satuan_kegiatan' => 'Dokumen',
-            'harga_satuan' => 35000,
-            'jumlah_sampel' => 800,
+            'tanggal_mulai' => '2026-08-01',
+            'tanggal_selesai' => '2026-08-31',
             'total_anggaran' => 28000000,
             'deskripsi' => 'Kegiatan Pendataan Sakernas 2026',
             'status_aktif' => true,
+            'created_by' => $admin->id,
         ]);
 
-        $akun2 = AkunKegiatan::create([
+        $detil3 = DetilKegiatan::create([
             'kegiatan_id' => $kegiatan2->id,
-            'kode_akun' => '521213',
-            'nama_akun' => 'Belanja Honor Output Kegiatan',
-        ]);
-
-        DetilKegiatan::create([
-            'akun_id' => $akun2->id,
             'nama_detil' => 'Honor Petugas Pendataan Sakernas',
             'jenis_sbml' => 'pendataan',
             'frekuensi_penugasan' => 'bulanan',
@@ -155,12 +142,17 @@ class DatabaseSeeder extends Seeder
                 'status_aktif' => $sample['status'],
             ]);
 
+            $selectedKegiatan = $i % 2 == 0 ? $kegiatan1 : $kegiatan2;
+            $selectedDetil = $i % 2 == 0 ? $detil1 : $detil3;
+
             $penugasan = Penugasan::create([
                 'mitra_id' => $mitra->id,
-                'kegiatan_id' => $i % 2 == 0 ? $kegiatan1->id : $kegiatan2->id,
+                'kegiatan_id' => $selectedKegiatan->id,
+                'detil_kegiatan_id' => $selectedDetil->id,
                 'bulan' => date('m'),
                 'tahun' => date('Y'),
                 'kuota_target' => rand(10, 50),
+                'status' => 'draft',
             ]);
 
             if ($i <= 5) {
@@ -169,6 +161,7 @@ class DatabaseSeeder extends Seeder
                     'jumlah_honor' => rand(500000, 2000000),
                     'tanggal_input' => now(),
                     'keterangan' => 'Honor bulan berjalan',
+                    'status_persetujuan' => 'draft',
                 ]);
             }
         }

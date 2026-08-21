@@ -88,6 +88,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/recycle-bin/kegiatan/bulk-force-delete', [KegiatanController::class, 'bulkForceDelete'])->name('kegiatan.bulk-force-delete');
         Route::post('/recycle-bin/kegiatan/{id}/restore', [KegiatanController::class, 'restore'])->name('kegiatan.restore');
         Route::delete('/recycle-bin/kegiatan/{id}/force-delete', [KegiatanController::class, 'forceDelete'])->name('kegiatan.force-delete');
+        Route::post('kegiatan/import', [KegiatanController::class, 'import'])->name('kegiatan.import');
         Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         

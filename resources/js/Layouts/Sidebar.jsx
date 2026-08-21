@@ -41,7 +41,17 @@ const Sidebar = forwardRef(function Sidebar({
 
     const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(isAnyRecycleBinActive);
     const [collapsedRecycleFlyout, setCollapsedRecycleFlyout] = useState(false);
+    const [flyoutTop, setFlyoutTop] = useState(200);
     const flyoutRef = useRef(null);
+
+    const handleCollapsedTrashClick = (e) => {
+        e.stopPropagation();
+        if (e.currentTarget) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setFlyoutTop(rect.top);
+        }
+        setCollapsedRecycleFlyout((prev) => !prev);
+    };
 
     const totalRecycleBinBadge =
         (counts?.recycleBinMitra || 0) +
@@ -73,8 +83,8 @@ const Sidebar = forwardRef(function Sidebar({
                     <Component
                         {...props}
                         className={`flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200 cursor-pointer ${active
-                                ? 'bg-simitra-orange text-white shadow-lg shadow-orange-500/25 scale-105'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-800/80 hover:scale-105'
+                            ? 'bg-simitra-orange text-white shadow-lg shadow-orange-500/25 scale-105'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-800/80 hover:scale-105'
                             }`}
                     >
                         <Icon size={20} />
@@ -100,8 +110,8 @@ const Sidebar = forwardRef(function Sidebar({
             <Component
                 {...props}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${active
-                        ? 'bg-simitra-orange text-white font-semibold shadow-md'
-                        : 'text-gray-300 hover:bg-gray-800/80 hover:text-white'
+                    ? 'bg-simitra-orange text-white font-semibold shadow-md'
+                    : 'text-gray-300 hover:bg-gray-800/80 hover:text-white'
                     }`}
             >
                 <div className="flex items-center gap-3">
@@ -306,11 +316,12 @@ const Sidebar = forwardRef(function Sidebar({
                                 <div className="relative group flex justify-center my-1" ref={flyoutRef}>
                                     <button
                                         type="button"
-                                        onClick={() => setCollapsedRecycleFlyout(!collapsedRecycleFlyout)}
+                                        onClick={handleCollapsedTrashClick}
                                         className={`flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200 cursor-pointer ${isAnyRecycleBinActive || collapsedRecycleFlyout
-                                                ? 'bg-gray-800 text-red-400 shadow-md'
-                                                : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/80'
+                                            ? 'bg-gray-800 text-red-400 shadow-md'
+                                            : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/80'
                                             }`}
+                                        title="Buka Pilihan Recycle Bin"
                                     >
                                         <Trash2 size={20} />
                                         {totalRecycleBinBadge > 0 && (
@@ -319,12 +330,15 @@ const Sidebar = forwardRef(function Sidebar({
                                     </button>
 
                                     {/* Flyout Submenu on Collapsed Mode */}
-                                    {collapsedRecycleFlyout ? (
-                                        <div className="absolute left-full ml-3 w-56 bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700 p-2 z-50 space-y-1">
-                                            <div className="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase border-b border-gray-800 flex justify-between items-center">
+                                    {collapsedRecycleFlyout && (
+                                        <div
+                                            className="fixed left-20 ml-2 w-60 bg-simitra-dark/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700 p-2.5 z-[9999] space-y-1 text-left"
+                                            style={{ top: Math.max(10, Math.min(flyoutTop, (typeof window !== 'undefined' ? window.innerHeight : 800) - 260)) }}
+                                        >
+                                            <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase border-b border-gray-800 flex justify-between items-center mb-1">
                                                 <span>Recycle Bins</span>
                                                 {totalRecycleBinBadge > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                                                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
                                                         {totalRecycleBinBadge}
                                                     </span>
                                                 )}
@@ -399,15 +413,6 @@ const Sidebar = forwardRef(function Sidebar({
                                                 )}
                                             </a>
                                         </div>
-                                    ) : (
-                                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900/95 backdrop-blur-sm text-white text-xs font-semibold rounded-lg shadow-2xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50 border border-gray-700 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                            <span>Recycle Bins</span>
-                                            {totalRecycleBinBadge > 0 && (
-                                                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                                                    {totalRecycleBinBadge}
-                                                </span>
-                                            )}
-                                        </div>
                                     )}
                                 </div>
                             ) : (
@@ -419,8 +424,8 @@ const Sidebar = forwardRef(function Sidebar({
                                         type="button"
                                         onClick={() => setIsRecycleBinOpen(!isRecycleBinOpen)}
                                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg transition-colors cursor-pointer ${isRecycleBinOpen || isAnyRecycleBinActive
-                                                ? 'bg-gray-800 text-white font-medium'
-                                                : 'text-gray-300 hover:bg-gray-800/80'
+                                            ? 'bg-gray-800 text-white font-medium'
+                                            : 'text-gray-300 hover:bg-gray-800/80'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
@@ -447,8 +452,8 @@ const Sidebar = forwardRef(function Sidebar({
                                             <Link
                                                 href={route('users.recycle-bin')}
                                                 className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('users.recycle-bin')
-                                                        ? 'bg-simitra-orange text-white font-bold'
-                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    ? 'bg-simitra-orange text-white font-bold'
+                                                    : 'text-gray-300 hover:bg-gray-800'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
@@ -461,8 +466,8 @@ const Sidebar = forwardRef(function Sidebar({
                                             <Link
                                                 href={route('mitra.recycle-bin')}
                                                 className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('mitra.recycle-bin')
-                                                        ? 'bg-simitra-orange text-white font-bold'
-                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    ? 'bg-simitra-orange text-white font-bold'
+                                                    : 'text-gray-300 hover:bg-gray-800'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
@@ -480,8 +485,8 @@ const Sidebar = forwardRef(function Sidebar({
                                             <Link
                                                 href={route('kegiatan.recycle-bin')}
                                                 className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin')
-                                                        ? 'bg-[#D9531E] text-white font-bold'
-                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    ? 'bg-[#D9531E] text-white font-bold'
+                                                    : 'text-gray-300 hover:bg-gray-800'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
@@ -499,8 +504,8 @@ const Sidebar = forwardRef(function Sidebar({
                                             <Link
                                                 href={route('penugasan.recycle-bin')}
                                                 className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin')
-                                                        ? 'bg-[#D9531E] text-white font-bold'
-                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    ? 'bg-[#D9531E] text-white font-bold'
+                                                    : 'text-gray-300 hover:bg-gray-800'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
