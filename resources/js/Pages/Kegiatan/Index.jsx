@@ -185,30 +185,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         status_aktif: 1
     });
 
-    const fileInputRef = useRef(null);
 
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        router.post(route('kegiatan.import'), { file }, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                e.target.value = '';
-            },
-            onError: (errors) => {
-                e.target.value = '';
-                if (errors.file) {
-                    alert(errors.file);
-                }
-            }
-        });
-    };
 
     const openDuplicateModal = (kegiatanItem) => {
         setSelectedKegiatan(kegiatanItem);
@@ -304,13 +281,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            onChange={handleFileChange} 
-                            className="hidden" 
-                            accept=".xlsx,.xls,.csv" 
-                        />
+
                         <button
                             type="button"
                             onClick={openImportModal}
