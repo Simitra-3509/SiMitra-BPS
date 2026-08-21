@@ -43,6 +43,17 @@ export default function Index({
         );
     };
 
+    const exportExcel = () => {
+        const queryParams = new URLSearchParams();
+        const activeFilters = { bulan, tahun, jenis_sbml: jenisSbml, status, threshold, cari };
+        Object.entries(activeFilters).forEach(([key, value]) => {
+            if (value !== '' && value !== null) {
+                queryParams.append(key, value);
+            }
+        });
+        window.location.href = `${route('monitoring-kuota.export')}?${queryParams.toString()}`;
+    };
+
     const StatusBadge = ({ type }) => {
         if (type === 'OK') return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">OK</span>;
         if (type === 'Warning') return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Warning</span>;
@@ -73,6 +84,7 @@ export default function Index({
                     <div>
                         <button
                             type="button"
+                            onClick={exportExcel}
                             className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
                         >
                             <FileSpreadsheet size={16} /> Export Excel

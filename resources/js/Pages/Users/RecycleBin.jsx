@@ -17,9 +17,53 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
     const [role, setRole] = useState(filters.role || '');
     const [status, setStatus] = useState(filters.status || '');
     const [perPage, setPerPage] = useState(filters.per_page || '20');
+    const [selectedIds, setSelectedIds] = useState([]);
 
     // Extract items from pagination object or array
     const userList = Array.isArray(trashedUsers) 
+        ? trashedUsers 
+        : (trashedUsers?.data || []);
+
+    const toggleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedIds(userList.map(item => item.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelect = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    const handleBulkRestore = () => {
+        if (selectedIds.length === 0) return;
+        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} user yang dipilih?`)) {
+            const bulkRestoreRoute = typeof route === 'function' && route().has('users.bulk-restore')
+                ? route('users.bulk-restore')
+                : `/recycle-bin/users/bulk-restore`;
+            router.post(bulkRestoreRoute, { ids: selectedIds }, {
+                onSuccess: () => setSelectedIds([])
+            });
+        }
+    };
+
+    const handleBulkForceDelete = () => {
+        if (selectedIds.length === 0) return;
+        if (confirm(`PERINGATAN: ${selectedIds.length} data user ini akan dihapus secara PERMANEN! Apakah Anda yakin?`)) {
+            const bulkForceDeleteRoute = typeof route === 'function' && route().has('users.bulk-force-delete')
+                ? route('users.bulk-force-delete')
+                : `/recycle-bin/users/bulk-force-delete`;
+            router.delete(bulkForceDeleteRoute, {
+                data: { ids: selectedIds },
+                onSuccess: () => setSelectedIds([])
+            });
+        }
+    }; 
         ? trashedUsers 
         : (trashedUsers?.data || []);
 
@@ -224,9 +268,41 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                 </div>
 
                 {/* 4. Teks Info Jumlah Data */}
-                <div className="text-right text-xs text-gray-500 dark:text-gray-400 font-medium">
+                <div className="text-right text-xs text-gray-500 dark:text-gray-400 font-medium mb-4">
                     {totalItems} item di Recycle Bin
                 </div>
+
+                {/* Bulk Actions Floating Bar */}
+                {selectedIds.length > 0 && (
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl border border-gray-700/50 flex items-center gap-6 animate-in slide-in-from-bottom-10 fade-in duration-300">
+                        <div className="flex items-center gap-3 border-r border-gray-700 pr-6">
+                            <div className="bg-[#D9531E] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-inner">
+                                {selectedIds.length}
+                            </div>
+                            <span className="text-sm font-medium text-gray-200">User Terpilih</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleBulkRestore}
+                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-2"
+                            >
+                                <RotateCcw size={16} /> Restore Terpilih
+                            </button>
+                            <button
+                                onClick={handleBulkForceDelete}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-2"
+                            >
+                                <Trash2 size={16} /> Hapus Permanen Terpilih
+                            </button>
+                            <button
+                                onClick={() => setSelectedIds([])}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md ml-2"
+                            >
+                                Batal
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* 5. Alert Merah (Peringatan Tabel) & 6. Tabel Data / Empty State */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden w-full">
@@ -244,7 +320,15 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-simitra-dark text-white uppercase text-xs font-bold tracking-wider border-b border-gray-700">
                                 <tr>
-                                    <th className="p-4 w-12 text-center">#</th>
+                                    <th className="p-4 w-12 text-center">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-600 text-[#D9531E] focus:ring-[#D9531E] bg-gray-800 cursor-pointer"
+                                            onChange={toggleSelectAll}
+                                            checked={userList.length > 0 && selectedIds.length === userList.length}
+                                        />
+                                    </th>
+                                    <th className="p-4 text-center">#</th>
                                     <th className="p-4">USERNAME</th>
                                     <th className="p-4">NAMA LENGKAP</th>
                                     <th className="p-4">EMAIL</th>
@@ -260,8 +344,16 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                                     userList.map((user, index) => (
                                         <tr 
                                             key={user.id || index}
-                                            className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                                            className={`transition-colors ${selectedIds.includes(user.id) ? 'bg-orange-50 dark:bg-orange-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40'}`}
                                         >
+                                            <td className="p-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E] dark:bg-gray-900 dark:border-gray-600 cursor-pointer"
+                                                    checked={selectedIds.includes(user.id)}
+                                                    onChange={() => toggleSelect(user.id)}
+                                                />
+                                            </td>
                                             <td className="p-4 text-center font-medium text-gray-500 dark:text-gray-400">
                                                 {index + 1}
                                             </td>
@@ -318,7 +410,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                                 ) : (
                                     /* Empty State */
                                     <tr>
-                                        <td colSpan="9" className="p-0">
+                                        <td colSpan="10" className="p-0">
                                             <div className="flex flex-col items-center justify-center py-12 text-center">
                                                 <Trash size={48} className="text-gray-300 dark:text-gray-600 mb-3" />
                                                 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">

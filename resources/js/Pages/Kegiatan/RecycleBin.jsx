@@ -7,6 +7,42 @@ export default function RecycleBin({ kegiatans, filters }) {
     const { flash } = usePage().props;
     const flashMessage = flash?.message || flash?.success;
     const [search, setSearch] = useState(filters?.search || '');
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    const toggleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedIds(kegiatans.data.map(item => item.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelect = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    const handleBulkRestore = () => {
+        if (selectedIds.length === 0) return;
+        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} data kegiatan yang dipilih?`)) {
+            router.post(route('kegiatan.bulk-restore'), { ids: selectedIds }, {
+                onSuccess: () => setSelectedIds([])
+            });
+        }
+    };
+
+    const handleBulkForceDelete = () => {
+        if (selectedIds.length === 0) return;
+        if (confirm(`PERINGATAN: ${selectedIds.length} data kegiatan ini akan dihapus secara PERMANEN beserta seluruh rinciannya! Apakah Anda yakin?`)) {
+            router.delete(route('kegiatan.bulk-force-delete'), {
+                data: { ids: selectedIds },
+                onSuccess: () => setSelectedIds([])
+            });
+        }
+    };
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -41,6 +77,38 @@ export default function RecycleBin({ kegiatans, filters }) {
                             <CheckCircle2 size={18} />
                         </div>
                         <span className="text-sm font-semibold">{flashMessage}</span>
+                    </div>
+                )}
+
+                {/* Bulk Actions Floating Bar */}
+                {selectedIds.length > 0 && (
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl border border-gray-700/50 flex items-center gap-6 animate-in slide-in-from-bottom-10 fade-in duration-300">
+                        <div className="flex items-center gap-3 border-r border-gray-700 pr-6">
+                            <div className="bg-[#D9531E] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-inner">
+                                {selectedIds.length}
+                            </div>
+                            <span className="text-sm font-medium text-gray-200">Kegiatan Terpilih</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleBulkRestore}
+                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-2"
+                            >
+                                <RotateCcw size={16} /> Restore Terpilih
+                            </button>
+                            <button
+                                onClick={handleBulkForceDelete}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-2"
+                            >
+                                <Trash2 size={16} /> Hapus Permanen Terpilih
+                            </button>
+                            <button
+                                onClick={() => setSelectedIds([])}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md ml-2"
+                            >
+                                Batal
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -85,6 +153,14 @@ export default function RecycleBin({ kegiatans, filters }) {
                         <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 uppercase text-xs font-bold border-b border-gray-100 dark:border-gray-600">
                                 <tr>
+                                    <th className="px-4 py-4 w-12 text-center">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E] dark:bg-gray-800 dark:border-gray-600 cursor-pointer"
+                                            onChange={toggleSelectAll}
+                                            checked={kegiatans?.data && kegiatans.data.length > 0 && selectedIds.length === kegiatans.data.length}
+                                        />
+                                    </th>
                                     <th className="px-6 py-4">Kode KRO</th>
                                     <th className="px-6 py-4">Nama Kegiatan</th>
                                     <th className="px-6 py-4">Total Anggaran</th>
@@ -95,7 +171,15 @@ export default function RecycleBin({ kegiatans, filters }) {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {kegiatans?.data && kegiatans.data.length > 0 ? (
                                     kegiatans.data.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                        <tr key={item.id} className={`transition ${selectedIds.includes(item.id) ? 'bg-orange-50/50 dark:bg-orange-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
+                                            <td className="px-4 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E] dark:bg-gray-900 dark:border-gray-600 cursor-pointer"
+                                                    checked={selectedIds.includes(item.id)}
+                                                    onChange={() => toggleSelect(item.id)}
+                                                />
+                                            </td>
                                             <td className="px-6 py-4 font-mono font-medium text-gray-900 dark:text-white">
                                                 {item.kode_kegiatan || '-'}
                                             </td>
@@ -131,7 +215,7 @@ export default function RecycleBin({ kegiatans, filters }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-12 text-center text-gray-400">
+                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
                                             <div className="flex flex-col items-center justify-center space-y-2">
                                                 <Folder size={32} className="text-gray-300 dark:text-gray-600" />
                                                 <p className="text-sm">Recycle Bin kosong. Tidak ada data Kegiatan terhapus.</p>

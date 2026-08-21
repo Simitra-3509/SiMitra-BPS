@@ -282,6 +282,36 @@ class KegiatanController extends Controller
     }
 
     /**
+     * Restore multiple resources from recycle bin.
+     */
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:kegiatans,id'
+        ]);
+
+        Kegiatan::onlyTrashed()->whereIn('id', $request->ids)->restore();
+
+        return redirect()->back()->with('success', count($request->ids) . ' kegiatan berhasil dipulihkan.');
+    }
+
+    /**
+     * Force delete multiple resources from recycle bin.
+     */
+    public function bulkForceDelete(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:kegiatans,id'
+        ]);
+
+        Kegiatan::onlyTrashed()->whereIn('id', $request->ids)->forceDelete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' kegiatan telah dihapus secara permanen.');
+    }
+
+    /**
      * Duplicate the specified resource in storage.
      */
     public function duplicate(Request $request, Kegiatan $kegiatan)
@@ -318,6 +348,7 @@ class KegiatanController extends Controller
         return redirect()->route('kegiatan.index')->with('success', "Kegiatan '{$kegiatan->nama_kegiatan}' beserta Detil Belanja berhasil diduplikasi.");
     }
 
+    /**
     /**
      * Import data kegiatan beserta detil belanja dari file CSV/Excel.
      */

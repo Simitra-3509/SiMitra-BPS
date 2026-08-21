@@ -332,4 +332,34 @@ class PenugasanController extends Controller
 
         return redirect()->back()->with('success', 'Penugasan mitra telah dihapus secara permanen.');
     }
+
+    /**
+     * Restore multiple resources from recycle bin.
+     */
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:penugasans,id'
+        ]);
+
+        Penugasan::onlyTrashed()->whereIn('id', $request->ids)->restore();
+
+        return redirect()->back()->with('success', count($request->ids) . ' penugasan mitra berhasil dipulihkan.');
+    }
+
+    /**
+     * Force delete multiple resources from recycle bin.
+     */
+    public function bulkForceDelete(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:penugasans,id'
+        ]);
+
+        Penugasan::onlyTrashed()->whereIn('id', $request->ids)->forceDelete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' penugasan mitra telah dihapus secara permanen.');
+    }
 }
