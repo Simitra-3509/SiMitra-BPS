@@ -92,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         
+        Route::post('penugasan/import', [PenugasanController::class, 'import'])->name('penugasan.import');
         Route::resource('penugasan', PenugasanController::class);
         Route::get('/recycle-bin/penugasan', [PenugasanController::class, 'recycleBin'])->name('penugasan.recycle-bin');
         Route::post('/recycle-bin/penugasan/bulk-restore', [PenugasanController::class, 'bulkRestore'])->name('penugasan.bulk-restore');

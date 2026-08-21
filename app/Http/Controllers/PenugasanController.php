@@ -369,4 +369,156 @@ class PenugasanController extends Controller
 
         return redirect()->back()->with('success', count($request->ids) . ' penugasan mitra telah dihapus secara permanen.');
     }
+
+    /**
+     * Strict helper: Convert month input (string name or number) to integer (1-12) or null
+     */
+    private function parseBulanStrict($value)
+    {
+        if (is_numeric($value) && (int)$value >= 1 && (int)$value <= 12) {
+            return (int)$value;
+        }
+
+        $bulanMap = [
+            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+            'january' => 1, 'february' => 2, 'march' => 3, 'may' => 5,
+            'june' => 6, 'july' => 7, 'august' => 8, 'october' => 10, 'december' => 12,
+        ];
+
+        $key = strtolower(trim((string)$value));
+        return $bulanMap[$key] ?? null;
+    }
+
+    /**
+     * Import / Upsert Penugasan Mitra from Excel JSON rows data.
+     */
+    public function import(Request $request)
+    {
+        $rows = $request->input('rows');
+
+        if (!$rows || !is_array($rows) || count($rows) === 0) {
+            return redirect()->back()->withErrors([
+                'import' => 'File Excel kosong atau tidak berisi data yang dapat dibaca.'
+            ]);
+        }
+
+        $errors = [];
+        $validData = [];
+
+        foreach ($rows as $index => $row) {
+            $rowNum = $index + 2; // Baris 1 header
+
+            $getVal = function ($keys) use ($row) {
+                foreach ((array)$keys as $k) {
+                    if (array_key_exists($k, $row) && $row[$k] !== null && $row[$k] !== '') {
+                        return trim((string)$row[$k]);
+                    }
+                }
+                return '';
+            };
+
+            $kodeKro = $getVal(['Kode KRO', 'kode_kro', 'Kode_Kro', 'kode_kegiatan', 'KRO']);
+            $namaDetil = $getVal(['Nama Detil', 'nama_detil', 'Nama_Detil', 'detil_kegiatan', 'detil']);
+            $sobatId = $getVal(['Sobat ID', 'sobat_id', 'Sobat_Id', 'sobatid']);
+            $bulanRaw = $getVal(['Bulan', 'bulan']);
+            $tahunRaw = $getVal(['Tahun', 'tahun']);
+            $kuotaRaw = $getVal(['Kuota Target', 'kuota_target', 'Kuota_Target', 'kuota', 'target']);
+
+            // 1. Validasi & Cari Kegiatan by Kode KRO
+            if (empty($kodeKro)) {
+                $errors[] = "Baris {$rowNum}: Kode KRO wajib diisi.";
+                continue;
+            }
+
+            $kegiatan = Kegiatan::where('kode_kegiatan', $kodeKro)->first();
+            if (!$kegiatan) {
+                $errors[] = "Baris {$rowNum}: Kegiatan dengan Kode KRO '{$kodeKro}' tidak ditemukan.";
+                continue;
+            }
+
+            // 2. Validasi & Cari DetilKegiatan by kegiatan_id + nama_detil
+            if (empty($namaDetil)) {
+                $errors[] = "Baris {$rowNum}: Nama Detil wajib diisi.";
+                continue;
+            }
+
+            $detilKegiatan = DetilKegiatan::where('kegiatan_id', $kegiatan->id)
+                ->where('nama_detil', $namaDetil)
+                ->first();
+
+            if (!$detilKegiatan) {
+                $errors[] = "Baris {$rowNum}: Detil Kegiatan '{$namaDetil}' tidak ditemukan untuk Kode KRO '{$kodeKro}'.";
+                continue;
+            }
+
+            // 3. Validasi & Cari Mitra by Sobat ID
+            if (empty($sobatId)) {
+                $errors[] = "Baris {$rowNum}: Sobat ID wajib diisi.";
+                continue;
+            }
+
+            $mitra = Mitra::where('sobat_id', $sobatId)->first();
+            if (!$mitra) {
+                $errors[] = "Baris {$rowNum}: Mitra dengan Sobat ID '{$sobatId}' tidak ditemukan.";
+                continue;
+            }
+
+            // 4. Validasi Bulan (Strict nama bulan -> integer 1-12)
+            $bulanInt = $this->parseBulanStrict($bulanRaw);
+            if (!$bulanInt) {
+                $errors[] = "Baris {$rowNum}: Nama bulan '{$bulanRaw}' tidak dikenali (gunakan nama bulan Indonesia, contoh: 'Agustus').";
+                continue;
+            }
+
+            // 5. Validasi Tahun
+            $tahunInt = is_numeric($tahunRaw) ? (int)$tahunRaw : 0;
+            if ($tahunInt < 2000 || $tahunInt > 2100) {
+                $errors[] = "Baris {$rowNum}: Tahun ('{$tahunRaw}') tidak valid (harus berupa angka 4 digit).";
+                continue;
+            }
+
+            // 6. Validasi Kuota Target
+            $kuotaVal = is_numeric($kuotaRaw) ? (float)$kuotaRaw : 0;
+            if ($kuotaVal <= 0) {
+                $errors[] = "Baris {$rowNum}: Kuota Target ('{$kuotaRaw}') harus berupa angka lebih dari 0.";
+                continue;
+            }
+
+            $validData[] = [
+                'kegiatan_id'       => $kegiatan->id,
+                'detil_kegiatan_id' => $detilKegiatan->id,
+                'mitra_id'          => $mitra->id,
+                'bulan'             => $bulanInt,
+                'tahun'             => $tahunInt,
+                'kuota_target'      => $kuotaVal,
+                'status'            => 'ditugaskan',
+            ];
+        }
+
+        // Jika ada 1 error pun, batalkan seluruhnya
+        if (count($errors) > 0) {
+            return redirect()->back()->withErrors([
+                'import_list' => $errors
+            ]);
+        }
+
+        DB::transaction(function () use ($validData) {
+            foreach ($validData as $data) {
+                Penugasan::updateOrCreate(
+                    [
+                        'detil_kegiatan_id' => $data['detil_kegiatan_id'],
+                        'mitra_id'          => $data['mitra_id'],
+                        'bulan'             => $data['bulan'],
+                        'tahun'             => $data['tahun'],
+                    ],
+                    $data
+                );
+            }
+        });
+
+        $totalCount = count($validData);
+        return redirect()->back()->with('success', "Berhasil meng-import / meng-update {$totalCount} data Penugasan Mitra.");
+    }
 }

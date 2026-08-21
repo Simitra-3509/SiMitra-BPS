@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2 } from 'lucide-react';
+import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import * as XLSX from 'xlsx';
 
 const namaBulan = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -25,6 +26,90 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
     // State for the Assign Mitra modal
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
     const [mitraSearch, setMitraSearch] = useState('');
+
+    // State for Import Excel Penugasan Mitra modal
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+
+    const { data: importData, setData: setImportData, post: postImport, processing: processingImport, errors: importErrors, reset: resetImport } = useForm({
+        file: null,
+        rows: []
+    });
+
+    const openImportModal = () => {
+        setIsImportModalOpen(true);
+    };
+
+    const closeImportModal = () => {
+        setIsImportModalOpen(false);
+        setTimeout(() => resetImport(), 300);
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = ["Kode KRO", "Nama Detil", "Sobat ID", "Bulan", "Tahun", "Kuota Target"];
+        const sampleRow = ["2026.BMA.001", "Honor SKLNP", "276426", "Agustus", "2026", 40];
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+        worksheet['!cols'] = [
+            { wch: 22 },
+            { wch: 25 },
+            { wch: 16 },
+            { wch: 16 },
+            { wch: 12 },
+            { wch: 15 }
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template Import Penugasan");
+        XLSX.writeFile(workbook, "Template_Import_Penugasan_Mitra.xlsx");
+    };
+
+    const processFile = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                setImportData({ file, rows: jsonData });
+            } catch (err) {
+                console.error("Gagal membaca file excel:", err);
+                setImportData({ file, rows: [] });
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) processFile(file);
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+        else if (e.type === 'dragleave') setDragActive(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) processFile(file);
+    };
+
+    const handleImportSubmit = (e) => {
+        e.preventDefault();
+        if (!importData.file) return;
+        postImport(route('penugasan.import'), {
+            onSuccess: () => closeImportModal()
+        });
+    };
 
     const handleFilter = () => {
         router.get(route('penugasan.index'), {
@@ -96,7 +181,8 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-1.5 shadow-sm"
+                            onClick={openImportModal}
+                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
                         >
                             <FileSpreadsheet size={16} /> Import Excel
                         </button>
@@ -560,6 +646,130 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                             >
                                 <Trash2 size={16} /> Hapus Data
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal Import Excel Penugasan Mitra */}
+                {isImportModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-150">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 bg-emerald-50/50 dark:bg-gray-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl dark:bg-emerald-950/60 dark:text-emerald-400">
+                                        <FileSpreadsheet size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Import Penugasan Mitra (.xlsx)</h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Unggah kolektif penugasan mitra (Mode Upsert)</p>
+                                    </div>
+                                </div>
+                                <button onClick={closeImportModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleImportSubmit} className="p-6 space-y-4">
+                                {/* Structured Error Display */}
+                                {importErrors.import && (
+                                    <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs flex items-center gap-2">
+                                        <AlertTriangle size={16} className="shrink-0 text-red-500" />
+                                        <span>{importErrors.import}</span>
+                                    </div>
+                                )}
+
+                                {importErrors.import_list && Array.isArray(importErrors.import_list) && importErrors.import_list.length > 0 && (
+                                    <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-xs space-y-1.5 max-h-44 overflow-y-auto">
+                                        <div className="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
+                                            <AlertTriangle size={15} />
+                                            <span>Gagal Import (Daftar Kesalahan Baris):</span>
+                                        </div>
+                                        <ul className="list-disc pl-4 space-y-1 text-rose-700 dark:text-rose-300">
+                                            {importErrors.import_list.map((err, idx) => (
+                                                <li key={idx}>{err}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* Info Box Format */}
+                                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-4 rounded-xl text-xs space-y-2.5 text-blue-900 dark:text-blue-200">
+                                    <p className="font-bold flex items-center gap-1.5">
+                                        <FileText size={16} className="text-blue-600 dark:text-blue-400" />
+                                        Ketentuan Format Import Excel Penugasan:
+                                    </p>
+                                    <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300 leading-relaxed">
+                                        <li>
+                                            Header kolom wajib: <span className="font-mono font-bold">Kode KRO, Nama Detil, Sobat ID, Bulan, Tahun, Kuota Target</span>
+                                        </li>
+                                        <li>Kolom <strong className="text-blue-950 dark:text-white">Bulan</strong> diisi teks nama bulan Indonesia (contoh: <span className="font-mono text-blue-700 font-bold">Agustus</span>).</li>
+                                        <li><strong className="text-blue-950 dark:text-white">Kode KRO, Nama Detil, dan Sobat ID</strong> harus sudah terdaftar di sistem.</li>
+                                        <li>System menggunakan mode <strong className="text-emerald-700 dark:text-emerald-400">UPSERT</strong>: Kombinasi (Detil + Mitra + Bulan + Tahun) yang sudah ada akan otomatis di-update kuota targetnya.</li>
+                                    </ul>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleDownloadTemplate}
+                                        className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3.5 py-2 rounded-lg border border-blue-300 dark:border-blue-700 shadow-xs cursor-pointer transition"
+                                    >
+                                        <Download size={14} /> Download Format Template Excel (.xlsx)
+                                    </button>
+                                </div>
+
+                                {/* Dropzone */}
+                                <div
+                                    onDragEnter={handleDrag}
+                                    onDragLeave={handleDrag}
+                                    onDragOver={handleDrag}
+                                    onDrop={handleDrop}
+                                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${
+                                        dragActive 
+                                            ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' 
+                                            : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls, .csv"
+                                        onChange={handleFileChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                                        <Upload className="text-emerald-600 dark:text-emerald-400" size={32} />
+                                        {importData.file ? (
+                                            <div className="space-y-0.5">
+                                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importData.file.name}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">{(importData.file.size / 1024).toFixed(1)} KB ({importData.rows?.length || 0} baris data)</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Pilih File Excel (.xlsx)</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Drag & drop atau klik untuk memilih file</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Footer Buttons */}
+                                <div className="flex items-center justify-end gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeImportModal}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition cursor-pointer"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!importData.file || processingImport}
+                                        className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                    >
+                                        <Upload size={16} />
+                                        <span>{processingImport ? 'Memproses Import...' : 'Proses Import'}</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}
