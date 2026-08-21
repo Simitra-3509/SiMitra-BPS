@@ -88,18 +88,25 @@ const Index = ({ data, summary, filters, mitraList }) => {
 
             <div className="space-y-6">
                 
-                {/* Header Banner */}
-                <div className="bg-gradient-to-r from-simitra-orange to-purple-600 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                {/* Page Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold">Laporan Detail Honor Mitra</h1>
-                        <p className="text-sm text-orange-100 mt-1">Informasi lengkap honorarium yang diterima setiap mitra</p>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Laporan Detail Honor Mitra</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Informasi lengkap honorarium yang diterima setiap mitra</p>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={exportExcel} className="px-4 py-2 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm">
-                            <FileSpreadsheet size={16} /> Export Excel
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={exportExcel}
+                            className="px-4 py-2 bg-[#00AA55] hover:bg-[#008844] text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-md cursor-pointer"
+                        >
+                            <FileSpreadsheet size={18} /> Export Excel
                         </button>
-                        <button className="px-4 py-2 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm">
-                            <FileText size={16} /> Cetak PDF
+                        <button
+                            type="button"
+                            className="px-4 py-2 bg-[#0080FF] hover:bg-[#0066CC] text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-md cursor-pointer"
+                        >
+                            <FileText size={18} /> Cetak PDF
                         </button>
                     </div>
                 </div>
@@ -107,7 +114,7 @@ const Index = ({ data, summary, filters, mitraList }) => {
                 {/* Summary Cards */}
                 <div className="space-y-4">
                     {/* Top Row Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-orange-500 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
                             <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <Users size={24} />
@@ -350,7 +357,7 @@ const Index = ({ data, summary, filters, mitraList }) => {
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-left min-w-[850px] whitespace-nowrap">
                             <thead className="text-xs text-gray-500 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
                                 <tr>
                                     <th className="px-6 py-4 font-bold">NO</th>

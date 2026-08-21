@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Search, RotateCcw, Trash2, ArrowLeft } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function RecycleBin({ mitras, filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const [search, setSearch] = useState(filters.search || '');
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null, variant: 'warning' });
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -14,15 +21,29 @@ export default function RecycleBin({ mitras, filters }) {
     };
 
     const handleRestore = (id) => {
-        if (confirm('Apakah Anda yakin ingin memulihkan data Mitra ini?')) {
-            router.post(route('mitra.restore', id));
-        }
+        setConfirmConfig({
+            title: 'Pulihkan Data Mitra',
+            message: 'Apakah Anda yakin ingin memulihkan data Mitra ini? Data akan aktif kembali.',
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('mitra.restore', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleForceDelete = (id) => {
-        if (confirm('PERINGATAN: Data ini akan dihapus secara PERMANEN dan tidak dapat dikembalikan! Apakah Anda yakin?')) {
-            router.delete(route('mitra.force-delete', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Permanen Mitra',
+            message: 'PERINGATAN: Data ini akan dihapus secara PERMANEN dan tidak dapat dikembalikan lagi!',
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('mitra.force-delete', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     return (
@@ -75,7 +96,7 @@ export default function RecycleBin({ mitras, filters }) {
                 {/* Table Data */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                        <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300 min-w-[800px] whitespace-nowrap">
                             <thead className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 uppercase text-xs font-semibold border-b border-gray-200 dark:border-gray-600">
                                 <tr>
                                     <th className="px-6 py-4">NIK</th>
@@ -98,14 +119,14 @@ export default function RecycleBin({ mitras, filters }) {
                                             <td className="px-6 py-4 text-right space-x-2">
                                                 <button
                                                     onClick={() => handleRestore(mitra.id)}
-                                                    className="px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                                                    className="px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
                                                     title="Pulihkan Mitra"
                                                 >
                                                     <RotateCcw size={14} /> Restore
                                                 </button>
                                                 <button
                                                     onClick={() => handleForceDelete(mitra.id)}
-                                                    className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                                                    className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
                                                     title="Hapus Permanen"
                                                 >
                                                     <Trash2 size={14} /> Hapus Permanen
@@ -144,6 +165,18 @@ export default function RecycleBin({ mitras, filters }) {
                     )}
                 </div>
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.variant === 'danger' ? 'Ya, Hapus Permanen' : 'Ya, Pulihkan'}
+                cancelText="Batal"
+                variant={confirmConfig.variant}
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

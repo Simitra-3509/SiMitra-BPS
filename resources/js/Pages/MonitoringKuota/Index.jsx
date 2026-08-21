@@ -85,15 +85,15 @@ export default function Index({
                         <button
                             type="button"
                             onClick={exportExcel}
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-2 shadow-md cursor-pointer"
                         >
-                            <FileSpreadsheet size={16} /> Export Excel
+                            <FileSpreadsheet size={18} /> Export Excel
                         </button>
                     </div>
                 </div>
 
                 {/* Dashboard Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-gray-300 dark:border-l-gray-600 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center group cursor-pointer">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Mitra</p>

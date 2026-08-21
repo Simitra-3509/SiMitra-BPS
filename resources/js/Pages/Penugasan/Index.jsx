@@ -11,6 +11,7 @@ const namaBulan = [
 
 function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
 
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
@@ -22,6 +23,10 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     // State for the Assign Mitra modal
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
@@ -133,17 +138,29 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
     };
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus penugasan ini?')) {
-            router.delete(route('penugasan.destroy', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Penugasan',
+            message: 'Apakah Anda yakin ingin menghapus penugasan ini? Data akan dipindahkan ke Recycle Bin.',
+            onConfirm: () => {
+                router.delete(route('penugasan.destroy', id));
+                setConfirmOpen(false);
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkDelete = () => {
-        if (confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} penugasan yang dipilih?`)) {
-            router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([]),
-            });
-        }
+        if (selectedIds.length === 0) return;
+        setConfirmConfig({
+            title: `Hapus ${selectedIds.length} Penugasan`,
+            message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} penugasan yang dipilih?`,
+            onConfirm: () => {
+                router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
+                    onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); },
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const toggleSelectAll = () => {
@@ -178,19 +195,19 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">Penugasan Mitra</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola penugasan mitra ke kegiatan</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="grid grid-cols-1 sm:flex items-center gap-2 w-full sm:w-auto">
                         <button
                             type="button"
                             onClick={openImportModal}
                             className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
                         >
-                            <FileSpreadsheet size={16} /> Import Excel
+                            <FileSpreadsheet size={18} /> Import Excel
                         </button>
                         <Link
                             href={route('penugasan.create')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#D9531E] rounded-lg hover:bg-orange-600 transition flex items-center gap-1.5 shadow-sm"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
                         >
-                            <Plus size={16} /> Tambah Penugasan
+                            <Plus size={18} /> Tambah Penugasan
                         </Link>
                     </div>
                 </div>
@@ -245,14 +262,14 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                                             </h3>
                                             <div className="flex items-center gap-2 mt-1.5">
                                                 <span className={`w-fit px-2 py-0.5 text-[10px] font-bold rounded flex items-center uppercase tracking-wide text-white ${(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan'
-                                                        ? 'bg-[#F26522]'
-                                                        : 'bg-[#3dbcc9]'
+                                                    ? 'bg-[#F26522]'
+                                                    : 'bg-[#3dbcc9]'
                                                     }`}>
                                                     {(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 border border-gray-200 dark:border-gray-600 shadow-sm">
                                                     <Calendar size={10} className="text-gray-400 dark:text-gray-500" />
-                                                    {kg.tgl_mulai && kg.tgl_selesai 
+                                                    {kg.tgl_mulai && kg.tgl_selesai
                                                         ? `${kg.tgl_mulai} s/d ${kg.tgl_selesai}`
                                                         : '01 Jan - 31 Jan 2026'}
                                                 </span>
@@ -409,121 +426,123 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
 
                 {/* Tabel */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            <tr>
-                                <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
-                                <th className="p-4 w-10 text-center">No</th>
-                                <th className="p-4">Kegiatan & Detil</th>
-                                <th className="p-4">Periode</th>
-                                <th className="p-4">Mitra</th>
-                                <th className="p-4 text-center">Kuota Target</th>
-                                <th className="p-4 text-center">Status</th>
-                                <th className="p-4 text-center">Honorarium</th>
-                                <th className="p-4 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                            {penugasan?.data && penugasan.data.length > 0 ? (
-                                penugasan.data.map((item, index) => {
-                                    const totalHonor = item.honoraria?.reduce((sum, h) => sum + (h.jumlah_honor ?? 0), 0) ?? 0;
-                                    const sudahInput = item.honoraria?.length > 0;
-                                    const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
-                                    const detilObj = item.detil_kegiatan || item.detilKegiatan;
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse min-w-[800px] whitespace-nowrap">
+                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <tr>
+                                    <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
+                                    <th className="p-4 w-10 text-center">No</th>
+                                    <th className="p-4">Kegiatan & Detil</th>
+                                    <th className="p-4">Periode</th>
+                                    <th className="p-4">Mitra</th>
+                                    <th className="p-4 text-center">Kuota Target</th>
+                                    <th className="p-4 text-center">Status</th>
+                                    <th className="p-4 text-center">Honorarium</th>
+                                    <th className="p-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                                {penugasan?.data && penugasan.data.length > 0 ? (
+                                    penugasan.data.map((item, index) => {
+                                        const totalHonor = item.honoraria?.reduce((sum, h) => sum + (h.jumlah_honor ?? 0), 0) ?? 0;
+                                        const sudahInput = item.honoraria?.length > 0;
+                                        const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
+                                        const detilObj = item.detil_kegiatan || item.detilKegiatan;
 
-                                    return (
-                                        <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                            <td className="p-4 text-center"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="rounded text-orange-600" /></td>
-                                            <td className="p-4 text-center font-medium text-gray-400 dark:text-gray-500">{nomorUrut}</td>
-                                            <td className="p-4">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <p className="font-bold text-gray-900 dark:text-white leading-snug">
-                                                        {item.kegiatan?.nama_kegiatan ?? '-'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                                        {detilObj?.nama_detil ?? 'Semua Detil'}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 font-medium text-gray-800 dark:text-gray-200">
-                                                {item.bulan && item.tahun
-                                                    ? `${namaBulan[item.bulan - 1] || item.bulan} ${item.tahun}`
-                                                    : '-'}
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <p className="font-bold text-gray-900 dark:text-white">
-                                                        {item.mitra?.nama_lengkap ?? '-'}
-                                                    </p>
-                                                    <p className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                                                        Sobat ID: {item.mitra?.sobat_id ?? '-'}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
-                                                {item.kuota_target ?? 0} {(detilObj?.satuan ?? '').toUpperCase()}
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                    }`}>
-                                                    {item.kegiatan?.status_aktif ? 'Aktif' : 'Non-Aktif'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                {sudahInput ? (
-                                                    <div>
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                                                            ✓ Sudah Input
-                                                        </span>
-                                                        <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-1">
-                                                            Rp {totalHonor.toLocaleString('id-ID')}
+                                        return (
+                                            <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                                <td className="p-4 text-center"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="rounded text-orange-600" /></td>
+                                                <td className="p-4 text-center font-medium text-gray-400 dark:text-gray-500">{nomorUrut}</td>
+                                                <td className="p-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <p className="font-bold text-gray-900 dark:text-white leading-snug">
+                                                            {item.kegiatan?.nama_kegiatan ?? '-'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                            {detilObj?.nama_detil ?? 'Semua Detil'}
                                                         </p>
                                                     </div>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                                        ⏳ Belum Input
+                                                </td>
+                                                <td className="p-4 font-medium text-gray-800 dark:text-gray-200">
+                                                    {item.bulan && item.tahun
+                                                        ? `${namaBulan[item.bulan - 1] || item.bulan} ${item.tahun}`
+                                                        : '-'}
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <p className="font-bold text-gray-900 dark:text-white">
+                                                            {item.mitra?.nama_lengkap ?? '-'}
+                                                        </p>
+                                                        <p className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                                                            Sobat ID: {item.mitra?.sobat_id ?? '-'}
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                    {item.kuota_target ?? 0} {(detilObj?.satuan ?? '').toUpperCase()}
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                        }`}>
+                                                        {item.kegiatan?.status_aktif ? 'Aktif' : 'Non-Aktif'}
                                                     </span>
-                                                )}
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <Link
-                                                        href={route('honorarium.create', { penugasan_id: item.id })}
-                                                        title="Input Honor"
-                                                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:text-emerald-500 rounded-lg transition flex items-center justify-center"
-                                                    >
-                                                        <Banknote size={15} />
-                                                    </Link>
-                                                    <Link
-                                                        href={route('penugasan.edit', item.id)}
-                                                        title="Edit"
-                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
-                                                    >
-                                                        <Edit size={15} />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        title="Hapus"
-                                                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan="9" className="p-8 text-center text-gray-400 dark:text-gray-500">
-                                        Tidak ada data penugasan yang ditemukan.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    {sudahInput ? (
+                                                        <div>
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                                                                ✓ Sudah Input
+                                                            </span>
+                                                            <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-1">
+                                                                Rp {totalHonor.toLocaleString('id-ID')}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                                            ⏳ Belum Input
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <Link
+                                                            href={route('honorarium.create', { penugasan_id: item.id })}
+                                                            title="Input Honor"
+                                                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:text-emerald-500 rounded-lg transition flex items-center justify-center"
+                                                        >
+                                                            <Banknote size={15} />
+                                                        </Link>
+                                                        <Link
+                                                            href={route('penugasan.edit', item.id)}
+                                                            title="Edit"
+                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
+                                                        >
+                                                            <Edit size={15} />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDelete(item.id)}
+                                                            title="Hapus"
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="9" className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                            Tidak ada data penugasan yang ditemukan.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
 
                     {/* Pagination */}
                     {penugasan?.last_page > 1 && (
@@ -723,11 +742,10 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                                     onDragLeave={handleDrag}
                                     onDragOver={handleDrag}
                                     onDrop={handleDrop}
-                                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${
-                                        dragActive 
-                                            ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' 
+                                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${dragActive
+                                            ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
                                             : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                 >
                                     <input
                                         type="file"
@@ -774,6 +792,18 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                     </div>
                 )}
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                variant="danger"
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </>
     );
 }

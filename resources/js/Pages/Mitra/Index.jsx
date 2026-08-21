@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router, usePage, Link } from '@inertiajs/react';
 import { Plus, Search, Edit2, Trash2, X, Trash, Eye, User, Phone, MapPin, CreditCard, GraduationCap, Briefcase, Calendar, ShieldCheck, Mail, FileSpreadsheet, Download, Upload, FileText, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function Index({ mitras, filters, banksList, deletedCount }) {
     const { flash, counts } = usePage().props;
+    const { toast } = useAppToast();
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'semua');
     const [bank, setBank] = useState(filters.bank || 'semua');
     const [perPage, setPerPage] = useState(filters.per_page || 20);
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingMitra, setEditingMitra] = useState(null);
@@ -49,8 +55,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "NIK", "Nama Lengkap", "Sobat ID", "No Telepon", "No WhatsApp", 
-            "Jenis Kelamin", "Tanggal Lahir", "Alamat", "Desa", "Kecamatan", 
+            "NIK", "Nama Lengkap", "Sobat ID", "No Telepon", "No WhatsApp",
+            "Jenis Kelamin", "Tanggal Lahir", "Alamat", "Desa", "Kecamatan",
             "Ijazah Terakhir", "Keahlian", "No Rekening", "Nama Bank"
         ];
         const sampleRow = [
@@ -195,9 +201,15 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
     };
 
     const handleDelete = (mitraId) => {
-        if (confirm('Apakah Anda yakin ingin memindahkan data Mitra ini ke Recycle Bin?')) {
-            router.delete(route('mitra.destroy', mitraId));
-        }
+        setConfirmConfig({
+            title: 'Hapus Data Mitra',
+            message: 'Apakah Anda yakin ingin memindahkan data Mitra ini ke Recycle Bin?',
+            onConfirm: () => {
+                router.delete(route('mitra.destroy', mitraId));
+                setConfirmOpen(false);
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const toggleSelectAll = () => {
@@ -228,15 +240,15 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Database & direktori mitra statistik Kabupaten Jember</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full md:w-auto">
                         <Link
                             href={route('mitra.recycle-bin')}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2 relative"
+                            className="relative bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md w-full sm:w-auto"
                         >
-                            <Trash size={16} /> Recycle Bin
-                            {deletedCount > 0 && (
-                                <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-rose-500 text-white rounded-full">
-                                    {deletedCount}
+                            <Trash size={18} /> Recycle Bin
+                            {(counts?.recycleBinMitra || deletedCount) > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-gray-800">
+                                    {counts?.recycleBinMitra || deletedCount}
                                 </span>
                             )}
                         </Link>
@@ -324,8 +336,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                 {/* Table Component */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-sm min-w-[850px] whitespace-nowrap">
                             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
                                     <th className="p-4 w-10 text-center">
@@ -369,11 +381,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                                 {mitra.no_telepon || '-'}
                                             </td>
                                             <td className="p-4 text-center">
-                                                <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full border ${
-                                                    mitra.status_aktif
+                                                <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full border ${mitra.status_aktif
                                                         ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-400 dark:border-green-800'
                                                         : 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-400 dark:border-red-800'
-                                                }`}>
+                                                    }`}>
                                                     {mitra.status_aktif ? 'Aktif' : 'Nonaktif'}
                                                 </span>
                                             </td>
@@ -424,11 +435,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                     disabled={!link.url}
                                     onClick={() => router.get(link.url)}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`px-3 py-1 text-xs rounded-md ${
-                                        link.active
+                                    className={`px-3 py-1 text-xs rounded-md ${link.active
                                             ? 'bg-simitra-orange text-white font-bold'
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-                                    } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                             ))}
                         </div>
@@ -579,11 +589,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <h2 className="text-xl font-black text-white tracking-tight">{detailMitra.nama_lengkap}</h2>
-                                        <span className={`px-2.5 py-0.5 text-[11px] font-extrabold uppercase rounded-full tracking-wider ${
-                                            detailMitra.status_aktif 
-                                                ? 'bg-emerald-400 text-emerald-950' 
+                                        <span className={`px-2.5 py-0.5 text-[11px] font-extrabold uppercase rounded-full tracking-wider ${detailMitra.status_aktif
+                                                ? 'bg-emerald-400 text-emerald-950'
                                                 : 'bg-red-400 text-red-950'
-                                        }`}>
+                                            }`}>
                                             {detailMitra.status_aktif ? 'Aktif' : 'Nonaktif'}
                                         </span>
                                     </div>
@@ -789,11 +798,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 onDragLeave={handleDrag}
                                 onDragOver={handleDrag}
                                 onDrop={handleDrop}
-                                className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${
-                                    dragActive 
-                                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' 
+                                className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${dragActive
+                                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
                                         : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 <input
                                     type="file"

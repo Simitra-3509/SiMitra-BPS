@@ -306,7 +306,7 @@ export default function SbmlIndex({ limits, history, flash }) {
                                 Riwayat Konfigurasi Database
                             </h4>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400">
+                                <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 min-w-[500px] whitespace-nowrap">
                                     <thead className="text-xs uppercase bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
                                         <tr>
                                             <th className="px-3 py-2">Kegiatan</th>
