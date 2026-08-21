@@ -93,7 +93,7 @@ export default function Index({
                 </div>
 
                 {/* Dashboard Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-gray-300 dark:border-l-gray-600 border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 flex justify-between items-center group cursor-pointer">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Mitra</p>

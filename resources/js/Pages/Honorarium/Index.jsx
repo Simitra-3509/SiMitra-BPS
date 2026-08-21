@@ -165,16 +165,16 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Daftar Honorarium</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Riwayat pembayaran honor mitra & Approval PPK</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-1 sm:flex items-center gap-2 w-full sm:w-auto">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-2 shadow-md cursor-pointer"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-2 shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <FileSpreadsheet size={18} /> Import Excel
                         </button>
                         <Link
                             href={route('honorarium.create')}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center gap-1.5 shadow-md"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
                         >
                             <Plus size={18} /> Input Honor Baru
                         </Link>
@@ -279,7 +279,8 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
 
                 {/* Table */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse min-w-[850px] whitespace-nowrap">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-12 text-center">No</th>
@@ -385,6 +386,7 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                         </tbody>
                     </table>
                 </div>
+            </div>
 
             </div>
 

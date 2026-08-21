@@ -298,18 +298,18 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Kelola kegiatan survei dan sensus</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full sm:w-auto">
                         <button
                             type="button"
                             onClick={openImportModal}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-2 shadow-md cursor-pointer"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-2 shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <FileSpreadsheet size={18} /> Import Excel
                         </button>
 
                         <Link
                             href={route('kegiatan.create')}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center gap-1.5 shadow-md"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
                         >
                             <Plus size={18} /> Tambah Kegiatan
                         </Link>
@@ -427,7 +427,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
                 {/* Tabel Data dari Database */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse min-w-[850px] whitespace-nowrap">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-8"></th>
@@ -636,6 +637,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         </tbody>
                     </table>
                 </div>
+            </div>
 
                 {/* Pagination */}
                 {kegiatan?.last_page > 1 && (

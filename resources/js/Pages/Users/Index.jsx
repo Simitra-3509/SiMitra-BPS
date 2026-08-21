@@ -394,12 +394,12 @@ export default function UserManagement() {
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                    <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2.5 w-full md:w-auto">
                         {/* Tombol Recycle Bin (Oranye - Sensus Ekonomi BPS) */}
                         <button
                             type="button"
                             onClick={() => router.get('/recycle-bin/users')}
-                            className="bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md cursor-pointer"
+                            className="bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <Trash2 size={18} />
                             <span>Recycle Bin</span>
@@ -409,7 +409,7 @@ export default function UserManagement() {
                         <button
                             type="button"
                             onClick={() => { setModalError(null); setImportFile(null); setIsImportModalOpen(true); }}
-                            className="bg-[#00AA55] hover:bg-[#008844] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md cursor-pointer"
+                            className="bg-[#00AA55] hover:bg-[#008844] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <FileSpreadsheet size={18} />
                             <span>Import Excel</span>
@@ -419,7 +419,7 @@ export default function UserManagement() {
                         <button
                             type="button"
                             onClick={openCreateModal}
-                            className="bg-[#0080FF] hover:bg-[#0066CC] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
+                            className="bg-[#0080FF] hover:bg-[#0066CC] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <Plus size={18} />
                             <span>Tambah User</span>
@@ -427,7 +427,7 @@ export default function UserManagement() {
                     </div>
                 </div>
 
-                {/* 2. Bagian Filter */}
+                {/* 2. Card Filter & Pencarian */}
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm mb-6 border border-gray-100 dark:border-gray-700">
                     <div className="flex flex-col md:flex-row gap-4 items-end w-full">
                         {/* Dropdown Role (Admin, Operator, Viewer, Mitra) */}
@@ -525,7 +525,7 @@ export default function UserManagement() {
                 {/* 4. Tabel Data User */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden w-full">
                     <div className="overflow-x-auto w-full">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-sm min-w-[750px] whitespace-nowrap">
                             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
                                     <th className="p-4 w-10 text-center">

@@ -181,7 +181,7 @@ export default function RecycleBin({ penugasans, filters }) {
                 {/* Table Data */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                        <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300 min-w-[800px] whitespace-nowrap">
                             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 uppercase text-xs font-bold border-b border-gray-100 dark:border-gray-600">
                                 <tr>
                                     <th className="px-4 py-4 w-12 text-center">

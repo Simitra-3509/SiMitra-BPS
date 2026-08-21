@@ -114,7 +114,7 @@ const Index = ({ data, summary, filters, mitraList }) => {
                 {/* Summary Cards */}
                 <div className="space-y-4">
                     {/* Top Row Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border-l-4 border-orange-500 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 flex items-center gap-4 group cursor-pointer">
                             <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform duration-300">
                                 <Users size={24} />
@@ -357,7 +357,7 @@ const Index = ({ data, summary, filters, mitraList }) => {
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-left min-w-[850px] whitespace-nowrap">
                             <thead className="text-xs text-gray-500 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
                                 <tr>
                                     <th className="px-6 py-4 font-bold">NO</th>
