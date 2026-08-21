@@ -345,7 +345,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
 
                     {/* Tabel Data */}
                     <div className="overflow-x-auto w-full">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-sm min-w-[750px] whitespace-nowrap">
                             <thead className="bg-simitra-dark text-white uppercase text-xs font-bold tracking-wider border-b border-gray-700">
                                 <tr>
                                     <th className="p-4 w-12 text-center">

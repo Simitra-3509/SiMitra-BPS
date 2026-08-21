@@ -106,16 +106,16 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">Penugasan Mitra</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola penugasan mitra ke kegiatan</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="grid grid-cols-1 sm:flex items-center gap-2 w-full sm:w-auto">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center gap-1.5 shadow-md cursor-pointer"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <FileSpreadsheet size={18} /> Import Excel
                         </button>
                         <Link
                             href={route('penugasan.create')}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center gap-1.5 shadow-md"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
                         >
                             <Plus size={18} /> Tambah Penugasan
                         </Link>
@@ -304,7 +304,8 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
 
                 {/* Tabel */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
-                    <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse min-w-[800px] whitespace-nowrap">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
@@ -413,6 +414,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
                             )}
                         </tbody>
                     </table>
+                    </div>
 
                     {/* Pagination */}
                     {penugasan?.last_page > 1 && (

@@ -78,7 +78,7 @@ export default function Dashboard({ stats, sbml, chartData }) {
                 <div className="h-3 bg-blue-600 rounded-full w-full opacity-90" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.2) 10px, rgba(255,255,255,.2) 20px)' }}></div>
 
                 {/* Stat Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
                         <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Total Mitra Aktif</div>
                         <div className="text-3xl font-bold text-simitra-orange">{stats.totalMitra}</div>

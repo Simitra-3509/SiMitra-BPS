@@ -141,10 +141,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Kelola data mitra BPS Kabupaten Jember</p>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full md:w-auto">
                         <Link
                             href={route('mitra.recycle-bin')}
-                            className="relative bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md"
+                            className="relative bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md w-full sm:w-auto"
                         >
                             <Trash size={18} /> Recycle Bin
                             {(counts?.recycleBinMitra || deletedCount) > 0 && (
@@ -156,7 +156,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                         <button
                             onClick={openCreateModal}
-                            className="bg-[#0080FF] hover:bg-[#0066CC] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
+                            className="bg-[#0080FF] hover:bg-[#0066CC] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-md cursor-pointer w-full sm:w-auto"
                         >
                             <Plus size={18} /> Tambah Mitra
                         </button>
@@ -252,8 +252,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                 {/* Table Component */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-sm min-w-[850px] whitespace-nowrap">
                             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
                                     <th className="p-4 w-10 text-center">
