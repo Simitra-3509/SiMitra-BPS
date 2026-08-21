@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router, usePage, Link } from '@inertiajs/react';
 import { Plus, Search, Edit2, Trash2, X, Trash } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function Index({ mitras, filters, banksList, deletedCount }) {
     const { flash, counts } = usePage().props;
+    const { toast } = useAppToast();
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'semua');
     const [bank, setBank] = useState(filters.bank || 'semua');
     const [perPage, setPerPage] = useState(filters.per_page || 20);
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingMitra, setEditingMitra] = useState(null);
@@ -88,9 +95,15 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
     };
 
     const handleDelete = (mitraId) => {
-        if (confirm('Apakah Anda yakin ingin memindahkan data Mitra ini ke Recycle Bin?')) {
-            router.delete(route('mitra.destroy', mitraId));
-        }
+        setConfirmConfig({
+            title: 'Hapus Data Mitra',
+            message: 'Apakah Anda yakin ingin memindahkan data Mitra ini ke Recycle Bin?',
+            onConfirm: () => {
+                router.delete(route('mitra.destroy', mitraId));
+                setConfirmOpen(false);
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const toggleSelectAll = () => {
@@ -131,11 +144,11 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <Link
                             href={route('mitra.recycle-bin')}
-                            className="relative border border-yellow-500/80 text-yellow-500 hover:bg-yellow-500/10 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                            className="relative bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-md"
                         >
-                            <Trash size={16} /> Recycle Bin
+                            <Trash size={18} /> Recycle Bin
                             {(counts?.recycleBinMitra || deletedCount) > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-gray-800">
                                     {counts?.recycleBinMitra || deletedCount}
                                 </span>
                             )}
@@ -143,7 +156,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                         <button
                             onClick={openCreateModal}
-                            className="bg-simitra-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md"
+                            className="bg-[#0080FF] hover:bg-[#0066CC] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
                         >
                             <Plus size={18} /> Tambah Mitra
                         </button>
@@ -474,6 +487,18 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                     </div>
                 </div>
             )}
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText="Ya, Pindahkan"
+                cancelText="Batal"
+                variant="warning"
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

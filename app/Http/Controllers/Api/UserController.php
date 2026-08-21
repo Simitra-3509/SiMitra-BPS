@@ -29,18 +29,28 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $input = $request->all();
+        if (isset($input['password']) && trim((string)$input['password']) === '') {
+            unset($input['password']);
+        }
+
+        $validator = Validator::make($input, [
             'username' => 'required|string|max:255|unique:users,username',
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'nullable|string|max:50',
             'password' => 'nullable|string|min:6',
             'role' => 'nullable|string',
+        ], [
+            'username.required' => 'Username wajib diisi.',
+            'username.unique' => 'Username sudah terdaftar, gunakan username lain.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'password.min' => 'Password minimal harus 6 karakter (atau kosongkan untuk password otomatis).',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal',
+                'message' => 'Validasi gagal: ' . $validator->errors()->first(),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -50,6 +60,7 @@ class UserController extends Controller
         $roleLower = strtolower($validated['role'] ?? 'operator');
         $role = match ($roleLower) {
             'admin', 'administrator' => 'Admin',
+            'ppk' => 'PPK',
             'viewer' => 'Viewer',
             'mitra' => 'Mitra',
             default => 'Operator',
@@ -89,19 +100,29 @@ class UserController extends Controller
             ], 404);
         }
 
-        $validator = Validator::make($request->all(), [
+        $input = $request->all();
+        if (isset($input['password']) && trim((string)$input['password']) === '') {
+            unset($input['password']);
+        }
+
+        $validator = Validator::make($input, [
             'username' => 'required|string|max:255|unique:users,username,' . $id,
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'nullable|string|max:50',
             'role' => 'nullable|string',
             'status' => 'nullable|string',
             'password' => 'nullable|string|min:6',
+        ], [
+            'username.required' => 'Username wajib diisi.',
+            'username.unique' => 'Username sudah terdaftar, gunakan username lain.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'password.min' => 'Password minimal harus 6 karakter (atau kosongkan untuk tidak mengubah).',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal',
+                'message' => 'Validasi gagal: ' . $validator->errors()->first(),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -118,6 +139,7 @@ class UserController extends Controller
             $roleLower = strtolower($validated['role']);
             $updateData['role'] = match ($roleLower) {
                 'admin', 'administrator' => 'Admin',
+                'ppk' => 'PPK',
                 'viewer' => 'Viewer',
                 'mitra' => 'Mitra',
                 default => 'Operator',
@@ -295,6 +317,7 @@ class UserController extends Controller
             $rLower = strtolower($overrideRoleInput);
             $selectedOverrideRole = match ($rLower) {
                 'admin', 'administrator' => 'Admin',
+                'ppk' => 'PPK',
                 'viewer' => 'Viewer',
                 'mitra' => 'Mitra',
                 default => 'Operator',
@@ -317,6 +340,7 @@ class UserController extends Controller
                 $roleLower = strtolower($roleRaw);
                 $role = match ($roleLower) {
                     'admin', 'administrator' => 'Admin',
+                    'ppk' => 'PPK',
                     'viewer' => 'Viewer',
                     'mitra' => 'Mitra',
                     default => 'Operator',

@@ -141,6 +141,7 @@ export default function Create() {
                                 </option>
                                 <option value="Administrator">Administrator</option>
                                 <option value="Admin">Admin</option>
+                                <option value="PPK">PPK (Pejabat Pembuat Komitmen)</option>
                                 <option value="Ketua Tim">Ketua Tim</option>
                                 <option value="Operator">Operator</option>
                                 <option value="Pegawai">Pegawai</option>

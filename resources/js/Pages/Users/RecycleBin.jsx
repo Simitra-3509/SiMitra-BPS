@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
     Trash2, 
@@ -11,13 +12,19 @@ import {
     Trash, 
     RotateCcw 
 } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function RecycleBin({ trashedUsers = [], filters = {} }) {
+    const { toast } = useAppToast();
     const [search, setSearch] = useState(filters.search || '');
     const [role, setRole] = useState(filters.role || '');
     const [status, setStatus] = useState(filters.status || '');
     const [perPage, setPerPage] = useState(filters.per_page || '20');
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     // Extract items from pagination object or array
     const userList = Array.isArray(trashedUsers) 
@@ -42,30 +49,40 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
 
     const handleBulkRestore = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} user yang dipilih?`)) {
-            const bulkRestoreRoute = typeof route === 'function' && route().has('users.bulk-restore')
-                ? route('users.bulk-restore')
-                : `/recycle-bin/users/bulk-restore`;
-            router.post(bulkRestoreRoute, { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Pulihkan ${selectedIds.length} User`,
+            message: `Apakah Anda yakin ingin memulihkan ${selectedIds.length} user yang dipilih?`,
+            onConfirm: () => {
+                setConfirmOpen(false);
+                const bulkRestoreRoute = typeof route === 'function' && route().has('users.bulk-restore')
+                    ? route('users.bulk-restore')
+                    : `/recycle-bin/users/bulk-restore`;
+                router.post(bulkRestoreRoute, { ids: selectedIds }, {
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkForceDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`PERINGATAN: ${selectedIds.length} data user ini akan dihapus secara PERMANEN! Apakah Anda yakin?`)) {
-            const bulkForceDeleteRoute = typeof route === 'function' && route().has('users.bulk-force-delete')
-                ? route('users.bulk-force-delete')
-                : `/recycle-bin/users/bulk-force-delete`;
-            router.delete(bulkForceDeleteRoute, {
-                data: { ids: selectedIds },
-                onSuccess: () => setSelectedIds([])
-            });
-        }
-    }; 
-        ? trashedUsers 
-        : (trashedUsers?.data || []);
+        setConfirmConfig({
+            title: `Hapus Permanen ${selectedIds.length} User`,
+            message: `PERINGATAN: ${selectedIds.length} data user ini akan dihapus secara PERMANEN dan tidak dapat dikembalikan!`,
+            onConfirm: () => {
+                setConfirmOpen(false);
+                const bulkForceDeleteRoute = typeof route === 'function' && route().has('users.bulk-force-delete')
+                    ? route('users.bulk-force-delete')
+                    : `/recycle-bin/users/bulk-force-delete`;
+                router.delete(bulkForceDeleteRoute, {
+                    data: { ids: selectedIds },
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
+    };
 
     const totalItems = Array.isArray(trashedUsers) 
         ? trashedUsers.length 
@@ -104,23 +121,33 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
     };
 
     const handleRestore = (id) => {
-        if (confirm('Apakah Anda yakin ingin memulihkan akun user ini?')) {
-            const restoreRoute = typeof route === 'function' && route().has('users.restore')
-                ? route('users.restore', id)
-                : `/recycle-bin/users/${id}/restore`;
-
-            router.post(restoreRoute, {}, { preserveScroll: true });
-        }
+        setConfirmConfig({
+            title: 'Pulihkan User',
+            message: 'Apakah Anda yakin ingin memulihkan akun user ini?',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                const restoreRoute = typeof route === 'function' && route().has('users.restore')
+                    ? route('users.restore', id)
+                    : `/recycle-bin/users/${id}/restore`;
+                router.post(restoreRoute, {}, { preserveScroll: true });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleForceDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus user ini secara permanen? Data tidak dapat dikembalikan lagi!')) {
-            const forceDeleteRoute = typeof route === 'function' && route().has('users.force-delete')
-                ? route('users.force-delete', id)
-                : `/recycle-bin/users/${id}/force-delete`;
-
-            router.delete(forceDeleteRoute, { preserveScroll: true });
-        }
+        setConfirmConfig({
+            title: 'Hapus Permanen User',
+            message: 'Apakah Anda yakin ingin menghapus user ini secara permanen? Data tidak dapat dikembalikan lagi!',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                const forceDeleteRoute = typeof route === 'function' && route().has('users.force-delete')
+                    ? route('users.force-delete', id)
+                    : `/recycle-bin/users/${id}/force-delete`;
+                router.delete(forceDeleteRoute, { preserveScroll: true });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const backToUserManagementRoute = typeof route === 'function' && route().has('users.index')
@@ -181,6 +208,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                                 <option value="">Semua Role</option>
                                 <option value="Administrator">Administrator</option>
                                 <option value="Admin">Admin</option>
+                                <option value="PPK">PPK</option>
                                 <option value="Ketua Tim">Ketua Tim</option>
                                 <option value="Operator">Operator</option>
                                 <option value="Pegawai">Pegawai</option>
@@ -426,6 +454,18 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                 </div>
 
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText="Ya, Lanjutkan"
+                cancelText="Batal"
+                variant={confirmConfig.title?.includes('Permanen') ? 'danger' : 'warning'}
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

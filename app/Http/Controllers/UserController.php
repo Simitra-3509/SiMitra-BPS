@@ -46,6 +46,7 @@ class UserController extends Controller
         $roleLower = strtolower($validated['role'] ?? 'operator');
         $role = match ($roleLower) {
             'admin', 'administrator' => 'Admin',
+            'ppk' => 'PPK',
             'viewer' => 'Viewer',
             'mitra' => 'Mitra',
             default => 'Operator',

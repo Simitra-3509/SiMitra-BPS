@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import Sidebar from '@/Layouts/Sidebar';
 import Topbar from '@/Layouts/Topbar';
 import { usePage } from '@inertiajs/react';
+import { ToastContainer } from '@/Components/Toast';
+import useToast from '@/hooks/useToast';
+
+// Context agar halaman anak bisa memicu toast
+export const ToastContext = createContext({ toast: {} });
+export const useAppToast = () => useContext(ToastContext);
 
 export default function AuthenticatedLayout({ user, header, children }) {
+    const { toasts, toast, removeToast } = useToast();
     const { auth } = usePage().props;
     const resolvedUser = user ?? auth?.user;
 
@@ -47,47 +54,52 @@ export default function AuthenticatedLayout({ user, header, children }) {
     }, [isCollapsed, mobileOpen]);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors flex">
-            {/* Sidebar (Desktop & Mobile) */}
-            <Sidebar 
-                ref={sidebarRef}
-                user={resolvedUser} 
-                isCollapsed={isCollapsed}
-                setIsCollapsed={setIsCollapsed}
-                toggleSidebar={toggleSidebar}
-                mobileOpen={mobileOpen}
-                setMobileOpen={setMobileOpen}
-            />
-
-            {/* Mobile Backdrop Overlay */}
-            {mobileOpen && (
-                <div 
-                    onClick={() => setMobileOpen(false)}
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
-                />
-            )}
-
-            {/* Main Content Area */}
-            <div 
-                className={`flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen ${
-                    isCollapsed ? 'md:ml-20' : 'md:ml-64'
-                }`}
-            >
-                {/* Topbar */}
-                <Topbar 
-                    ref={topbarRef}
+        <ToastContext.Provider value={{ toast }}>
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors flex">
+                {/* Sidebar (Desktop & Mobile) */}
+                <Sidebar 
+                    ref={sidebarRef}
                     user={resolvedUser} 
-                    header={header} 
                     isCollapsed={isCollapsed}
+                    setIsCollapsed={setIsCollapsed}
                     toggleSidebar={toggleSidebar}
+                    mobileOpen={mobileOpen}
                     setMobileOpen={setMobileOpen}
                 />
 
-                {/* Page Content */}
-                <main className="flex-1 p-6 text-gray-900 dark:text-gray-100">
-                    {children}
-                </main>
+                {/* Mobile Backdrop Overlay */}
+                {mobileOpen && (
+                    <div 
+                        onClick={() => setMobileOpen(false)}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
+                    />
+                )}
+
+                {/* Main Content Area */}
+                <div 
+                    className={`flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen ${
+                        isCollapsed ? 'md:ml-20' : 'md:ml-64'
+                    }`}
+                >
+                    {/* Topbar */}
+                    <Topbar 
+                        ref={topbarRef}
+                        user={resolvedUser} 
+                        header={header} 
+                        isCollapsed={isCollapsed}
+                        toggleSidebar={toggleSidebar}
+                        setMobileOpen={setMobileOpen}
+                    />
+
+                    {/* Page Content */}
+                    <main className="flex-1 p-6 text-gray-900 dark:text-gray-100">
+                        {children}
+                    </main>
+                </div>
             </div>
-        </div>
+
+            {/* Global Toast Notifications */}
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
+        </ToastContext.Provider>
     );
 }

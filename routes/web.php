@@ -24,9 +24,9 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==========================================
-    // ROUTE UTAMA (ADMIN, OPERATOR, VIEWER, MITRA)
+    // ROUTE UTAMA (ADMIN, OPERATOR, PPK, VIEWER, MITRA)
     // ==========================================
-    Route::middleware('role:admin,operator,viewer,mitra')->group(function () {
+    Route::middleware('role:admin,operator,ppk,viewer,mitra')->group(function () {
         Route::get('/dashboard', function () {
             $totalMitra = Mitra::where('status_aktif', true)->count();
             $kegiatanAktif = Kegiatan::where('status_aktif', true)->count();

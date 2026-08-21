@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import { Search, RotateCcw, Trash2, ArrowLeft, Users, CheckCircle2 } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function RecycleBin({ penugasans, filters }) {
     const { flash } = usePage().props;
+    const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
     const [search, setSearch] = useState(filters?.search || '');
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // State ConfirmDialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null, variant: 'warning' });
 
     const toggleSelectAll = (e) => {
         if (e.target.checked) {
@@ -27,21 +34,35 @@ export default function RecycleBin({ penugasans, filters }) {
 
     const handleBulkRestore = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} penugasan yang dipilih?`)) {
-            router.post(route('penugasan.bulk-restore'), { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Pulihkan ${selectedIds.length} Penugasan`,
+            message: `Apakah Anda yakin ingin memulihkan ${selectedIds.length} penugasan yang dipilih?`,
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('penugasan.bulk-restore'), { ids: selectedIds }, {
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleBulkForceDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`PERINGATAN: ${selectedIds.length} data penugasan ini akan dihapus secara PERMANEN! Apakah Anda yakin?`)) {
-            router.delete(route('penugasan.bulk-force-delete'), {
-                data: { ids: selectedIds },
-                onSuccess: () => setSelectedIds([])
-            });
-        }
+        setConfirmConfig({
+            title: `Hapus Permanen ${selectedIds.length} Penugasan`,
+            message: `PERINGATAN: ${selectedIds.length} data penugasan ini akan dihapus secara PERMANEN!`,
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('penugasan.bulk-force-delete'), {
+                    data: { ids: selectedIds },
+                    onSuccess: () => setSelectedIds([])
+                });
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleSearch = (e) => {
@@ -50,15 +71,29 @@ export default function RecycleBin({ penugasans, filters }) {
     };
 
     const handleRestore = (id) => {
-        if (confirm('Apakah Anda yakin ingin memulihkan penugasan ini?')) {
-            router.post(route('penugasan.restore', id));
-        }
+        setConfirmConfig({
+            title: 'Pulihkan Penugasan',
+            message: 'Apakah Anda yakin ingin memulihkan penugasan ini?',
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('penugasan.restore', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     const handleForceDelete = (id) => {
-        if (confirm('PERINGATAN: Data penugasan ini akan dihapus secara PERMANEN! Apakah Anda yakin?')) {
-            router.delete(route('penugasan.force-delete', id));
-        }
+        setConfirmConfig({
+            title: 'Hapus Permanen Penugasan',
+            message: 'PERINGATAN: Data penugasan ini akan dihapus secara PERMANEN!',
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('penugasan.force-delete', id));
+            },
+        });
+        setConfirmOpen(true);
     };
 
     return (
@@ -252,6 +287,18 @@ export default function RecycleBin({ penugasans, filters }) {
                     )}
                 </div>
             </div>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.variant === 'danger' ? 'Ya, Hapus Permanen' : 'Ya, Pulihkan'}
+                cancelText="Batal"
+                variant={confirmConfig.variant}
+                onConfirm={confirmConfig.onConfirm}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

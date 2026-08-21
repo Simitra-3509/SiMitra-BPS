@@ -54,6 +54,7 @@ const Sidebar = forwardRef(function Sidebar({
     };
 
     const totalRecycleBinBadge =
+        (counts?.recycleBinUser || 0) +
         (counts?.recycleBinMitra || 0) +
         (counts?.recycleBinKegiatan || 0) +
         (counts?.recycleBinPenugasan || 0) +
@@ -82,6 +83,7 @@ const Sidebar = forwardRef(function Sidebar({
                 <div className="relative group flex justify-center my-1">
                     <Component
                         {...props}
+                        title={label}
                         className={`flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200 cursor-pointer ${active
                             ? 'bg-simitra-orange text-white shadow-lg shadow-orange-500/25 scale-105'
                             : 'text-gray-400 hover:text-white hover:bg-gray-800/80 hover:scale-105'
@@ -94,7 +96,7 @@ const Sidebar = forwardRef(function Sidebar({
                     </Component>
 
                     {/* Floating Tooltip */}
-                    <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900/95 backdrop-blur-sm text-white text-xs font-semibold rounded-lg shadow-2xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50 border border-gray-700 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <div className="fixed left-20 ml-2.5 px-3 py-1.5 bg-gray-900/95 backdrop-blur-md text-white text-xs font-semibold rounded-lg shadow-2xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-[9999] border border-gray-700 flex items-center gap-2 my-1">
                         <span>{label}</span>
                         {badge && (
                             <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
@@ -298,15 +300,8 @@ const Sidebar = forwardRef(function Sidebar({
                     <NavItem
                         href={route('monitoring-kuota.index')}
                         icon={Gauge}
-                        label="Monitoring Kuota"
+                        label="Monitoring Kuota SBML"
                         active={route().current('monitoring-kuota.*')}
-                    />
-
-                    <NavItem
-                        href="#"
-                        icon={TrendingUp}
-                        label="Monitoring SBML"
-                        active={false}
                     />
 
                     {/* SECTION: RECYCLE BINS (Khusus Admin) */}
@@ -352,6 +347,11 @@ const Sidebar = forwardRef(function Sidebar({
                                                 <div className="flex items-center gap-2.5">
                                                     <User size={14} /> Recycle Bin User
                                                 </div>
+                                                {counts?.recycleBinUser > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                        {counts.recycleBinUser}
+                                                    </span>
+                                                )}
                                             </Link>
                                             <Link
                                                 href={route('mitra.recycle-bin')}
@@ -398,10 +398,11 @@ const Sidebar = forwardRef(function Sidebar({
                                                     </span>
                                                 )}
                                             </Link>
-                                            <a
-                                                href="#"
+                                            <Link
+                                                href={route('honorarium.recycle-bin')}
                                                 onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('honorarium.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                    }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
                                                     <Banknote size={14} /> Recycle Bin Honorarium
@@ -411,7 +412,7 @@ const Sidebar = forwardRef(function Sidebar({
                                                         {counts.recycleBinHonorarium}
                                                     </span>
                                                 )}
-                                            </a>
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
@@ -460,6 +461,11 @@ const Sidebar = forwardRef(function Sidebar({
                                                     <User size={14} className="text-gray-400" />
                                                     <span>Recycle Bin User</span>
                                                 </div>
+                                                {counts?.recycleBinUser > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                        {counts.recycleBinUser}
+                                                    </span>
+                                                )}
                                             </Link>
 
                                             {/* Recycle Bin Mitra */}
