@@ -282,6 +282,36 @@ class KegiatanController extends Controller
     }
 
     /**
+     * Restore multiple resources from recycle bin.
+     */
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:kegiatans,id'
+        ]);
+
+        Kegiatan::onlyTrashed()->whereIn('id', $request->ids)->restore();
+
+        return redirect()->back()->with('success', count($request->ids) . ' kegiatan berhasil dipulihkan.');
+    }
+
+    /**
+     * Force delete multiple resources from recycle bin.
+     */
+    public function bulkForceDelete(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:kegiatans,id'
+        ]);
+
+        Kegiatan::onlyTrashed()->whereIn('id', $request->ids)->forceDelete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' kegiatan telah dihapus secara permanen.');
+    }
+
+    /**
      * Duplicate the specified resource in storage.
      */
     public function duplicate(Request $request, Kegiatan $kegiatan)
@@ -316,5 +346,215 @@ class KegiatanController extends Controller
         });
 
         return redirect()->route('kegiatan.index')->with('success', "Kegiatan '{$kegiatan->nama_kegiatan}' beserta Detil Belanja berhasil diduplikasi.");
+    }
+
+    /**
+     * Native XLSX parser using ZipArchive & SimpleXML
+     */
+    private function parseXlsx($filePath)
+    {
+        $rows = [];
+        $zip = new \ZipArchive();
+        if ($zip->open($filePath) === true) {
+            $sharedStrings = [];
+            if (($sharedStringsIndex = $zip->locateName('xl/sharedStrings.xml')) !== false) {
+                $xmlStr = $zip->getFromIndex($sharedStringsIndex);
+                $xml = @simplexml_load_string($xmlStr);
+                if ($xml && isset($xml->si)) {
+                    foreach ($xml->si as $val) {
+                        if (isset($val->t)) {
+                            $sharedStrings[] = (string)$val->t;
+                        } elseif (isset($val->r)) {
+                            $textArr = [];
+                            foreach ($val->r as $r) {
+                                $textArr[] = (string)($r->t ?? '');
+                            }
+                            $sharedStrings[] = implode('', $textArr);
+                        } else {
+                            $sharedStrings[] = '';
+                        }
+                    }
+                }
+            }
+
+            $sheetIndex = $zip->locateName('xl/worksheets/sheet1.xml');
+            if ($sheetIndex !== false) {
+                $xmlStr = $zip->getFromIndex($sheetIndex);
+                $xml = @simplexml_load_string($xmlStr);
+                if ($xml && isset($xml->sheetData->row)) {
+                    foreach ($xml->sheetData->row as $r) {
+                        $rowCells = [];
+                        foreach ($r->c as $c) {
+                            $cellValue = (string)($c->v ?? '');
+                            $type = (string)($c['t'] ?? '');
+                            if ($type === 's' && isset($sharedStrings[(int)$cellValue])) {
+                                $cellValue = $sharedStrings[(int)$cellValue];
+                            }
+                            $rowCells[] = trim($cellValue);
+                        }
+                        if (!empty(array_filter($rowCells))) {
+                            $rows[] = $rowCells;
+                        }
+                    }
+                }
+            }
+            $zip->close();
+        }
+        return $rows;
+    }
+
+    /**
+     * Import kegiatan from Excel / CSV file.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:5120',
+        ]);
+
+        $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension());
+        $path = $file->getRealPath();
+        
+        $kegiatansData = [];
+
+        if ($extension === 'xlsx' || $extension === 'xls') {
+            $rawRows = $this->parseXlsx($path);
+            if (!empty($rawRows)) {
+                $header = array_shift($rawRows);
+                $cleanHeader = array_map(function($h) {
+                    return strtolower(trim(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $h))));
+                }, $header);
+
+                foreach ($rawRows as $row) {
+                    if (count($row) >= count($cleanHeader)) {
+                        $kegiatansData[] = array_combine(
+                            array_slice($cleanHeader, 0, count($row)),
+                            array_slice($row, 0, count($cleanHeader))
+                        );
+                    }
+                }
+            }
+        } elseif ($extension === 'csv') {
+            if (($handle = fopen($path, 'r')) !== false) {
+                $header = fgetcsv($handle, 1000, ',');
+                if ($header && count($header) == 1 && str_contains($header[0], ';')) {
+                    rewind($handle);
+                    $header = fgetcsv($handle, 1000, ';');
+                }
+                
+                $cleanHeader = array_map(function($h) {
+                    return strtolower(trim(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $h))));
+                }, $header ?? []);
+
+                while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                    if (count($row) === 1 && str_contains($row[0], ';')) {
+                        $row = explode(';', $row[0]);
+                    }
+                    if (count($row) >= count($cleanHeader)) {
+                        $rowData = array_combine(array_slice($cleanHeader, 0, count($row)), array_slice($row, 0, count($cleanHeader)));
+                        $kegiatansData[] = $rowData;
+                    }
+                }
+                fclose($handle);
+            }
+        }
+
+        if (empty($kegiatansData)) {
+            return redirect()->back()->withErrors(['file' => 'Tidak ada data kegiatan yang valid untuk diimport atau format file salah.']);
+        }
+
+        // Kelompokkan berdasarkan nama_kegiatan
+        $groupedKegiatans = [];
+        foreach ($kegiatansData as $row) {
+            $namaKegiatan = trim($row['nama_kegiatan'] ?? $row['kegiatan'] ?? '');
+            if (empty($namaKegiatan)) continue;
+
+            $key = strtolower(str_replace(' ', '_', $namaKegiatan));
+            if (!isset($groupedKegiatans[$key])) {
+                $tglMulai = $this->parseExcelDate($row['tanggal_mulai'] ?? $row['tgl_mulai'] ?? null);
+                $tglSelesai = $this->parseExcelDate($row['tanggal_selesai'] ?? $row['tgl_selesai'] ?? null);
+
+                $groupedKegiatans[$key] = [
+                    'nama_kegiatan' => $namaKegiatan,
+                    'kode_kegiatan' => trim($row['kode_kegiatan'] ?? $row['kode'] ?? $row['kro'] ?? ''),
+                    'tanggal_mulai' => $tglMulai,
+                    'tanggal_selesai' => $tglSelesai,
+                    'deskripsi' => trim($row['deskripsi'] ?? ''),
+                    'detil' => []
+                ];
+            }
+
+            $namaDetil = trim($row['nama_detil'] ?? $row['detil'] ?? $row['rincian'] ?? '');
+            if (!empty($namaDetil)) {
+                $groupedKegiatans[$key]['detil'][] = [
+                    'nama_detil' => $namaDetil,
+                    'jenis_sbml' => strtolower(trim($row['jenis_sbml'] ?? 'pendataan')),
+                    'frekuensi_penugasan' => strtolower(trim($row['frekuensi_penugasan'] ?? $row['frekuensi'] ?? 'bulanan')),
+                    'satuan' => trim($row['satuan'] ?? 'O-K'),
+                    'jumlah' => floatval(str_replace(',', '.', $row['jumlah'] ?? $row['volume'] ?? 1)),
+                    'harga_satuan' => floatval(str_replace(',', '.', $row['harga_satuan'] ?? $row['harga'] ?? 0)),
+                ];
+            }
+        }
+
+        if (empty($groupedKegiatans)) {
+            return redirect()->back()->withErrors(['file' => 'Format file tidak sesuai, kolom nama_kegiatan dan nama_detil tidak ditemukan.']);
+        }
+
+        DB::transaction(function () use ($groupedKegiatans) {
+            foreach ($groupedKegiatans as $kegData) {
+                // Hitung total anggaran
+                $totalAnggaran = 0;
+                foreach ($kegData['detil'] as $detilData) {
+                    $totalAnggaran += $detilData['jumlah'] * $detilData['harga_satuan'];
+                }
+
+                $kegiatan = Kegiatan::create([
+                    'nama_kegiatan'   => $kegData['nama_kegiatan'],
+                    'kode_kegiatan'   => !empty($kegData['kode_kegiatan']) ? $kegData['kode_kegiatan'] : null,
+                    'tanggal_mulai'   => $kegData['tanggal_mulai'],
+                    'tanggal_selesai' => $kegData['tanggal_selesai'],
+                    'status_aktif'    => true,
+                    'deskripsi'       => $kegData['deskripsi'],
+                    'total_anggaran'  => $totalAnggaran,
+                    'created_by'      => auth()->id(),
+                ]);
+
+                foreach ($kegData['detil'] as $detilData) {
+                    $jenisSbml = in_array($detilData['jenis_sbml'], ['pendataan', 'pengolahan']) ? $detilData['jenis_sbml'] : 'pendataan';
+                    $frekuensi = in_array($detilData['frekuensi_penugasan'], ['bulanan', 'triwulanan', 'tahunan']) ? $detilData['frekuensi_penugasan'] : 'bulanan';
+                    $satuan = !empty($detilData['satuan']) ? $detilData['satuan'] : 'O-K';
+                    
+                    DetilKegiatan::create([
+                        'kegiatan_id'         => $kegiatan->id,
+                        'nama_detil'          => $detilData['nama_detil'],
+                        'jenis_sbml'          => $jenisSbml,
+                        'frekuensi_penugasan' => $frekuensi,
+                        'satuan'              => $satuan,
+                        'jumlah'              => $detilData['jumlah'],
+                        'harga_satuan'        => $detilData['harga_satuan'],
+                        'total'               => $detilData['jumlah'] * $detilData['harga_satuan'],
+                    ]);
+                }
+            }
+        });
+
+        $count = count($groupedKegiatans);
+        return redirect()->back()->with('success', "Berhasil mengimport {$count} data Kegiatan beserta detilnya.");
+    }
+
+    private function parseExcelDate($dateValue)
+    {
+        if (empty($dateValue)) return null;
+        if (is_numeric($dateValue)) {
+            $unix_date = ($dateValue - 25569) * 86400;
+            return gmdate("Y-m-d", $unix_date);
+        }
+        try {
+            return \Carbon\Carbon::parse($dateValue)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

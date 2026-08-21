@@ -12,7 +12,7 @@ import {
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Show({ auth, kegiatan, grandTotal }) {
-    const detilList = kegiatan?.detil_kegiatan || (kegiatan?.akun_kegiatan || []).flatMap((a) => a.detil_kegiatan || []);
+    const detilList = kegiatan?.detil_kegiatan || kegiatan?.detilKegiatan || [];
 
     const formatRupiah = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val || 0);

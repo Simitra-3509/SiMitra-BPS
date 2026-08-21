@@ -177,4 +177,78 @@ class HonorariumController extends Controller
 
         return redirect()->back()->with('message', 'Honorarium telah ditolak dengan catatan PPK.');
     }
+
+    /**
+     * Tampilkan data terhapus (Recycle Bin).
+     */
+    public function recycleBin(Request $request)
+    {
+        $query = Honorarium::onlyTrashed()->with(['penugasan.mitra', 'penugasan.kegiatan', 'approver']);
+
+        if ($request->filled('search')) {
+            $query->whereHas('penugasan.mitra', function ($q) use ($request) {
+                $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
+                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $trashedHonorarium = $query->latest('deleted_at')->paginate(15)->withQueryString();
+
+        return Inertia::render('Honorarium/RecycleBin', [
+            'trashedHonorarium' => $trashedHonorarium,
+            'filters' => $request->only(['search']),
+        ]);
+    }
+
+    /**
+     * Restore data honorarium.
+     */
+    public function restore($id)
+    {
+        $honorarium = Honorarium::onlyTrashed()->findOrFail($id);
+        $honorarium->restore();
+
+        return redirect()->back()->with('success', "Honorarium berhasil dipulihkan dari Recycle Bin.");
+    }
+
+    /**
+     * Force delete data honorarium.
+     */
+    public function forceDelete($id)
+    {
+        $honorarium = Honorarium::onlyTrashed()->findOrFail($id);
+        $honorarium->forceDelete();
+
+        return redirect()->back()->with('success', "Honorarium telah dihapus secara permanen.");
+    }
+
+    /**
+     * Restore multiple resources from recycle bin.
+     */
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:honoraria,id'
+        ]);
+
+        Honorarium::onlyTrashed()->whereIn('id', $request->ids)->restore();
+
+        return redirect()->back()->with('success', count($request->ids) . ' honorarium berhasil dipulihkan.');
+    }
+
+    /**
+     * Force delete multiple resources from recycle bin.
+     */
+    public function bulkForceDelete(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:honoraria,id'
+        ]);
+
+        Honorarium::onlyTrashed()->whereIn('id', $request->ids)->forceDelete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' honorarium telah dihapus secara permanen.');
+    }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Head, router, Link, useForm, usePage } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Copy, Info, CheckCircle2 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -25,6 +25,31 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         tgl_selesai: '',
         status_aktif: 1
     });
+
+    const fileInputRef = useRef(null);
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        router.post(route('kegiatan.import'), { file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                e.target.value = '';
+            },
+            onError: (errors) => {
+                e.target.value = '';
+                if (errors.file) {
+                    alert(errors.file);
+                }
+            }
+        });
+    };
 
     const openDuplicateModal = (kegiatanItem) => {
         setSelectedKegiatan(kegiatanItem);
@@ -120,8 +145,16 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleFileChange} 
+                            className="hidden" 
+                            accept=".xlsx,.xls,.csv" 
+                        />
                         <button
                             type="button"
+                            onClick={handleImportClick}
                             className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2"
                         >
                             <FileSpreadsheet size={16} /> Import Excel
@@ -296,10 +329,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                             <div className="flex flex-wrap items-center justify-center gap-1">
                                                 {(() => {
                                                     const types = new Set();
-                                                    (item.akun_kegiatan || item.akunKegiatan || []).forEach(a => {
-                                                        (a.detil_kegiatan || a.detilKegiatan || []).forEach(d => {
-                                                            if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
-                                                        });
+                                                    (item.detil_kegiatan || item.detilKegiatan || []).forEach(d => {
+                                                        if (d.jenis_sbml) types.add(d.jenis_sbml.toLowerCase());
                                                     });
                                                     const typeArr = Array.from(types);
                                                     if (typeArr.length === 0) typeArr.push(item.jenis_kegiatan || 'pendataan');

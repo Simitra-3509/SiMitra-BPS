@@ -3,7 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MitraController;
 use App\Http\Controllers\SbmlLimitController;
-use App\Http\Controllers\KegiatanController; 
+use App\Http\Controllers\KegiatanController;
+use App\Http\Controllers\UserController; 
 use App\Http\Controllers\PenugasanController;
 use App\Http\Controllers\HonorariumController;
 use App\Http\Controllers\LaporanHonorController;
@@ -80,8 +81,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['auth'])->group(function () {
+        Route::post('kegiatan/import', [KegiatanController::class, 'import'])->name('kegiatan.import');
         Route::resource('kegiatan', KegiatanController::class);
         Route::get('/recycle-bin/kegiatan', [KegiatanController::class, 'recycleBin'])->name('kegiatan.recycle-bin');
+        Route::post('/recycle-bin/kegiatan/bulk-restore', [KegiatanController::class, 'bulkRestore'])->name('kegiatan.bulk-restore');
+        Route::delete('/recycle-bin/kegiatan/bulk-force-delete', [KegiatanController::class, 'bulkForceDelete'])->name('kegiatan.bulk-force-delete');
         Route::post('/recycle-bin/kegiatan/{id}/restore', [KegiatanController::class, 'restore'])->name('kegiatan.restore');
         Route::delete('/recycle-bin/kegiatan/{id}/force-delete', [KegiatanController::class, 'forceDelete'])->name('kegiatan.force-delete');
         Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
@@ -89,6 +93,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         Route::resource('penugasan', PenugasanController::class);
         Route::get('/recycle-bin/penugasan', [PenugasanController::class, 'recycleBin'])->name('penugasan.recycle-bin');
+        Route::post('/recycle-bin/penugasan/bulk-restore', [PenugasanController::class, 'bulkRestore'])->name('penugasan.bulk-restore');
+        Route::delete('/recycle-bin/penugasan/bulk-force-delete', [PenugasanController::class, 'bulkForceDelete'])->name('penugasan.bulk-force-delete');
         Route::post('/recycle-bin/penugasan/{id}/restore', [PenugasanController::class, 'restore'])->name('penugasan.restore');
         Route::delete('/recycle-bin/penugasan/{id}/force-delete', [PenugasanController::class, 'forceDelete'])->name('penugasan.force-delete');
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
@@ -97,12 +103,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
         Route::resource('honorarium', HonorariumController::class);
+        Route::get('/recycle-bin/honorarium', [HonorariumController::class, 'recycleBin'])->name('honorarium.recycle-bin');
+        Route::post('/recycle-bin/honorarium/bulk-restore', [HonorariumController::class, 'bulkRestore'])->name('honorarium.bulk-restore');
+        Route::delete('/recycle-bin/honorarium/bulk-force-delete', [HonorariumController::class, 'bulkForceDelete'])->name('honorarium.bulk-force-delete');
+        Route::post('/recycle-bin/honorarium/{id}/restore', [HonorariumController::class, 'restore'])->name('honorarium.restore');
+        Route::delete('/recycle-bin/honorarium/{id}/force-delete', [HonorariumController::class, 'forceDelete'])->name('honorarium.force-delete');
         Route::post('honorarium/{honorarium}/ajukan', [HonorariumController::class, 'ajukanPersetujuan'])->name('honorarium.ajukan');
         Route::post('honorarium/{honorarium}/setujui', [HonorariumController::class, 'setujui'])->name('honorarium.setujui');
         Route::post('honorarium/{honorarium}/tolak', [HonorariumController::class, 'tolak'])->name('honorarium.tolak');
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
+        Route::get('laporan-honor/export', [LaporanHonorController::class, 'export'])->name('laporan-honor.export');
         Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
         Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');
+        Route::get('monitoring-kuota/export', [MonitoringKuotaController::class, 'export'])->name('monitoring-kuota.export');
         Route::get('monitoring-kuota/{id}', [MonitoringKuotaController::class, 'show'])->name('monitoring-kuota.show');
     });
 
@@ -136,51 +149,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/recycle-bin/mitra/{id}/restore', [MitraController::class, 'restore'])->name('mitra.restore');
     Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
     // User Routes
-    Route::get('/users', function () {
-        return Inertia::render('Users/Index');
-    })->name('users.index');
-    Route::get('/recycle-bin/users', function (Illuminate\Http\Request $request) {
-        return Inertia::render('Users/RecycleBin', [
-            'trashedUsers' => [],
-            'filters' => $request->only(['search', 'role', 'status', 'per_page']),
-        ]);
-    })->name('users.recycle-bin');
-    Route::get('/users/create', function () {
-        return Inertia::render('Users/Create');
-    })->name('users.create');
-    Route::post('/users', function (Illuminate\Http\Request $request) {
-        $validated = $request->validate([
-            'username' => 'required|string|max:255|unique:users,username',
-            'password' => 'nullable|string|min:6',
-            'nama_lengkap' => 'required|string|max:255',
-            'sobat_id' => 'nullable|string|max:50',
-            'role' => 'nullable|string',
-        ]);
-        $sobatId = !empty($validated['sobat_id']) ? trim($validated['sobat_id']) : null;
-        $plainPassword = !empty($validated['password']) 
-            ? $validated['password'] 
-            : ($sobatId ?? $validated['username']);
-
-        $roleLower = strtolower($validated['role'] ?? 'operator');
-        $role = match ($roleLower) {
-            'admin', 'administrator' => 'Admin',
-            'viewer' => 'Viewer',
-            'mitra' => 'Mitra',
-            default => 'Operator',
-        };
-
-        App\Models\User::create([
-            'name' => $validated['nama_lengkap'],
-            'username' => $validated['username'],
-            'sobat_id' => $sobatId,
-            'password' => Illuminate\Support\Facades\Hash::make($plainPassword),
-            'role' => $role,
-        ]);
-        return redirect()->route('users.index')->with('message', 'User berhasil ditambahkan.');
-    })->name('user.store');
-    Route::get('/users/edit', function () {
-        return Inertia::render('Users/Edit');
-    })->name('users.edit');
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/recycle-bin/users', [UserController::class, 'recycleBin'])->name('users.recycle-bin');
+    Route::post('/recycle-bin/users/bulk-restore', [UserController::class, 'bulkRestore'])->name('users.bulk-restore');
+    Route::delete('/recycle-bin/users/bulk-force-delete', [UserController::class, 'bulkForceDelete'])->name('users.bulk-force-delete');
+    Route::post('/recycle-bin/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+    Route::delete('/recycle-bin/users/{id}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
+    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('user.store');
+    Route::get('/users/edit', [UserController::class, 'edit'])->name('users.edit');
 });
 
 require __DIR__.'/auth.php';

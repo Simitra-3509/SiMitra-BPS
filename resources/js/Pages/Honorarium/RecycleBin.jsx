@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage, Link } from '@inertiajs/react';
-import { Search, RotateCcw, Trash2, ArrowLeft, Users, CheckCircle2 } from 'lucide-react';
+import { Search, RotateCcw, Trash2, ArrowLeft, Banknote, CheckCircle2 } from 'lucide-react';
 
-export default function RecycleBin({ penugasans, filters }) {
+export default function RecycleBin({ honorariums, filters }) {
     const { flash } = usePage().props;
     const flashMessage = flash?.message || flash?.success;
     const [search, setSearch] = useState(filters?.search || '');
@@ -11,7 +11,7 @@ export default function RecycleBin({ penugasans, filters }) {
 
     const toggleSelectAll = (e) => {
         if (e.target.checked) {
-            setSelectedIds(penugasans.data.map(item => item.id));
+            setSelectedIds(honorariums.data.map(item => item.id));
         } else {
             setSelectedIds([]);
         }
@@ -27,8 +27,8 @@ export default function RecycleBin({ penugasans, filters }) {
 
     const handleBulkRestore = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} penugasan yang dipilih?`)) {
-            router.post(route('penugasan.bulk-restore'), { ids: selectedIds }, {
+        if (confirm(`Apakah Anda yakin ingin memulihkan ${selectedIds.length} data honorarium yang dipilih?`)) {
+            router.post(route('honorarium.bulk-restore'), { ids: selectedIds }, {
                 onSuccess: () => setSelectedIds([])
             });
         }
@@ -36,8 +36,8 @@ export default function RecycleBin({ penugasans, filters }) {
 
     const handleBulkForceDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`PERINGATAN: ${selectedIds.length} data penugasan ini akan dihapus secara PERMANEN! Apakah Anda yakin?`)) {
-            router.delete(route('penugasan.bulk-force-delete'), {
+        if (confirm(`PERINGATAN: ${selectedIds.length} data honorarium ini akan dihapus secara PERMANEN! Apakah Anda yakin?`)) {
+            router.delete(route('honorarium.bulk-force-delete'), {
                 data: { ids: selectedIds },
                 onSuccess: () => setSelectedIds([])
             });
@@ -46,24 +46,28 @@ export default function RecycleBin({ penugasans, filters }) {
 
     const handleSearch = (e) => {
         e.preventDefault();
-        router.get(route('penugasan.recycle-bin'), { search }, { preserveState: true });
+        router.get(route('honorarium.recycle-bin'), { search }, { preserveState: true });
     };
 
     const handleRestore = (id) => {
-        if (confirm('Apakah Anda yakin ingin memulihkan penugasan ini?')) {
-            router.post(route('penugasan.restore', id));
+        if (confirm('Apakah Anda yakin ingin memulihkan data honorarium ini?')) {
+            router.post(route('honorarium.restore', id));
         }
     };
 
     const handleForceDelete = (id) => {
-        if (confirm('PERINGATAN: Data penugasan ini akan dihapus secara PERMANEN! Apakah Anda yakin?')) {
-            router.delete(route('penugasan.force-delete', id));
+        if (confirm('PERINGATAN: Data honorarium ini akan dihapus secara PERMANEN! Apakah Anda yakin?')) {
+            router.delete(route('honorarium.force-delete', id));
         }
     };
 
+    const formatRupiah = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val || 0);
+    };
+
     return (
-        <AuthenticatedLayout header="Recycle Bin — Penugasan Terhapus">
-            <Head title="Recycle Bin Penugasan - SIMITRA LITE" />
+        <AuthenticatedLayout header="Recycle Bin — Honorarium Terhapus">
+            <Head title="Recycle Bin Honorarium - SIMITRA LITE" />
 
             <div className="space-y-6">
                 {/* Flash Message */}
@@ -83,7 +87,7 @@ export default function RecycleBin({ penugasans, filters }) {
                             <div className="bg-[#D9531E] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-inner">
                                 {selectedIds.length}
                             </div>
-                            <span className="text-sm font-medium text-gray-200">Penugasan Terpilih</span>
+                            <span className="text-sm font-medium text-gray-200">Honorarium Terpilih</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <button
@@ -112,17 +116,17 @@ export default function RecycleBin({ penugasans, filters }) {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                         <Link
-                            href={route('penugasan.index')}
+                            href={route('honorarium.index')}
                             className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition"
                         >
-                            <ArrowLeft size={16} /> Kembali ke Penugasan
+                            <ArrowLeft size={16} /> Kembali ke Daftar Honorarium
                         </Link>
 
                         <form onSubmit={handleSearch} className="flex gap-2 flex-1 sm:w-64">
                             <div className="relative w-full">
                                 <input
                                     type="text"
-                                    placeholder="Cari Sobat ID / Nama Mitra..."
+                                    placeholder="Cari Mitra..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full pl-3 pr-10 py-2 text-sm border rounded-xl dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#D9531E]"
@@ -139,7 +143,7 @@ export default function RecycleBin({ penugasans, filters }) {
                     </div>
 
                     <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Total Penugasan Terhapus: <strong className="text-red-500 font-bold text-sm">{penugasans?.total || 0}</strong>
+                        Total Honorarium Terhapus: <strong className="text-red-500 font-bold text-sm">{honorariums?.total || 0}</strong>
                     </div>
                 </div>
 
@@ -154,20 +158,19 @@ export default function RecycleBin({ penugasans, filters }) {
                                             type="checkbox"
                                             className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E] dark:bg-gray-800 dark:border-gray-600 cursor-pointer"
                                             onChange={toggleSelectAll}
-                                            checked={penugasans?.data && penugasans.data.length > 0 && selectedIds.length === penugasans.data.length}
+                                            checked={honorariums?.data && honorariums.data.length > 0 && selectedIds.length === honorariums.data.length}
                                         />
                                     </th>
                                     <th className="px-6 py-4">Mitra</th>
                                     <th className="px-6 py-4">Kegiatan</th>
-                                    <th className="px-6 py-4 text-center">Periode</th>
-                                    <th className="px-6 py-4 text-center">Kuota Target</th>
+                                    <th className="px-6 py-4">Total Honor</th>
                                     <th className="px-6 py-4">Tanggal Dihapus</th>
                                     <th className="px-6 py-4 text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {penugasans?.data && penugasans.data.length > 0 ? (
-                                    penugasans.data.map((item) => (
+                                {honorariums?.data && honorariums.data.length > 0 ? (
+                                    honorariums.data.map((item) => (
                                         <tr key={item.id} className={`transition ${selectedIds.includes(item.id) ? 'bg-orange-50/50 dark:bg-orange-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
                                             <td className="px-4 py-4 text-center">
                                                 <input
@@ -178,24 +181,16 @@ export default function RecycleBin({ penugasans, filters }) {
                                                 />
                                             </td>
                                             <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                                                {item.mitra?.nama_lengkap || '-'}
+                                                {item.penugasan?.mitra?.nama_lengkap || '-'}
                                                 <span className="block text-xs font-mono font-normal text-orange-600 dark:text-orange-400">
-                                                    ID: {item.mitra?.sobat_id || '-'}
+                                                    ID: {item.penugasan?.mitra?.sobat_id || '-'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-gray-800 dark:text-gray-200">
-                                                {item.kegiatan?.nama_kegiatan || '-'}
-                                                {item.detil_kegiatan?.nama_detil && (
-                                                    <span className="block text-xs text-gray-500">
-                                                        Detil: {item.detil_kegiatan.nama_detil}
-                                                    </span>
-                                                )}
+                                                {item.penugasan?.kegiatan?.nama_kegiatan || '-'}
                                             </td>
-                                            <td className="px-6 py-4 text-center font-mono font-semibold">
-                                                Bulan {item.bulan} {item.tahun}
-                                            </td>
-                                            <td className="px-6 py-4 text-center font-mono font-bold text-gray-900 dark:text-white">
-                                                {item.kuota_target} {item.detil_kegiatan?.satuan || ''}
+                                            <td className="px-6 py-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                {formatRupiah(item.jumlah_honor)}
                                             </td>
                                             <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">
                                                 {new Date(item.deleted_at).toLocaleString('id-ID')}
@@ -204,7 +199,7 @@ export default function RecycleBin({ penugasans, filters }) {
                                                 <button
                                                     onClick={() => handleRestore(item.id)}
                                                     className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition cursor-pointer"
-                                                    title="Pulihkan Penugasan"
+                                                    title="Pulihkan Honorarium"
                                                 >
                                                     <RotateCcw size={14} /> Restore
                                                 </button>
@@ -220,10 +215,10 @@ export default function RecycleBin({ penugasans, filters }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-12 text-center text-gray-400">
+                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
                                             <div className="flex flex-col items-center justify-center space-y-2">
-                                                <Users size={32} className="text-gray-300 dark:text-gray-600" />
-                                                <p className="text-sm">Recycle Bin kosong. Tidak ada data Penugasan terhapus.</p>
+                                                <Banknote size={32} className="text-gray-300 dark:text-gray-600" />
+                                                <p className="text-sm">Recycle Bin kosong. Tidak ada data Honorarium terhapus.</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -233,9 +228,9 @@ export default function RecycleBin({ penugasans, filters }) {
                     </div>
 
                     {/* Pagination */}
-                    {penugasans?.links && penugasans.links.length > 3 && (
+                    {honorariums?.links && honorariums.links.length > 3 && (
                         <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-1">
-                            {penugasans.links.map((link, idx) => (
+                            {honorariums.links.map((link, idx) => (
                                 <button
                                     key={idx}
                                     disabled={!link.url}
