@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -39,10 +40,7 @@ class UserController extends Controller
         ]);
         
         $sobatId = !empty($validated['sobat_id']) ? trim($validated['sobat_id']) : null;
-        $plainPassword = !empty($validated['password']) 
-            ? $validated['password'] 
-            : ($sobatId ?? $validated['username']);
-
+        
         $roleLower = strtolower($validated['role'] ?? 'operator');
         $role = match ($roleLower) {
             'admin', 'administrator' => 'Admin',
@@ -52,12 +50,27 @@ class UserController extends Controller
             default => 'Operator',
         };
 
+        $plainPassword = $validated['password'] ?? null;
+        $mustChangePassword = false;
+
+        if (empty($plainPassword)) {
+            if ($role === 'Mitra') {
+                $plainPassword = $sobatId ?? $validated['username'];
+                $mustChangePassword = false;
+            } else {
+                $sanitizedUsername = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($validated['username']));
+                $plainPassword = $sanitizedUsername . '@3509';
+                $mustChangePassword = true;
+            }
+        }
+
         User::create([
             'name' => $validated['nama_lengkap'],
             'username' => $validated['username'],
             'sobat_id' => $sobatId,
             'password' => Hash::make($plainPassword),
             'role' => $role,
+            'must_change_password' => $mustChangePassword,
         ]);
         
         return redirect()->route('users.index')->with('message', 'User berhasil ditambahkan.');
