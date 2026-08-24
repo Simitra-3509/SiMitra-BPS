@@ -722,24 +722,18 @@ export default function UserManagement() {
 
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    SOBAT ID (Opsional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={createForm.sobat_id}
-                                    onChange={(e) => setCreateForm({ ...createForm, sobat_id: e.target.value })}
-                                    placeholder="3509xxxxxxxxxxxx"
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-1 focus:ring-simitra-orange focus:outline-none font-mono"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                     Role <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={createForm.role}
-                                    onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                                    onChange={(e) => {
+                                        const newRole = e.target.value;
+                                        setCreateForm({
+                                            ...createForm,
+                                            role: newRole,
+                                            sobat_id: newRole === 'Mitra' ? createForm.sobat_id : ''
+                                        });
+                                    }}
                                     className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-simitra-orange focus:outline-none"
                                 >
                                     <option value="Admin">Admin</option>
@@ -750,15 +744,35 @@ export default function UserManagement() {
                                 </select>
                             </div>
 
+                            {createForm.role === 'Mitra' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                        SOBAT ID <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={createForm.sobat_id}
+                                        onChange={(e) => setCreateForm({ ...createForm, sobat_id: e.target.value })}
+                                        placeholder="3509xxxxxxxxxxxx"
+                                        className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-1 focus:ring-simitra-orange focus:outline-none font-mono"
+                                    />
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Password <span className="text-gray-400 font-normal">(Opsional — jika kosong otomatis memakai SOBAT ID / Username)</span>
+                                    Password <span className="text-gray-400 font-normal">
+                                        {createForm.role === 'Mitra'
+                                            ? '(Opsional — jika kosong otomatis memakai SOBAT ID / Username)'
+                                            : '(Opsional — jika kosong otomatis memakai Username)'}
+                                    </span>
                                 </label>
                                 <input
                                     type="password"
                                     value={createForm.password}
                                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                                    placeholder="Biarkan kosong untuk password otomatis SOBAT ID"
+                                    placeholder={createForm.role === 'Mitra' ? "Biarkan kosong untuk password otomatis SOBAT ID" : "Biarkan kosong untuk password otomatis Username"}
                                     className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-1 focus:ring-simitra-orange focus:outline-none"
                                 />
                             </div>
@@ -833,18 +847,6 @@ export default function UserManagement() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    SOBAT ID (Opsional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editForm.sobat_id}
-                                    onChange={(e) => setEditForm({ ...editForm, sobat_id: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-1 focus:ring-simitra-orange focus:outline-none font-mono"
-                                />
-                            </div>
-
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -852,7 +854,14 @@ export default function UserManagement() {
                                     </label>
                                     <select
                                         value={editForm.role}
-                                        onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                                        onChange={(e) => {
+                                            const newRole = e.target.value;
+                                            setEditForm({
+                                                ...editForm,
+                                                role: newRole,
+                                                sobat_id: newRole === 'Mitra' ? editForm.sobat_id : ''
+                                            });
+                                        }}
                                         className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-simitra-orange focus:outline-none"
                                     >
                                         <option value="Admin">Admin</option>
@@ -877,6 +886,21 @@ export default function UserManagement() {
                                     </select>
                                 </div>
                             </div>
+
+                            {editForm.role === 'Mitra' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                        SOBAT ID <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editForm.sobat_id}
+                                        onChange={(e) => setEditForm({ ...editForm, sobat_id: e.target.value })}
+                                        className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-1 focus:ring-simitra-orange focus:outline-none font-mono"
+                                    />
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
