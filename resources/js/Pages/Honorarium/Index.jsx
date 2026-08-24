@@ -12,7 +12,10 @@ import {
     Send, 
     Lock, 
     Info, 
-    MessageSquare 
+    MessageSquare,
+    RotateCcw,
+    Edit,
+    Trash2
 } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import ConfirmDialog from '@/Components/ConfirmDialog';
@@ -89,6 +92,36 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
             onConfirm: () => {
                 setConfirmOpen(false);
                 router.post(route('honorarium.setujui', id));
+            },
+        });
+        setConfirmOpen(true);
+    };
+
+    const handleBatalkan = (id) => {
+        setConfirmConfig({
+            title: 'Batalkan Persetujuan Honorarium',
+            message: 'Apakah Anda yakin ingin membatalkan persetujuan honorarium ini dan mengembalikannya ke status Menunggu PPK?',
+            confirmText: 'Ya, Batalkan Persetujuan',
+            cancelText: 'Batal',
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.post(route('honorarium.batalkan', id));
+            },
+        });
+        setConfirmOpen(true);
+    };
+
+    const handleDelete = (id) => {
+        setConfirmConfig({
+            title: 'Hapus Honorarium',
+            message: 'Apakah Anda yakin ingin menghapus data honorarium ini?',
+            confirmText: 'Ya, Hapus',
+            cancelText: 'Batal',
+            variant: 'danger',
+            onConfirm: () => {
+                setConfirmOpen(false);
+                router.delete(route('honorarium.destroy', id));
             },
         });
         setConfirmOpen(true);
@@ -286,7 +319,7 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                                 <th className="p-4 w-12 text-center">No</th>
                                 <th className="p-4">Tanggal</th>
                                 <th className="p-4">Mitra</th>
-                                <th className="p-4">Kegiatan</th>
+                                <th className="p-4">Kegiatan & Detil</th>
                                 <th className="p-4 text-center">Volume</th>
                                 <th className="p-4 text-right">Total Honor</th>
                                 <th className="p-4 text-center">Status Approval</th>
@@ -298,6 +331,10 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                                 honorarium.data.map((item, index) => {
                                     const st = item.status_persetujuan || 'draft';
                                     const isDisetujui = st === 'disetujui';
+                                    const isOwner = item.input_by && Number(item.input_by) === Number(auth?.user?.id);
+                                    const isAdmin = ['admin', 'administrator'].includes(userRole);
+                                    const canEdit = isPpk || (st === 'draft' && (isOwner || isAdmin)) || (st === 'ditolak' && (isOwner || isAdmin));
+                                    const canDelete = isPpk || (st === 'draft' && (isOwner || isAdmin));
 
                                     return (
                                         <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
@@ -313,8 +350,15 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-gray-600 dark:text-gray-400">
-                                                {item.penugasan?.kegiatan?.nama_kegiatan || '-'}
+                                            <td className="p-4">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="font-bold text-gray-900 dark:text-white">
+                                                        {item.penugasan?.kegiatan?.nama_kegiatan || '-'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                        {item.penugasan?.detil_kegiatan?.nama_detil || item.penugasan?.detilKegiatan?.nama_detil || '-'}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="p-4 text-center font-mono font-bold">{item.jumlah_item || 1}</td>
                                             <td className="p-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -325,48 +369,112 @@ const Index = ({ honorarium, semuaKegiatan, filters }) => {
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="flex items-center justify-center gap-1.5">
-                                                    {/* Tombol Ajukan (jika Draft / Ditolak) */}
-                                                    {(st === 'draft' || st === 'ditolak') && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleAjukan(item.id)}
-                                                            className="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 cursor-pointer"
-                                                            title="Ajukan persetujuan ke PPK"
-                                                        >
-                                                            <Send size={12} /> Ajukan
-                                                        </button>
-                                                    )}
-
-                                                    {/* Tombol Khusus PPK (Setujui / Tolak) */}
-                                                    {isPpk && st !== 'disetujui' && (
+                                                    {/* POV PPK */}
+                                                    {isPpk ? (
                                                         <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleSetujui(item.id)}
-                                                                className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition flex items-center gap-1 cursor-pointer"
-                                                                title="Setujui Honorarium"
-                                                            >
-                                                                <CheckCircle size={12} /> Setujui
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openTolakModal(item.id)}
-                                                                className="px-2.5 py-1 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition flex items-center gap-1 cursor-pointer"
-                                                                title="Tolak Honorarium"
-                                                            >
-                                                                <XCircle size={12} /> Tolak
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                            {st === 'menunggu_persetujuan' && (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSetujui(item.id)}
+                                                                        className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                                                        title="Setujui Honorarium"
+                                                                    >
+                                                                        <CheckCircle size={12} /> Setujui
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openTolakModal(item.id)}
+                                                                        className="px-2.5 py-1 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                                                        title="Tolak Honorarium"
+                                                                    >
+                                                                        <XCircle size={12} /> Tolak
+                                                                    </button>
+                                                                    <Link
+                                                                        href={route('honorarium.edit', item.id)}
+                                                                        className="px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition flex items-center gap-1"
+                                                                        title="Edit Honorarium"
+                                                                    >
+                                                                        <Edit size={12} /> Edit
+                                                                    </Link>
+                                                                </>
+                                                            )}
 
-                                                    {/* Indikator Terkunci untuk Non-PPK saat disetujui */}
-                                                    {isDisetujui && !isPpk && (
-                                                        <span 
-                                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
-                                                            title="Honor ini sudah disetujui PPK. Hubungi PPK secara langsung untuk perubahan."
-                                                        >
-                                                            <Lock size={12} /> Terkunci
-                                                        </span>
+                                                            {st === 'disetujui' && (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleBatalkan(item.id)}
+                                                                        className="px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                                                        title="Batalkan Persetujuan (Kembalikan ke Menunggu PPK)"
+                                                                    >
+                                                                        <RotateCcw size={12} /> Batalkan
+                                                                    </button>
+                                                                    <Link
+                                                                        href={route('honorarium.edit', item.id)}
+                                                                        className="px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition flex items-center gap-1"
+                                                                        title="Edit Honorarium"
+                                                                    >
+                                                                        <Edit size={12} /> Edit
+                                                                    </Link>
+                                                                </>
+                                                            )}
+
+                                                            {st === 'ditolak' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleSetujui(item.id)}
+                                                                    className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                                                    title="Setujui Kembali Honorarium"
+                                                                >
+                                                                    <CheckCircle size={12} /> Setujui
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        /* POV Operator / Admin */
+                                                        <>
+                                                            {st === 'draft' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleAjukan(item.id)}
+                                                                    className="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 cursor-pointer"
+                                                                    title="Ajukan persetujuan ke PPK"
+                                                                >
+                                                                    <Send size={12} /> Ajukan
+                                                                </button>
+                                                            )}
+
+                                                            {canEdit && (
+                                                                <Link
+                                                                    href={route('honorarium.edit', item.id)}
+                                                                    className="px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition flex items-center gap-1"
+                                                                    title="Edit Honorarium"
+                                                                >
+                                                                    <Edit size={12} /> Edit
+                                                                </Link>
+                                                            )}
+
+                                                            {canDelete && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDelete(item.id)}
+                                                                    className="px-2 py-1 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                                                    title="Hapus Honorarium"
+                                                                >
+                                                                    <Trash2 size={12} /> Hapus
+                                                                </button>
+                                                            )}
+
+                                                            {isDisetujui && (
+                                                                <span 
+                                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
+                                                                    title="Honor ini sudah disetujui PPK. Hubungi PPK secara langsung untuk perubahan."
+                                                                >
+                                                                    <Lock size={12} /> Terkunci
+                                                                </span>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>

@@ -22,4 +22,9 @@ class Honorarium extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'input_by');
+    }
 }

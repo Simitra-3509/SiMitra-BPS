@@ -113,6 +113,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('honorarium/{honorarium}/ajukan', [HonorariumController::class, 'ajukanPersetujuan'])->name('honorarium.ajukan');
         Route::post('honorarium/{honorarium}/setujui', [HonorariumController::class, 'setujui'])->name('honorarium.setujui');
         Route::post('honorarium/{honorarium}/tolak', [HonorariumController::class, 'tolak'])->name('honorarium.tolak');
+        Route::post('honorarium/{honorarium}/batalkan-persetujuan', [HonorariumController::class, 'batalkanPersetujuan'])->name('honorarium.batalkan');
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
         Route::get('laporan-honor/export', [LaporanHonorController::class, 'export'])->name('laporan-honor.export');
         Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
