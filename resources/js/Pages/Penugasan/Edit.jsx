@@ -7,6 +7,8 @@ function Edit({ penugasan, kegiatan, mitra, auth }) {
     const { data, setData, put, processing, errors } = useForm({
         kegiatan_id: penugasan.kegiatan_id || '',
         mitra_id: penugasan.mitra_id || '',
+        tanggal_mulai: penugasan.tanggal_mulai || '',
+        tanggal_selesai: penugasan.tanggal_selesai || '',
         status: penugasan.status || 'Aktif'
     });
 
@@ -56,6 +58,32 @@ function Edit({ penugasan, kegiatan, mitra, auth }) {
                             ))}
                         </select>
                         {errors.mitra_id && <p className="text-xs text-red-500 mt-1">{errors.mitra_id}</p>}
+                    </div>
+
+                    {/* Tanggal Mulai */}
+                    <div className="space-y-1.5">
+                        <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">Tanggal Mulai</label>
+                        <input
+                            type="date"
+                            value={data.tanggal_mulai}
+                            onChange={(e) => setData('tanggal_mulai', e.target.value)}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                            className="w-full px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition cursor-pointer"
+                        />
+                        {errors.tanggal_mulai && <p className="text-xs text-red-500 mt-1">{errors.tanggal_mulai}</p>}
+                    </div>
+
+                    {/* Tanggal Selesai */}
+                    <div className="space-y-1.5">
+                        <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">Tanggal Selesai</label>
+                        <input
+                            type="date"
+                            value={data.tanggal_selesai}
+                            onChange={(e) => setData('tanggal_selesai', e.target.value)}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                            className="w-full px-3.5 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition cursor-pointer"
+                        />
+                        {errors.tanggal_selesai && <p className="text-xs text-red-500 mt-1">{errors.tanggal_selesai}</p>}
                     </div>
 
                     {/* Status */}

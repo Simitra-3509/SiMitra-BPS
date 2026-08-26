@@ -17,6 +17,10 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const [tahun, setTahun] = useState(filters?.tahun || '');
     const [cari, setCari] = useState(filters?.cari || '');
 
+    // Role check
+    const userRole = auth?.user?.role;
+    const canManageKegiatan = ['admin', 'ppk'].includes(userRole);
+
     // State untuk checklist (bulk delete)
     const [selectedIds, setSelectedIds] = useState([]);
 
@@ -298,22 +302,24 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Kelola kegiatan survei dan sensus</p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={openImportModal}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-2 shadow-md cursor-pointer w-full sm:w-auto"
-                        >
-                            <FileSpreadsheet size={18} /> Import Excel
-                        </button>
+                    {canManageKegiatan && (
+                        <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full sm:w-auto">
+                            <button
+                                type="button"
+                                onClick={openImportModal}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-2 shadow-md cursor-pointer w-full sm:w-auto"
+                            >
+                                <FileSpreadsheet size={18} /> Import Excel
+                            </button>
 
-                        <Link
-                            href={route('kegiatan.create')}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
-                        >
-                            <Plus size={18} /> Tambah Kegiatan
-                        </Link>
-                    </div>
+                            <Link
+                                href={route('kegiatan.create')}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
+                            >
+                                <Plus size={18} /> Tambah Kegiatan
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Flash Success Notification */}
@@ -432,20 +438,22 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 <th className="p-4 w-8"></th>
-                                <th className="p-4 w-12 text-center">
-                                    <input
-                                        type="checkbox"
-                                        className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
-                                        checked={kegiatan?.data?.length > 0 && selectedIds.length === kegiatan.data.length}
-                                        onChange={toggleSelectAll}
-                                    />
-                                </th>
+                                {canManageKegiatan && (
+                                    <th className="p-4 w-12 text-center">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
+                                            checked={kegiatan?.data?.length > 0 && selectedIds.length === kegiatan.data.length}
+                                            onChange={toggleSelectAll}
+                                        />
+                                    </th>
+                                )}
                                 <th className="p-4 w-12 text-center">No</th>
                                 <th className="p-4">Kegiatan</th>
                                 <th className="p-4 text-center">Detil</th>
                                 <th className="p-4">Total Anggaran</th>
                                 <th className="p-4 text-center">Status</th>
-                                <th className="p-4 text-center">Aksi</th>
+                                {canManageKegiatan && <th className="p-4 text-center">Aksi</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
@@ -474,14 +482,16 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                                 </td>
 
                                                 {/* Checkbox */}
-                                                <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
-                                                    <input
-                                                        type="checkbox"
-                                                        className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
-                                                        checked={selectedIds.includes(item.id)}
-                                                        onChange={() => toggleSelect(item.id)}
-                                                    />
-                                                </td>
+                                                {canManageKegiatan && (
+                                                    <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
+                                                            checked={selectedIds.includes(item.id)}
+                                                            onChange={() => toggleSelect(item.id)}
+                                                        />
+                                                    </td>
+                                                )}
 
                                                 {/* No */}
                                                 <td className="p-4 text-center font-medium text-gray-500 dark:text-gray-400">
@@ -536,31 +546,33 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                                 </td>
 
                                                 {/* Aksi — Edit, Duplicate, Delete (NO Eye) */}
-                                                <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <Link
-                                                            href={route('kegiatan.edit', item.id)}
-                                                            className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit size={14} />
-                                                        </Link>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); openDuplicateModal(item); }}
-                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
-                                                            title="Duplikat"
-                                                        >
-                                                            <Copy size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                                            className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
-                                                            title="Hapus"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                {canManageKegiatan && (
+                                                    <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <Link
+                                                                href={route('kegiatan.edit', item.id)}
+                                                                className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
+                                                                title="Edit"
+                                                            >
+                                                                <Edit size={14} />
+                                                            </Link>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); openDuplicateModal(item); }}
+                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
+                                                                title="Duplikat"
+                                                            >
+                                                                <Copy size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                                                className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
+                                                                title="Hapus"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                )}
                                             </tr>
 
                                             {/* — Expand Drawer Row — */}
@@ -629,7 +641,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                    <td colSpan={canManageKegiatan ? "8" : "6"} className="p-8 text-center text-gray-400 dark:text-gray-500">
                                         Tidak ada data kegiatan yang ditemukan.
                                     </td>
                                 </tr>

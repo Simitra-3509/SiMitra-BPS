@@ -23,20 +23,12 @@ import Modal from '@/Components/Modal';
 export default function Create({ kegiatan, kegiatanList }) {
     const listKegiatan = kegiatanList || kegiatan || [];
 
-    const namaBulanList = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-
-    const currentMonthNum = new Date().getMonth() + 1;
-    const currentTahunDefault = new Date().getFullYear();
-
     const { data, setData, post, processing, errors } = useForm({
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
-        bulan: currentMonthNum,
-        tahun: currentTahunDefault,
+        tanggal_mulai: '',
+        tanggal_selesai: '',
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
     });
 
@@ -45,6 +37,10 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [detilList, setDetilList] = useState([]);
     const [selectedDetilInfo, setSelectedDetilInfo] = useState(null);
 
+    const selectedKegiatan = listKegiatan.find((k) => String(k.id) === String(data.kegiatan_id));
+    const minDate = selectedKegiatan?.tanggal_mulai || '';
+    const maxDate = selectedKegiatan?.tanggal_selesai || '';
+
     // Modal Picker Mitra states (Tanpa filter kecamatan)
     const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -52,10 +48,9 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
 
-    // Salin bulan lalu states
+    // Salin periode sebelumnya states
     const [prevMonthData, setPrevMonthData] = useState([]);
-    const [prevBulanName, setPrevBulanName] = useState('');
-    const [prevTahunNum, setPrevTahunNum] = useState(currentTahunDefault);
+    const [prevPeriodeName, setPrevPeriodeName] = useState('');
     const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
     const [selectedPrevMitraIds, setSelectedPrevMitraIds] = useState([]);
 
@@ -87,38 +82,37 @@ export default function Create({ kegiatan, kegiatanList }) {
         setSelectedDetilInfo(foundDetil || null);
 
         if (selectedDetilId && foundDetil) {
-            fetchPrevMonthAssignments(selectedDetilId, data.bulan, data.tahun);
+            fetchPrevMonthAssignments(selectedDetilId, data.tanggal_mulai, data.tanggal_selesai);
         } else {
             setPrevMonthData([]);
         }
     };
 
     // 4. Fetch data penugasan bulan sebelumnya
-    const fetchPrevMonthAssignments = (detilId, bulanVal, tahunVal) => {
-        if (!detilId || !bulanVal) return;
+    const fetchPrevMonthAssignments = (detilId, tglMulaiVal, tglSelesaiVal) => {
+        if (!detilId || !tglMulaiVal || !tglSelesaiVal) return;
 
         axios.get(route('api.penugasan.prev-month'), {
             params: {
                 detil_kegiatan_id: detilId,
-                bulan: bulanVal,
-                tahun: tahunVal
+                tanggal_mulai: tglMulaiVal,
+                tanggal_selesai: tglSelesaiVal
             }
         })
         .then((res) => {
             const list = res.data?.data || [];
             setPrevMonthData(list);
-            setPrevBulanName(res.data?.prev_bulan_nama || namaBulanList[(res.data?.prev_bulan || 1) - 1] || '');
-            setPrevTahunNum(res.data?.prev_tahun || tahunVal);
+            setPrevPeriodeName(res.data?.prev_periode || 'Periode Sebelumnya');
         })
         .catch((err) => console.error('Error fetching prev month:', err));
     };
 
-    // Refetch prev month when bulan / tahun changes
+    // Refetch prev month when dates changes
     useEffect(() => {
         if (data.detil_kegiatan_id) {
-            fetchPrevMonthAssignments(data.detil_kegiatan_id, data.bulan, data.tahun);
+            fetchPrevMonthAssignments(data.detil_kegiatan_id, data.tanggal_mulai, data.tanggal_selesai);
         }
-    }, [data.bulan, data.tahun]);
+    }, [data.tanggal_mulai, data.tanggal_selesai]);
 
     // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, TANPA kecamatan)
     useEffect(() => {
@@ -486,7 +480,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 2. Periode Penugasan
                             </h3>
 
-                            {/* Tombol Salin dari Bulan Lalu */}
+                            {/* Tombol Salin dari Periode Lalu */}
                             {selectedDetilInfo && selectedDetilInfo.frekuensi_penugasan !== 'bulanan' && prevMonthData.length > 0 && (
                                 <button
                                     type="button"
@@ -494,7 +488,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 dark:text-indigo-300 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
                                 >
                                     <Copy size={14} />
-                                    <span>Salin Penugasan dari {prevBulanName} {prevTahunNum} ({prevMonthData.length} Mitra)</span>
+                                    <span>Salin Penugasan dari {prevPeriodeName} ({prevMonthData.length} Mitra)</span>
                                 </button>
                             )}
                         </div>
@@ -502,31 +496,37 @@ export default function Create({ kegiatan, kegiatanList }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Bulan Penugasan <span className="text-red-500">*</span>
+                                    Tanggal Mulai <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={data.bulan}
-                                    onChange={(e) => setData('bulan', parseInt(e.target.value))}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
-                                >
-                                    {namaBulanList.map((m, idx) => (
-                                        <option key={idx + 1} value={idx + 1}>{m}</option>
-                                    ))}
-                                </select>
-                                {errors.bulan && <p className="text-xs text-red-500">{errors.bulan}</p>}
+                                <input
+                                    type="date"
+                                    value={data.tanggal_mulai}
+                                    min={minDate}
+                                    max={maxDate}
+                                    onChange={(e) => setData('tanggal_mulai', e.target.value)}
+                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none cursor-pointer"
+                                />
+                                {errors.tanggal_mulai && <p className="text-xs text-red-500">{errors.tanggal_mulai}</p>}
+                                {minDate && maxDate && (
+                                    <p className="text-[10px] text-gray-500">Maksimum periode: {minDate} s/d {maxDate}</p>
+                                )}
                             </div>
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Tahun Penugasan <span className="text-red-500">*</span>
+                                    Tanggal Selesai <span className="text-red-500">*</span>
                                 </label>
                                 <input
-                                    type="number"
-                                    value={data.tahun}
-                                    onChange={(e) => setData('tahun', parseInt(e.target.value) || currentTahunDefault)}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none font-mono"
+                                    type="date"
+                                    value={data.tanggal_selesai}
+                                    min={data.tanggal_mulai || minDate}
+                                    max={maxDate}
+                                    onChange={(e) => setData('tanggal_selesai', e.target.value)}
+                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none font-mono cursor-pointer"
                                 />
-                                {errors.tahun && <p className="text-xs text-red-500">{errors.tahun}</p>}
+                                {errors.tanggal_selesai && <p className="text-xs text-red-500">{errors.tanggal_selesai}</p>}
                             </div>
                         </div>
                     </div>
@@ -640,7 +640,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                     {/* Actions Submit */}
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="text-xs text-gray-500">
-                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {data.bulan} {data.tahun}.
+                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {data.tanggal_mulai} s/d {data.tanggal_selesai}.
                         </div>
                         <div className="flex items-center gap-3">
                             <Link
@@ -769,13 +769,13 @@ export default function Create({ kegiatan, kegiatanList }) {
                 </div>
             </Modal>
 
-            {/* Modal Salin dari Bulan Lalu */}
+            {/* Modal Salin dari Periode Lalu */}
             <Modal show={isCopyModalOpen} onClose={() => setIsCopyModalOpen(false)} maxWidth="2xl">
                 <div className="p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
                         <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Copy size={18} className="text-indigo-600" />
-                            Salin Penugasan dari {prevBulanName} {prevTahunNum}
+                            Salin Penugasan dari {prevPeriodeName}
                         </h3>
                         <button
                             type="button"

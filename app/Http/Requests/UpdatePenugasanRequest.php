@@ -23,9 +23,11 @@ class UpdatePenugasanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'kegiatan_id' => 'required|exists:kegiatans,id',
-            'mitra_id'    => 'required|exists:mitras,id',
-            'status'      => 'required|string',
+            'kegiatan_id'     => 'required|exists:kegiatans,id',
+            'mitra_id'        => 'required|exists:mitras,id',
+            'status'          => 'required|string',
+            'tanggal_mulai'   => 'required|date',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
         ];
     }
 }
