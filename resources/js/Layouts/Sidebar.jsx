@@ -31,13 +31,22 @@ const Sidebar = forwardRef(function Sidebar({
     setMobileOpen
 }, ref) {
     const { auth, counts } = usePage().props;
-    const isAdmin = (auth?.user?.role || '').toLowerCase() === 'admin';
+    const userRole = (auth?.user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'administrator';
+    const isOperator = userRole === 'operator';
+    const isPPK = userRole === 'ppk';
+
+    const canSeeRecycleUser = isAdmin;
+    const canSeeRecycleMitra = isAdmin || isOperator;
+    const canSeeRecycleKegiatan = isAdmin || isOperator || isPPK;
+    const canSeeRecyclePenugasan = isAdmin || isOperator || isPPK;
+    const hasAnyRecycleAccess = canSeeRecycleUser || canSeeRecycleMitra || canSeeRecycleKegiatan || canSeeRecyclePenugasan;
 
     const isAnyRecycleBinActive = Boolean(
-        (typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin')) ||
-        (typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin')) ||
-        (typeof route === 'function' && route().has('kegiatan.recycle-bin') && route().current('kegiatan.recycle-bin')) ||
-        (typeof route === 'function' && route().has('penugasan.recycle-bin') && route().current('penugasan.recycle-bin'))
+        (canSeeRecycleUser && typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin')) ||
+        (canSeeRecycleMitra && typeof route === 'function' && route().has('mitra.recycle-bin') && route().current('mitra.recycle-bin')) ||
+        (canSeeRecycleKegiatan && typeof route === 'function' && route().has('kegiatan.recycle-bin') && route().current('kegiatan.recycle-bin')) ||
+        (canSeeRecyclePenugasan && typeof route === 'function' && route().has('penugasan.recycle-bin') && route().current('penugasan.recycle-bin'))
     );
 
     const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(isAnyRecycleBinActive);
@@ -55,10 +64,10 @@ const Sidebar = forwardRef(function Sidebar({
     };
 
     const totalRecycleBinBadge =
-        (counts?.recycleBinUser || 0) +
-        (counts?.recycleBinMitra || 0) +
-        (counts?.recycleBinKegiatan || 0) +
-        (counts?.recycleBinPenugasan || 0);
+        (canSeeRecycleUser ? (counts?.recycleBinUser || 0) : 0) +
+        (canSeeRecycleMitra ? (counts?.recycleBinMitra || 0) : 0) +
+        (canSeeRecycleKegiatan ? (counts?.recycleBinKegiatan || 0) : 0) +
+        (canSeeRecyclePenugasan ? (counts?.recycleBinPenugasan || 0) : 0);
 
     // Close flyout when clicking outside
     useEffect(() => {
@@ -199,48 +208,45 @@ const Sidebar = forwardRef(function Sidebar({
                         active={route().current('dashboard')}
                     />
 
-                    {/* SECTION: PENGATURAN */}
-                    {isCollapsed ? (
-                        <div className="my-3 border-t border-gray-800/80 mx-2" />
-                    ) : (
-                        <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                            PENGATURAN
-                        </div>
-                    )}
-
-                    {/* Batas SBML */}
-                    <NavItem
-                        href={route('sbml.index')}
-                        icon={Settings}
-                        label="Batas SBML"
-                        active={route().current('sbml.index')}
-                        badge={!isAdmin ? 'Lihat' : null}
-                    />
-
-                    {/* SECTION: ADMINISTRATOR (Hanya Admin) */}
+                    {/* SECTION: PENGATURAN (Hanya Admin) */}
                     {isAdmin && (
                         <>
                             {isCollapsed ? (
                                 <div className="my-3 border-t border-gray-800/80 mx-2" />
                             ) : (
                                 <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                                    ADMINISTRATOR
+                                    PENGATURAN
                                 </div>
                             )}
 
                             <NavItem
-                                href={route('users.index')}
-                                icon={Users}
-                                label="Manajemen User"
-                                active={route().current('users.index')}
+                                href={route('sbml.index')}
+                                icon={Settings}
+                                label="Batas SBML"
+                                active={route().current('sbml.index')}
                             />
+                        </>
+                    )}
 
-                            <NavItem
-                                href="#"
-                                icon={ShieldCheck}
-                                label="Security Center"
-                                active={false}
-                            />
+                    {/* SECTION: ADMINISTRATOR & DATA MASTER */}
+                    {(isAdmin || isOperator) && (
+                        <>
+                            {isCollapsed ? (
+                                <div className="my-3 border-t border-gray-800/80 mx-2" />
+                            ) : (
+                                <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                    {isAdmin ? 'ADMINISTRATOR' : 'DATA MASTER'}
+                                </div>
+                            )}
+
+                            {isAdmin && (
+                                <NavItem
+                                    href={route('users.index')}
+                                    icon={Users}
+                                    label="Manajemen User"
+                                    active={route().current('users.index')}
+                                />
+                            )}
 
                             <NavItem
                                 href={route('mitra.index')}
@@ -252,61 +258,61 @@ const Sidebar = forwardRef(function Sidebar({
                     )}
 
                     {/* SECTION: MANAJEMEN KEGIATAN */}
-                    {isCollapsed ? (
-                        <div className="my-3 border-t border-gray-800/80 mx-2" />
-                    ) : (
-                        <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                            MANAJEMEN KEGIATAN
-                        </div>
+                    {(isAdmin || isOperator || isPPK) && (
+                        <>
+                            {isCollapsed ? (
+                                <div className="my-3 border-t border-gray-800/80 mx-2" />
+                            ) : (
+                                <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                    MANAJEMEN KEGIATAN
+                                </div>
+                            )}
+
+                            <NavItem
+                                href={route('kegiatan.index')}
+                                icon={CalendarCheck}
+                                label="Kegiatan"
+                                active={route().current('kegiatan.index')}
+                            />
+
+                            <NavItem
+                                href={route('penugasan.index')}
+                                icon={UserCheck}
+                                label="Penugasan Mitra"
+                                active={route().current('penugasan.*')}
+                            />
+                        </>
                     )}
 
-                    <NavItem
-                        href={route('kegiatan.index')}
-                        icon={CalendarCheck}
-                        label="Kegiatan"
-                        active={route().current('kegiatan.index')}
-                    />
+                    {/* SECTION: TRANSAKSI (PPK & Admin) */}
+                    {(isAdmin || isPPK) && (
+                        <>
+                            {isCollapsed ? (
+                                <div className="my-3 border-t border-gray-800/80 mx-2" />
+                            ) : (
+                                <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                    TRANSAKSI
+                                </div>
+                            )}
 
-                    <NavItem
-                        href={route('penugasan.index')}
-                        icon={UserCheck}
-                        label="Penugasan Mitra"
-                        active={route().current('penugasan.*')}
-                    />
+                            <NavItem
+                                href={route('laporan-honor.index')}
+                                icon={FileText}
+                                label="Laporan Detail Honor Mitra"
+                                active={route().current('laporan-honor.*')}
+                            />
 
-                    <NavItem
-                        href={route('periode.index')}
-                        icon={Lock}
-                        label="Kunci Periode Penugasan"
-                        active={route().current('periode.*')}
-                    />
-
-                    {/* SECTION: TRANSAKSI */}
-                    {isCollapsed ? (
-                        <div className="my-3 border-t border-gray-800/80 mx-2" />
-                    ) : (
-                        <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                            TRANSAKSI
-                        </div>
+                            <NavItem
+                                href={route('monitoring-kuota.index')}
+                                icon={Gauge}
+                                label="Monitoring Kuota SBML"
+                                active={route().current('monitoring-kuota.*')}
+                            />
+                        </>
                     )}
 
-
-                    <NavItem
-                        href={route('laporan-honor.index')}
-                        icon={FileText}
-                        label="Laporan Detail Honor Mitra"
-                        active={route().current('laporan-honor.*')}
-                    />
-
-                    <NavItem
-                        href={route('monitoring-kuota.index')}
-                        icon={Gauge}
-                        label="Monitoring Kuota SBML"
-                        active={route().current('monitoring-kuota.*')}
-                    />
-
-                    {/* SECTION: RECYCLE BINS (Khusus Admin) */}
-                    {isAdmin && (
+                    {/* SECTION: RECYCLE BINS */}
+                    {hasAnyRecycleAccess && (
                         <>
                             {isCollapsed ? (
                                 <div className="relative group flex justify-center my-1" ref={flyoutRef}>
@@ -339,67 +345,74 @@ const Sidebar = forwardRef(function Sidebar({
                                                     </span>
                                                 )}
                                             </div>
-                                            <Link
-                                                href={route('users.recycle-bin')}
-                                                onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('users.recycle-bin') ? 'bg-simitra-orange text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <User size={14} /> Recycle Bin User
-                                                </div>
-                                                {counts?.recycleBinUser > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinUser}
-                                                    </span>
-                                                )}
-                                            </Link>
-                                            <Link
-                                                href={route('mitra.recycle-bin')}
-                                                onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('mitra.recycle-bin') ? 'bg-simitra-orange text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <Contact size={14} /> Recycle Bin Mitra
-                                                </div>
-                                                {counts?.recycleBinMitra > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinMitra}
-                                                    </span>
-                                                )}
-                                            </Link>
-                                            <Link
-                                                href={route('kegiatan.recycle-bin')}
-                                                onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <CalendarDays size={14} /> Recycle Bin Kegiatan
-                                                </div>
-                                                {counts?.recycleBinKegiatan > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinKegiatan}
-                                                    </span>
-                                                )}
-                                            </Link>
-                                            <Link
-                                                href={route('penugasan.recycle-bin')}
-                                                onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <UserCheck size={14} /> Recycle Bin Penugasan
-                                                </div>
-                                                {counts?.recycleBinPenugasan > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinPenugasan}
-                                                    </span>
-                                                )}
-                                            </Link>
-
+                                            {canSeeRecycleUser && (
+                                                <Link
+                                                    href={route('users.recycle-bin')}
+                                                    onClick={() => setCollapsedRecycleFlyout(false)}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('users.recycle-bin') ? 'bg-simitra-orange text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <User size={14} /> Recycle Bin User
+                                                    </div>
+                                                    {counts?.recycleBinUser > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinUser}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
+                                            {canSeeRecycleMitra && (
+                                                <Link
+                                                    href={route('mitra.recycle-bin')}
+                                                    onClick={() => setCollapsedRecycleFlyout(false)}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('mitra.recycle-bin') ? 'bg-simitra-orange text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Contact size={14} /> Recycle Bin Mitra
+                                                    </div>
+                                                    {counts?.recycleBinMitra > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinMitra}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
+                                            {canSeeRecycleKegiatan && (
+                                                <Link
+                                                    href={route('kegiatan.recycle-bin')}
+                                                    onClick={() => setCollapsedRecycleFlyout(false)}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <CalendarDays size={14} /> Recycle Bin Kegiatan
+                                                    </div>
+                                                    {counts?.recycleBinKegiatan > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinKegiatan}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
+                                            {canSeeRecyclePenugasan && (
+                                                <Link
+                                                    href={route('penugasan.recycle-bin')}
+                                                    onClick={() => setCollapsedRecycleFlyout(false)}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <UserCheck size={14} /> Recycle Bin Penugasan
+                                                    </div>
+                                                    {counts?.recycleBinPenugasan > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinPenugasan}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -436,83 +449,85 @@ const Sidebar = forwardRef(function Sidebar({
 
                                     {isRecycleBinOpen && (
                                         <div className="pl-4 pr-1 mt-1 space-y-1 border-l-2 border-gray-700 ml-5">
-                                            {/* Recycle Bin User */}
-                                            <Link
-                                                href={route('users.recycle-bin')}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('users.recycle-bin')
-                                                    ? 'bg-simitra-orange text-white font-bold'
-                                                    : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <User size={14} className="text-gray-400" />
-                                                    <span>Recycle Bin User</span>
-                                                </div>
-                                                {counts?.recycleBinUser > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinUser}
-                                                    </span>
-                                                )}
-                                            </Link>
+                                            {canSeeRecycleUser && (
+                                                <Link
+                                                    href={route('users.recycle-bin')}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('users.recycle-bin')
+                                                        ? 'bg-simitra-orange text-white font-bold'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <User size={14} className="text-gray-400" />
+                                                        <span>Recycle Bin User</span>
+                                                    </div>
+                                                    {counts?.recycleBinUser > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinUser}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
 
-                                            {/* Recycle Bin Mitra */}
-                                            <Link
-                                                href={route('mitra.recycle-bin')}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('mitra.recycle-bin')
-                                                    ? 'bg-simitra-orange text-white font-bold'
-                                                    : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <Contact size={14} className="text-gray-400" />
-                                                    <span>Recycle Bin Mitra</span>
-                                                </div>
-                                                {counts?.recycleBinMitra > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinMitra}
-                                                    </span>
-                                                )}
-                                            </Link>
+                                            {canSeeRecycleMitra && (
+                                                <Link
+                                                    href={route('mitra.recycle-bin')}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('mitra.recycle-bin')
+                                                        ? 'bg-simitra-orange text-white font-bold'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Contact size={14} className="text-gray-400" />
+                                                        <span>Recycle Bin Mitra</span>
+                                                    </div>
+                                                    {counts?.recycleBinMitra > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinMitra}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
 
-                                            {/* Recycle Bin Kegiatan */}
-                                            <Link
-                                                href={route('kegiatan.recycle-bin')}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin')
-                                                    ? 'bg-[#D9531E] text-white font-bold'
-                                                    : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <CalendarDays size={14} className="text-gray-400" />
-                                                    <span>Recycle Bin Kegiatan</span>
-                                                </div>
-                                                {counts?.recycleBinKegiatan > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinKegiatan}
-                                                    </span>
-                                                )}
-                                            </Link>
+                                            {canSeeRecycleKegiatan && (
+                                                <Link
+                                                    href={route('kegiatan.recycle-bin')}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('kegiatan.recycle-bin')
+                                                        ? 'bg-[#D9531E] text-white font-bold'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <CalendarDays size={14} className="text-gray-400" />
+                                                        <span>Recycle Bin Kegiatan</span>
+                                                    </div>
+                                                    {counts?.recycleBinKegiatan > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinKegiatan}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
 
-                                            {/* Recycle Bin Penugasan */}
-                                            <Link
-                                                href={route('penugasan.recycle-bin')}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin')
-                                                    ? 'bg-[#D9531E] text-white font-bold'
-                                                    : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <UserCheck size={14} className="text-gray-400" />
-                                                    <span>Recycle Bin Penugasan</span>
-                                                </div>
-                                                {counts?.recycleBinPenugasan > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinPenugasan}
-                                                    </span>
-                                                )}
-                                            </Link>
-
-
+                                            {canSeeRecyclePenugasan && (
+                                                <Link
+                                                    href={route('penugasan.recycle-bin')}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${route().current('penugasan.recycle-bin')
+                                                        ? 'bg-[#D9531E] text-white font-bold'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <UserCheck size={14} className="text-gray-400" />
+                                                        <span>Recycle Bin Penugasan</span>
+                                                    </div>
+                                                    {counts?.recycleBinPenugasan > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                                            {counts.recycleBinPenugasan}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
                                         </div>
                                     )}
                                 </div>

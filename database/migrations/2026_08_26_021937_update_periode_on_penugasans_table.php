@@ -12,9 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('penugasans', function (Blueprint $table) {
-            $table->date('tanggal_mulai')->nullable()->after('kegiatan_id');
-            $table->date('tanggal_selesai')->nullable()->after('tanggal_mulai');
-            $table->dropColumn(['bulan', 'tahun']);
+            if (Schema::hasColumn('penugasans', 'tanggal_mulai')) {
+                $table->dropColumn('tanggal_mulai');
+            }
+            if (Schema::hasColumn('penugasans', 'tanggal_selesai')) {
+                $table->dropColumn('tanggal_selesai');
+            }
         });
     }
 
@@ -23,10 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('penugasans', function (Blueprint $table) {
-            $table->integer('bulan')->nullable();
-            $table->year('tahun')->nullable();
-            $table->dropColumn(['tanggal_mulai', 'tanggal_selesai']);
-        });
+        //
     }
 };
