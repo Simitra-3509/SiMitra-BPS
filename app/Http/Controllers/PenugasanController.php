@@ -12,9 +12,22 @@ use App\Http\Requests\UpdatePenugasanRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class PenugasanController extends Controller
+class PenugasanController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role:operator', only: [
+                'create', 'store', 'edit', 'update', 'destroy', 
+                'bulkDestroy', 'restore', 'forceDelete', 
+                'bulkRestore', 'bulkForceDelete'
+            ]),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -30,12 +43,12 @@ class PenugasanController extends Controller
             $query->where('detil_kegiatan_id', $request->detil_kegiatan_id);
         }
 
-        if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+        if ($request->filled('tanggal_mulai')) {
+            $query->where('tanggal_mulai', '>=', $request->tanggal_mulai);
         }
 
-        if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+        if ($request->filled('tanggal_selesai')) {
+            $query->where('tanggal_selesai', '<=', $request->tanggal_selesai);
         }
 
         if ($request->filled('search')) {
@@ -125,25 +138,9 @@ class PenugasanController extends Controller
     }
 
     /**
-     * Helper: Convert month input (string name or number) to integer (1-12)
+     * Helper: Parse Date String to Get Previous Month Range
+     * We don't have this function anymore.
      */
-    private function parseBulanToInteger($value)
-    {
-        if (is_numeric($value) && (int)$value >= 1 && (int)$value <= 12) {
-            return (int)$value;
-        }
-
-        $bulanMap = [
-            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
-            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
-            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
-            'january' => 1, 'february' => 2, 'march' => 3, 'may' => 5,
-            'june' => 6, 'july' => 7, 'august' => 8, 'october' => 10, 'december' => 12,
-        ];
-
-        $key = strtolower(trim((string)$value));
-        return $bulanMap[$key] ?? (int)date('n');
-    }
 
     /**
      * API: Fetch Prev Month Penugasan for Copy Button
@@ -151,24 +148,19 @@ class PenugasanController extends Controller
     public function getPrevMonthPenugasan(Request $request)
     {
         $detilId = $request->get('detil_kegiatan_id');
-        $bulan   = $this->parseBulanToInteger($request->get('bulan'));
-        $tahun   = (int)$request->get('tahun', date('Y'));
+        $tanggalMulai = $request->get('tanggal_mulai');
 
-        if (!$detilId || !$bulan || !$tahun) {
+        if (!$detilId || !$tanggalMulai) {
             return response()->json([]);
         }
 
-        $prevBulan = $bulan - 1;
-        $prevTahun = $tahun;
-        if ($prevBulan < 1) {
-            $prevBulan = 12;
-            $prevTahun = $tahun - 1;
-        }
+        // Hitung tanggal mulai bulan sebelumnya
+        $prevMulai = date('Y-m-d', strtotime('-1 month', strtotime($tanggalMulai)));
 
+        // Cari penugasan dengan tanggal mulai yang sama di bulan sebelumnya
         $prevPenugasan = Penugasan::with('mitra')
             ->where('detil_kegiatan_id', $detilId)
-            ->where('bulan', $prevBulan)
-            ->where('tahun', $prevTahun)
+            ->where('tanggal_mulai', $prevMulai)
             ->get();
 
         $result = $prevPenugasan->map(function ($item) {
@@ -185,11 +177,12 @@ class PenugasanController extends Controller
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
+        
+        $prevBulanNum = (int)date('n', strtotime($prevMulai));
 
         return response()->json([
-            'prev_bulan'      => $prevBulan,
-            'prev_bulan_nama' => $namaBulanList[$prevBulan] ?? $prevBulan,
-            'prev_tahun'      => $prevTahun,
+            'prev_bulan_nama' => $namaBulanList[$prevBulanNum],
+            'prev_tahun'      => date('Y', strtotime($prevMulai)),
             'data'            => $result,
         ]);
     }
@@ -210,17 +203,17 @@ class PenugasanController extends Controller
         $request->validate([
             'kegiatan_id'           => 'required|exists:kegiatans,id',
             'detil_kegiatan_id'     => 'required|exists:detil_kegiatan,id',
-            'bulan'                 => 'required|integer|min:1|max:12',
-            'tahun'                 => 'required|integer',
+            'tanggal_mulai'         => 'required|date',
+            'tanggal_selesai'       => 'required|date|after_or_equal:tanggal_mulai',
             'mitras'                => 'required|array|min:1',
             'mitras.*.id'           => 'required|exists:mitras,id',
             'mitras.*.kuota_target' => 'required|numeric|min:1',
         ], [
             'kegiatan_id.required'           => 'Kegiatan wajib dipilih.',
             'detil_kegiatan_id.required'     => 'Detil rincian wajib dipilih.',
-            'bulan.required'                 => 'Bulan wajib dipilih.',
-            'bulan.integer'                  => 'Bulan harus berupa angka 1-12.',
-            'tahun.required'                 => 'Tahun wajib diisi.',
+            'tanggal_mulai.required'         => 'Tanggal mulai wajib diisi.',
+            'tanggal_selesai.required'       => 'Tanggal selesai wajib diisi.',
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama dengan atau lebih besar dari tanggal mulai.',
             'mitras.required'                => 'Minimal 1 mitra harus dipilih.',
             'mitras.min'                     => 'Minimal 1 mitra harus dipilih.',
             'mitras.*.kuota_target.required' => 'Kuota per mitra wajib diisi.',
@@ -257,7 +250,7 @@ class PenugasanController extends Controller
                     if ($exists) {
                         $mitra = Mitra::find($mitraId);
                         $namaMitra = $mitra ? $mitra->nama_lengkap : 'Mitra';
-                        throw new \Exception("Mitra {$namaMitra} sudah ditugaskan ke detil ini pada bulan ke-{$request->bulan} {$request->tahun}.");
+                        throw new \Exception("Mitra {$namaMitra} sudah ditugaskan ke detil ini pada periode {$request->tanggal_mulai} s/d {$request->tanggal_selesai}.");
                     }
 
                     // C.3 Validasi SBML — Cek SBML limit per mitra

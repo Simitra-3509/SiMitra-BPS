@@ -7,9 +7,18 @@ use App\Models\DetilKegiatan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class KegiatanController extends Controller
+class KegiatanController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role:admin,ppk', only: ['create', 'store', 'edit', 'update', 'destroy', 'duplicate', 'import', 'bulkDestroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
