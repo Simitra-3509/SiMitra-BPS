@@ -55,10 +55,26 @@ class PenugasanController extends Controller
             $tahunList = [$currentYr - 1, $currentYr, $currentYr + 1];
         }
 
+        $targetBulan = (int) ($request->input('bulan') ?: date('n'));
+        $targetTahun = (int) ($request->input('tahun') ?: date('Y'));
+
+        $periodeAktif = PeriodePengisian::where('bulan', $targetBulan)
+            ->where('tahun', $targetTahun)
+            ->first();
+
+        $statusPeriode = [
+            'bulan'      => $targetBulan,
+            'tahun'      => $targetTahun,
+            'status'     => $periodeAktif?->status ?? 'terbuka',
+            'is_locked'  => ($periodeAktif?->status ?? 'terbuka') === 'terkunci',
+            'dikunci_at' => $periodeAktif?->dikunci_at?->format('d M Y H:i'),
+        ];
+
         return Inertia::render('Penugasan/Index', [
             'penugasan'     => $penugasan,
             'semuaKegiatan' => $semuaKegiatan,
             'tahunList'     => $tahunList,
+            'statusPeriode' => $statusPeriode,
             'filters'       => $request->only(['kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun', 'search', 'jenis_sbml', 'status_honor']),
         ]);
     }
@@ -68,6 +84,10 @@ class PenugasanController extends Controller
      */
     public function create()
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
+
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
 
         return Inertia::render('Penugasan/Create', [
@@ -179,6 +199,10 @@ class PenugasanController extends Controller
      */
     public function store(Request $request)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
+
         if ($request->has('bulan')) {
             $request->merge(['bulan' => $this->parseBulanToInteger($request->bulan)]);
         }
@@ -298,6 +322,9 @@ class PenugasanController extends Controller
      */
     public function edit(Penugasan $penugasan)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
         $penugasan->load(['kegiatan', 'mitra']);
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
         $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'sobat_id']);
@@ -314,6 +341,9 @@ class PenugasanController extends Controller
      */
     public function update(UpdatePenugasanRequest $request, Penugasan $penugasan)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
         $userRole = strtolower(auth()->user()->role ?? '');
         $validated = $request->validated();
 
@@ -377,6 +407,9 @@ class PenugasanController extends Controller
      */
     public function destroy(Penugasan $penugasan)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
         $penugasan->delete();
 
         return back()->with('success', '1 penugasan mitra berhasil dipindahkan ke Recycle Bin.');

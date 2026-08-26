@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText } from 'lucide-react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText, Lock, Unlock } from 'lucide-react';
 import AuthenticatedLayout, { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import * as XLSX from 'xlsx';
@@ -10,7 +10,7 @@ const namaBulan = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], filters }) {
+function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], statusPeriode, filters }) {
     const { flash } = usePage().props;
     const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
@@ -23,6 +23,37 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+
+    const userRole = (auth?.user?.role || usePage().props?.auth?.user?.role || '').toLowerCase();
+    const canManagePenugasan = ['operator', 'admin', 'administrator'].includes(userRole);
+    const isPPKOrAdmin = ['ppk', 'admin', 'administrator'].includes(userRole);
+
+    const activeBulan = statusPeriode?.bulan || (bulan ? parseInt(bulan) : new Date().getMonth() + 1);
+    const activeTahun = statusPeriode?.tahun || (tahun ? parseInt(tahun) : new Date().getFullYear());
+    const isPeriodLocked = statusPeriode?.is_locked || false;
+
+    const handleToggleKunci = (targetBulan, targetTahun, isCurrentlyLocked) => {
+        const routeName = isCurrentlyLocked ? 'periode.buka' : 'periode.kunci';
+        const actionText = isCurrentlyLocked ? 'membuka kunci' : 'mengunci';
+        
+        setConfirmConfig({
+            title: isCurrentlyLocked ? 'Buka Kunci Periode' : 'Kunci Periode Pengisian',
+            message: `Apakah Anda yakin ingin ${actionText} pengisian penugasan bulan ${namaBulan[targetBulan - 1]} ${targetTahun}?`,
+            onConfirm: () => {
+                router.post(route(routeName), {
+                    bulan: targetBulan,
+                    tahun: targetTahun
+                }, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success(`Periode ${namaBulan[targetBulan - 1]} ${targetTahun} berhasil di-${isCurrentlyLocked ? 'buka' : 'kunci'}.`);
+                        setConfirmOpen(false);
+                    }
+                });
+            }
+        });
+        setConfirmOpen(true);
+    };
 
     // State ConfirmDialog
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -120,7 +151,6 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
         router.get(route('penugasan.index'), {
             jenis_sbml: jenisSbml,
             kegiatan_id: kegiatanId,
-            status_honor: statusHonor,
             bulan,
             tahun,
             search,
@@ -130,7 +160,6 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
     const handleReset = () => {
         setJenisSbml('');
         setKegiatanId('');
-        setStatusHonor('');
         setBulan('');
         setTahun('');
         setSearch('');
@@ -190,25 +219,57 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
             <div className="space-y-6">
 
                 {/* Page Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">Penugasan Mitra</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola penugasan mitra ke kegiatan</p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Penugasan Mitra</h1>
+                            {/* Widget Status Periode */}
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${isPeriodLocked
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                }`}>
+                                {isPeriodLocked ? <Lock size={13} /> : <Unlock size={13} />}
+                                Periode {namaBulan[activeBulan - 1]} {activeTahun}: {isPeriodLocked ? 'TERKUNCI' : 'TERBUKA'}
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Kelola alokasi kuota penugasan mitra per kegiatan & bulan anggaran</p>
                     </div>
-                    <div className="grid grid-cols-1 sm:flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={openImportModal}
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
-                        >
-                            <FileSpreadsheet size={18} /> Import Excel
-                        </button>
-                        <Link
-                            href={route('penugasan.create')}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
-                        >
-                            <Plus size={18} /> Tambah Penugasan
-                        </Link>
+
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {/* Tombol Kunci Periode Khusus PPK & Admin */}
+                        {isPPKOrAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => handleToggleKunci(activeBulan, activeTahun, isPeriodLocked)}
+                                className={`px-4 py-2 text-sm font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer ${isPeriodLocked
+                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                    : 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white'
+                                    }`}
+                                title={isPeriodLocked ? 'Klik untuk membuka kunci periode ini' : 'Klik untuk mengunci periode ini'}
+                            >
+                                {isPeriodLocked ? <Unlock size={16} /> : <Lock size={16} />}
+                                {isPeriodLocked ? 'Buka Kunci Periode' : 'Kunci Periode Bulan Ini'}
+                            </button>
+                        )}
+
+                        {/* Tombol Tambah Penugasan & Import Khusus Operator & Admin */}
+                        {canManagePenugasan && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={openImportModal}
+                                    className="px-4 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl hover:bg-emerald-100 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                                >
+                                    <FileSpreadsheet size={16} /> Import Excel
+                                </button>
+                                <Link
+                                    href={route('penugasan.create')}
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-xl transition flex items-center justify-center gap-1.5 shadow-md"
+                                >
+                                    <Plus size={16} /> Tambah Penugasan
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
 
