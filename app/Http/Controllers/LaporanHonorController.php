@@ -21,22 +21,16 @@ class LaporanHonorController extends Controller
         $tglMulai = $request->input('tanggal_mulai', '');
         $tglSelesai = $request->input('tanggal_selesai', '');
         
-        $bulanBayar = $request->input('bulan_bayar', '');
-        $tahunBayar = $request->input('tahun_bayar', '');
-        $statusPembayaran = $request->input('status_pembayaran', '');
-        
         $mitraId = $request->input('mitra_id', '');
         $jenisSbml = $request->input('jenis_sbml', '');
         $cari = $request->input('cari', '');
         $perPage = $request->input('per_page', 10);
 
-        // Subquery or Base Query to get data
-        $query = DB::table('honoraria as h')
-            ->join('penugasans as p', 'h.penugasan_id', '=', 'p.id')
+        // Base Query dari Penugasan (karena Honor otomatis dihitung di Penugasan)
+        $query = DB::table('penugasans as p')
             ->join('mitras as m', 'p.mitra_id', '=', 'm.id')
             ->join('kegiatans as k', 'p.kegiatan_id', '=', 'k.id')
-            ->join('detil_kegiatan as dk', 'dk.kegiatan_id', '=', 'k.id')
-            ->whereNull('h.deleted_at')
+            ->join('detil_kegiatan as dk', 'p.detil_kegiatan_id', '=', 'dk.id')
             ->whereNull('p.deleted_at')
             ->whereNull('m.deleted_at')
             ->whereNull('k.deleted_at');
@@ -47,52 +41,43 @@ class LaporanHonorController extends Controller
         if ($tglMulai) $query->where('k.tanggal_mulai', '>=', $tglMulai);
         if ($tglSelesai) $query->where('k.tanggal_selesai', '<=', $tglSelesai);
         
-        // Asumsi pembayaran jika belum dibayar tanggal_input null/lain
-        if ($bulanBayar) $query->whereMonth('h.tanggal_input', $bulanBayar);
-        if ($tahunBayar) $query->whereYear('h.tanggal_input', $tahunBayar);
-        if ($statusPembayaran === 'sudah_dibayar') {
-            $query->whereNotNull('h.tanggal_input');
-        } elseif ($statusPembayaran === 'belum_dibayar') {
-            $query->whereNull('h.tanggal_input');
-        }
-
         if ($mitraId) $query->where('p.mitra_id', $mitraId);
         if ($jenisSbml) $query->where('dk.jenis_sbml', $jenisSbml);
         
         if ($cari) {
             $query->where(function($q) use ($cari) {
-                $q->where('k.nama_kegiatan', 'like', "%{$cari}%");
+                $q->where('k.nama_kegiatan', 'like', "%{$cari}%")
+                  ->orWhere('m.nama_lengkap', 'like', "%{$cari}%");
             });
         }
 
-        // Clone query for Summary Aggregations
+        // Summary Aggregations
         $summaryQuery = clone $query;
-        $totalHonor = $summaryQuery->sum('h.jumlah_honor');
+        $totalHonor = (float) $summaryQuery->sum('p.total_honor');
         
         $totalMitraQuery = clone $query;
         $totalMitra = $totalMitraQuery->distinct('p.mitra_id')->count('p.mitra_id');
         
         $totalTransaksiQuery = clone $query;
-        $totalTransaksi = $totalTransaksiQuery->count('h.id');
+        $totalTransaksi = $totalTransaksiQuery->count('p.id');
         
         $pendataanQuery = clone $query;
-        $totalHonorPendataan = $pendataanQuery->where('dk.jenis_sbml', 'pendataan')->sum('h.jumlah_honor');
+        $totalHonorPendataan = (float) $pendataanQuery->where('dk.jenis_sbml', 'pendataan')->sum('p.total_honor');
         
         $pengolahanQuery = clone $query;
-        $totalHonorPengolahan = $pengolahanQuery->where('dk.jenis_sbml', 'pengolahan')->sum('h.jumlah_honor');
+        $totalHonorPengolahan = (float) $pengolahanQuery->where('dk.jenis_sbml', 'pengolahan')->sum('p.total_honor');
         
         $rataRata = $totalMitra > 0 ? $totalHonor / $totalMitra : 0;
 
-        // Fetch Paginated List grouped by Mitra, Penugasan and Kegiatan
-        // Distinct selection for the list
+        // Fetch Paginated List grouped by Mitra, Bulan, Tahun, Jenis SBML
         $listQuery = $query->select(
             'm.id as mitra_id',
             'm.nama_lengkap as nama_mitra',
             'p.bulan',
             'p.tahun',
             'dk.jenis_sbml',
-            DB::raw('COUNT(h.id) as jml_transaksi'),
-            DB::raw('SUM(h.jumlah_honor) as total_pencairan')
+            DB::raw('COUNT(p.id) as jml_transaksi'),
+            DB::raw('SUM(p.total_honor) as total_pencairan')
         )
         ->groupBy('m.id', 'm.nama_lengkap', 'p.bulan', 'p.tahun', 'dk.jenis_sbml')
         ->orderByDesc('p.tahun')
@@ -109,26 +94,23 @@ class LaporanHonorController extends Controller
                 ['path' => $request->url(), 'query' => $request->query()]
             );
         } else {
-            // Laravel DB Query Builder Paginate
             $paginated = $listQuery->paginate((int) $perPage)->withQueryString();
         }
 
-        // Get dropdown list for Mitra (all active mitras)
         $mitraList = Mitra::select('id', 'nama_lengkap')->where('status_aktif', true)->orderBy('nama_lengkap')->get();
 
         return Inertia::render('LaporanHonor/Index', [
             'data' => $paginated,
             'summary' => [
-                'total_mitra' => $totalMitra,
-                'total_transaksi' => $totalTransaksi,
-                'total_honor' => $totalHonor,
-                'rata_rata' => $rataRata,
-                'total_honor_pendataan' => $totalHonorPendataan,
+                'total_mitra'            => $totalMitra,
+                'total_transaksi'        => $totalTransaksi,
+                'total_honor'            => $totalHonor,
+                'rata_rata'              => $rataRata,
+                'total_honor_pendataan'  => $totalHonorPendataan,
                 'total_honor_pengolahan' => $totalHonorPengolahan,
             ],
             'filters' => $request->only([
                 'bulan_kegiatan', 'tahun_kegiatan', 'tanggal_mulai', 'tanggal_selesai',
-                'bulan_bayar', 'tahun_bayar', 'status_pembayaran',
                 'mitra_id', 'jenis_sbml', 'cari', 'per_page'
             ]),
             'mitraList' => $mitraList
@@ -145,45 +127,30 @@ class LaporanHonorController extends Controller
         $tglMulai = $request->input('tanggal_mulai', '');
         $tglSelesai = $request->input('tanggal_selesai', '');
         
-        $bulanBayar = $request->input('bulan_bayar', '');
-        $tahunBayar = $request->input('tahun_bayar', '');
-        $statusPembayaran = $request->input('status_pembayaran', '');
-        
         $mitraId = $request->input('mitra_id', '');
         $jenisSbml = $request->input('jenis_sbml', '');
         $cari = $request->input('cari', '');
 
-        // Base Query
-        $query = DB::table('honoraria as h')
-            ->join('penugasans as p', 'h.penugasan_id', '=', 'p.id')
+        $query = DB::table('penugasans as p')
             ->join('mitras as m', 'p.mitra_id', '=', 'm.id')
             ->join('kegiatans as k', 'p.kegiatan_id', '=', 'k.id')
-            ->join('detil_kegiatan as dk', 'dk.kegiatan_id', '=', 'k.id')
-            ->whereNull('h.deleted_at')
+            ->join('detil_kegiatan as dk', 'p.detil_kegiatan_id', '=', 'dk.id')
             ->whereNull('p.deleted_at')
             ->whereNull('m.deleted_at')
             ->whereNull('k.deleted_at');
 
-        // Apply Filters
         if ($bulanKeg) $query->where('p.bulan', $bulanKeg);
         if ($tahunKeg) $query->where('p.tahun', $tahunKeg);
         if ($tglMulai) $query->where('k.tanggal_mulai', '>=', $tglMulai);
         if ($tglSelesai) $query->where('k.tanggal_selesai', '<=', $tglSelesai);
         
-        if ($bulanBayar) $query->whereMonth('h.tanggal_input', $bulanBayar);
-        if ($tahunBayar) $query->whereYear('h.tanggal_input', $tahunBayar);
-        if ($statusPembayaran === 'sudah_dibayar') {
-            $query->whereNotNull('h.tanggal_input');
-        } elseif ($statusPembayaran === 'belum_dibayar') {
-            $query->whereNull('h.tanggal_input');
-        }
-
         if ($mitraId) $query->where('p.mitra_id', $mitraId);
         if ($jenisSbml) $query->where('dk.jenis_sbml', $jenisSbml);
         
         if ($cari) {
             $query->where(function($q) use ($cari) {
-                $q->where('k.nama_kegiatan', 'like', "%{$cari}%");
+                $q->where('k.nama_kegiatan', 'like', "%{$cari}%")
+                  ->orWhere('m.nama_lengkap', 'like', "%{$cari}%");
             });
         }
 
@@ -192,8 +159,8 @@ class LaporanHonorController extends Controller
             'p.bulan',
             'p.tahun',
             'dk.jenis_sbml',
-            DB::raw('COUNT(h.id) as jml_transaksi'),
-            DB::raw('SUM(h.jumlah_honor) as total_pencairan')
+            DB::raw('COUNT(p.id) as jml_transaksi'),
+            DB::raw('SUM(p.total_honor) as total_pencairan')
         )
         ->groupBy('m.id', 'm.nama_lengkap', 'p.bulan', 'p.tahun', 'dk.jenis_sbml')
         ->orderByDesc('p.tahun')
@@ -212,7 +179,7 @@ class LaporanHonorController extends Controller
             "Expires"             => "0"
         );
 
-        $columns = array('No', 'Nama Mitra', 'Bulan', 'Tahun', 'Jenis SBML', 'Jumlah Transaksi', 'Total Pencairan');
+        $columns = array('No', 'Nama Mitra', 'Bulan', 'Tahun', 'Jenis SBML', 'Jumlah Penugasan', 'Total Honor');
 
         $callback = function() use($data, $columns) {
             $file = fopen('php://output', 'w');

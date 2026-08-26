@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\Mitra;
 use App\Models\Kegiatan;
+use App\Models\Penugasan;
 use App\Models\SbmlLimit;
 
 Route::get('/', function () {
@@ -29,8 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', function () {
             $totalMitra = Mitra::where('status_aktif', true)->count();
             $kegiatanAktif = Kegiatan::where('status_aktif', true)->count();
-            $honorBulanIni = Honorarium::whereMonth('tanggal_input', date('m'))->whereYear('tanggal_input', date('Y'))->sum('jumlah_honor');
-            $jumlahInputHonor = Honorarium::whereMonth('tanggal_input', date('m'))->whereYear('tanggal_input', date('Y'))->count();
+            $honorBulanIni = (float) Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->sum('total_honor');
+            $jumlahPenugasanBulanIni = Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->count();
 
             $sbmlPendataan = SbmlLimit::where('jenis_kegiatan', 'pendataan')->first()?->batas_maksimal ?? 0;
             $sbmlPengolahan = SbmlLimit::where('jenis_kegiatan', 'pengolahan')->first()?->batas_maksimal ?? 0;
@@ -49,7 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $komposisiData = [
                 ['name' => 'Mitra', 'value' => $totalMitra],
                 ['name' => 'Kegiatan', 'value' => $kegiatanAktif],
-                ['name' => 'Input Honor', 'value' => $jumlahInputHonor],
+                ['name' => 'Penugasan', 'value' => $jumlahPenugasanBulanIni],
             ];
 
             return Inertia::render('Dashboard', [
@@ -57,7 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'totalMitra' => $totalMitra,
                     'kegiatanAktif' => $kegiatanAktif,
                     'honorBulanIni' => $honorBulanIni,
-                    'jumlahInputHonor' => $jumlahInputHonor,
+                    'jumlahInputHonor' => $jumlahPenugasanBulanIni,
                 ],
                 'sbml' => [
                     'pendataan' => $sbmlPendataan,
