@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Fragment } from 'react';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText, Lock, Unlock } from 'lucide-react';
 import AuthenticatedLayout, { useAppToast } from '@/Layouts/AuthenticatedLayout';
@@ -10,7 +10,7 @@ const namaBulan = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-function Index({ auth, penugasan, kegiatanTanpaMitra = [], semuaKegiatan, tahunList = [], statusPeriode, filters }) {
+function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], statusPeriode, filters }) {
     const { flash } = usePage().props;
     const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
@@ -63,7 +63,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra = [], semuaKegiatan, tahunL
 
     // State for the Assign Mitra modal
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
-    const [mitraSearch, setMitraSearch] = useState('');
 
     // State for Import Excel Penugasan Mitra modal
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -100,6 +99,13 @@ function Index({ auth, penugasan, kegiatanTanpaMitra = [], semuaKegiatan, tahunL
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Template Import Penugasan");
         XLSX.writeFile(workbook, "Template_Import_Penugasan_Mitra.xlsx");
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+        else if (e.type === 'dragleave') setDragActive(false);
     };
 
     const handleDrop = (e) => {
