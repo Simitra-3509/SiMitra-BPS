@@ -80,7 +80,7 @@ class PenugasanController extends Controller implements HasMiddleware
             'tahun'      => $targetTahun,
             'status'     => $periodeAktif?->status ?? 'terbuka',
             'is_locked'  => ($periodeAktif?->status ?? 'terbuka') === 'terkunci',
-            'dikunci_at' => $periodeAktif?->dikunci_at?->format('d M Y H:i'),
+            'dikunci_at' => $periodeAktif?->dikunci_at ? \Carbon\Carbon::parse($periodeAktif->dikunci_at)->format('d M Y H:i') : null,
         ];
 
         return Inertia::render('Penugasan/Index', [

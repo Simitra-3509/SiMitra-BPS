@@ -183,8 +183,8 @@ export default function Index({ periodes, tahun, tahunList }) {
                         ? `Apakah Anda yakin ingin MENGUNCI periode ${confirmAction?.item?.nama_bulan} ${confirmAction?.item?.tahun}? Operator tidak dapat menambah/mengedit penugasan pada bulan ini.`
                         : `Apakah Anda yakin ingin MEMBUKA kunci periode ${confirmAction?.item?.nama_bulan} ${confirmAction?.item?.tahun}? Operator dapat kembali mengisi penugasan.`
                 }
-                type={confirmAction?.type === 'kunci' ? 'danger' : 'info'}
-                confirmText={confirmAction?.type === 'kunci' ? 'Kunci Sekarang' : 'Buka Kunci'}
+                variant={confirmAction?.type === 'kunci' ? 'lock' : 'unlock'}
+                confirmText={confirmAction?.type === 'kunci' ? 'Ya, Kunci Periode' : 'Ya, Buka Kunci'}
             />
         </AuthenticatedLayout>
     );
