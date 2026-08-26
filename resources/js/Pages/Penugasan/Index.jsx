@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText, Lock, Unlock } from 'lucide-react';
 import AuthenticatedLayout, { useAppToast } from '@/Layouts/AuthenticatedLayout';
@@ -10,28 +10,15 @@ const namaBulan = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-<<<<<<< HEAD
 function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], statusPeriode, filters }) {
-=======
-function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
     const { flash } = usePage().props;
     const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
 
-    const userRole = auth?.user?.role;
-    const canManagePenugasan = userRole === 'operator';
-
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [kegiatanId, setKegiatanId] = useState(filters?.kegiatan_id || '');
-<<<<<<< HEAD
     const [bulan, setBulan] = useState(filters?.bulan || '');
     const [tahun, setTahun] = useState(filters?.tahun || '');
-=======
-    const [statusHonor, setStatusHonor] = useState(filters?.status_honor || '');
-    const [tanggalMulai, setTanggalMulai] = useState(filters?.tanggal_mulai || '');
-    const [tanggalSelesai, setTanggalSelesai] = useState(filters?.tanggal_selesai || '');
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
     const [search, setSearch] = useState(filters?.search || '');
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
@@ -164,14 +151,8 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
         router.get(route('penugasan.index'), {
             jenis_sbml: jenisSbml,
             kegiatan_id: kegiatanId,
-<<<<<<< HEAD
             bulan,
             tahun,
-=======
-            status_honor: statusHonor,
-            tanggal_mulai: tanggalMulai,
-            tanggal_selesai: tanggalSelesai,
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
             search,
         }, { preserveState: true, replace: true });
     };
@@ -179,14 +160,8 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
     const handleReset = () => {
         setJenisSbml('');
         setKegiatanId('');
-<<<<<<< HEAD
         setBulan('');
         setTahun('');
-=======
-        setStatusHonor('');
-        setTanggalMulai('');
-        setTanggalSelesai('');
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
         setSearch('');
         router.get(route('penugasan.index'));
     };
@@ -259,7 +234,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Kelola alokasi kuota penugasan mitra per kegiatan & bulan anggaran</p>
                     </div>
-<<<<<<< HEAD
 
                     <div className="flex flex-wrap items-center gap-2.5">
                         {/* Tombol Kunci Periode Khusus PPK & Admin */}
@@ -297,24 +271,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                             </>
                         )}
                     </div>
-=======
-                    {canManagePenugasan && (
-                        <div className="grid grid-cols-1 sm:flex items-center gap-2 w-full sm:w-auto">
-                            <button
-                                type="button"
-                                className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer w-full sm:w-auto"
-                            >
-                                <FileSpreadsheet size={18} /> Import Excel
-                            </button>
-                            <Link
-                                href={route('penugasan.create')}
-                                className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
-                            >
-                                <Plus size={18} /> Tambah Penugasan
-                            </Link>
-                        </div>
-                    )}
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                 </div>
 
                 {/* Flash Success Notification */}
@@ -381,14 +337,12 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                             </div>
                                         </div>
                                         <div className="ml-auto pl-4 border-l border-gray-100 dark:border-gray-700 flex items-center">
-                                            {canManagePenugasan && (
-                                                <button
-                                                    onClick={() => setAssignModal({ isOpen: true, kegiatan: kg })}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg hover:bg-[#D9531E] hover:text-white dark:hover:bg-[#D9531E] dark:hover:text-white hover:border-[#D9531E] transition-colors cursor-pointer"
-                                                >
-                                                    <Plus size={14} /> Tugaskan
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => setAssignModal({ isOpen: true, kegiatan: kg })}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg hover:bg-[#D9531E] hover:text-white dark:hover:bg-[#D9531E] dark:hover:text-white hover:border-[#D9531E] transition-colors"
+                                            >
+                                                <Plus size={14} /> Tugaskan
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -463,7 +417,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                             </select>
                         </div>
 
-<<<<<<< HEAD
                         {/* Tahun */}
                         <div className="flex flex-col gap-1 min-w-[110px]">
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Tahun</label>
@@ -480,28 +433,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                         </div>
 
 
-=======
-                        {/* Tanggal Mulai & Selesai */}
-                        <div className="flex flex-col gap-1 min-w-[130px]">
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Tgl Mulai</label>
-                            <input
-                                type="date"
-                                value={tanggalMulai}
-                                onChange={(e) => setTanggalMulai(e.target.value)}
-                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
-                            />
-                        </div>
-                        <div className="flex flex-col gap-1 min-w-[130px]">
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Tgl Selesai</label>
-                            <input
-                                type="date"
-                                value={tanggalSelesai}
-                                onChange={(e) => setTanggalSelesai(e.target.value)}
-                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
-                            />
-                        </div>
-
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                         {/* Search */}
                         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Cari</label>
@@ -545,7 +476,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
                     <div className="overflow-x-auto w-full">
                         <table className="w-full text-left border-collapse min-w-[800px] whitespace-nowrap">
-<<<<<<< HEAD
                             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
                                     <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
@@ -576,68 +506,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                                         </p>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                                                             {detilObj?.nama_detil ?? 'Semua Detil'}
-=======
-                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            <tr>
-                                {canManagePenugasan && <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>}
-                                <th className="p-4 w-10 text-center">No</th>
-                                <th className="p-4">Kegiatan</th>
-                                <th className="p-4">Mitra</th>
-                                <th className="p-4 text-center">Status</th>
-                                <th className="p-4 text-center">Honorarium</th>
-                                {canManagePenugasan && <th className="p-4 text-center">Aksi</th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                            {penugasan?.data && penugasan.data.length > 0 ? (
-                                penugasan.data.map((item, index) => {
-                                    const totalHonor = item.honoraria?.reduce((sum, h) => sum + (h.jumlah_honor ?? 0), 0) ?? 0;
-                                    const sudahInput = item.honoraria?.length > 0;
-                                    const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
-
-                                    return (
-                                        <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                            {canManagePenugasan && <td className="p-4 text-center"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="rounded text-orange-600" /></td>}
-                                            <td className="p-4 text-center font-medium text-gray-400 dark:text-gray-500">{nomorUrut}</td>
-                                            <td className="p-4">
-                                                <p className="font-semibold text-gray-900 dark:text-white leading-snug">
-                                                    {item.kegiatan?.nama_kegiatan ?? '-'}
-                                                    {item.tanggal_mulai && item.tanggal_selesai && (
-                                                        <span className="text-gray-500 dark:text-gray-400 font-medium text-xs ml-1 block mt-0.5">
-                                                            {item.tanggal_mulai} s/d {item.tanggal_selesai}
-                                                        </span>
-                                                    )}
-                                                </p>
-                                                {(item.kegiatan?.jenis_sbml || item.kegiatan?.jenis_kegiatan) && (
-                                                        <span className={`mt-1.5 inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded text-white ${(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan'
-                                                            ? 'bg-[#F26522]'
-                                                            : 'bg-[#3dbcc9]'
-                                                        }`}>
-                                                        {(item.kegiatan.jenis_sbml || item.kegiatan.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="p-4">
-                                                <p className="font-semibold text-gray-900 dark:text-white">{item.mitra?.nama ?? '-'}</p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.mitra?.nik ?? ''}</p>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                    }`}>
-                                                    {item.kegiatan?.status_aktif ? 'Aktif' : 'Non-Aktif'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                {sudahInput ? (
-                                                    <div>
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                                                            ✓ Sudah Input
-                                                        </span>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                            Rp {totalHonor.toLocaleString('id-ID')}
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                                                         </p>
                                                     </div>
                                                 </td>
@@ -669,26 +537,10 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                                         }`}>
                                                         {item.kegiatan?.status_aktif ? 'Aktif' : 'Non-Aktif'}
                                                     </span>
-<<<<<<< HEAD
                                                 </td>
                                                 <td className="p-4 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
                                                         <Link
-=======
-                                                )}
-                                            </td>
-                                            {canManagePenugasan && (
-                                                <td className="p-4 text-center">
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        <Link
-                                                            href={route('honorarium.create', { penugasan_id: item.id })}
-                                                            title="Input Honor"
-                                                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:text-emerald-500 rounded-lg transition flex items-center justify-center"
-                                                        >
-                                                            <Banknote size={15} />
-                                                        </Link>
-                                                        <Link
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                                                             href={route('penugasan.edit', item.id)}
                                                             title="Edit"
                                                             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
@@ -698,17 +550,12 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                                         <button
                                                             onClick={() => handleDelete(item.id)}
                                                             title="Hapus"
-<<<<<<< HEAD
                                                             className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
-=======
-                                                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition cursor-pointer"
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                                                         >
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
                                                 </td>
-<<<<<<< HEAD
                                             </tr>
                                         );
                                     })
@@ -734,21 +581,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                         <td colSpan="2"></td>
                                     </tr>
                                 </tfoot>
-=======
-                                            )}
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan={canManagePenugasan ? "7" : "5"} className="p-10 text-center text-gray-400 dark:text-gray-500">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <span className="text-3xl">📋</span>
-                                            <span className="text-sm">Tidak ada data penugasan yang ditemukan.</span>
-                                        </div>
-                                    </td>
-                                </tr>
->>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                             )}
                         </table>
                     </div>
