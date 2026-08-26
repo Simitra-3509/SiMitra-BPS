@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2 } from 'lucide-react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { useAppToast } from '@/Layouts/AuthenticatedLayout';
+import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
+import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText, Lock, Unlock } from 'lucide-react';
+import AuthenticatedLayout, { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import * as XLSX from 'xlsx';
 
 const namaBulan = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
+<<<<<<< HEAD
+function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], statusPeriode, filters }) {
+=======
 function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) {
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
     const { flash } = usePage().props;
     const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
@@ -20,13 +24,49 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
 
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [kegiatanId, setKegiatanId] = useState(filters?.kegiatan_id || '');
+<<<<<<< HEAD
+    const [bulan, setBulan] = useState(filters?.bulan || '');
+    const [tahun, setTahun] = useState(filters?.tahun || '');
+=======
     const [statusHonor, setStatusHonor] = useState(filters?.status_honor || '');
     const [tanggalMulai, setTanggalMulai] = useState(filters?.tanggal_mulai || '');
     const [tanggalSelesai, setTanggalSelesai] = useState(filters?.tanggal_selesai || '');
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
     const [search, setSearch] = useState(filters?.search || '');
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+
+    const userRole = (auth?.user?.role || usePage().props?.auth?.user?.role || '').toLowerCase();
+    const canManagePenugasan = ['operator', 'admin', 'administrator'].includes(userRole);
+    const isPPKOrAdmin = ['ppk', 'admin', 'administrator'].includes(userRole);
+
+    const activeBulan = statusPeriode?.bulan || (bulan ? parseInt(bulan) : new Date().getMonth() + 1);
+    const activeTahun = statusPeriode?.tahun || (tahun ? parseInt(tahun) : new Date().getFullYear());
+    const isPeriodLocked = statusPeriode?.is_locked || false;
+
+    const handleToggleKunci = (targetBulan, targetTahun, isCurrentlyLocked) => {
+        const routeName = isCurrentlyLocked ? 'periode.buka' : 'periode.kunci';
+        const actionText = isCurrentlyLocked ? 'membuka kunci' : 'mengunci';
+        
+        setConfirmConfig({
+            title: isCurrentlyLocked ? 'Buka Kunci Periode' : 'Kunci Periode Pengisian',
+            message: `Apakah Anda yakin ingin ${actionText} pengisian penugasan bulan ${namaBulan[targetBulan - 1]} ${targetTahun}?`,
+            onConfirm: () => {
+                router.post(route(routeName), {
+                    bulan: targetBulan,
+                    tahun: targetTahun
+                }, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success(`Periode ${namaBulan[targetBulan - 1]} ${targetTahun} berhasil di-${isCurrentlyLocked ? 'buka' : 'kunci'}.`);
+                        setConfirmOpen(false);
+                    }
+                });
+            }
+        });
+        setConfirmOpen(true);
+    };
 
     // State ConfirmDialog
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -36,13 +76,102 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
     const [mitraSearch, setMitraSearch] = useState('');
 
+    // State for Import Excel Penugasan Mitra modal
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+
+    const { data: importData, setData: setImportData, post: postImport, processing: processingImport, errors: importErrors, reset: resetImport } = useForm({
+        file: null,
+        rows: []
+    });
+
+    const openImportModal = () => {
+        setIsImportModalOpen(true);
+    };
+
+    const closeImportModal = () => {
+        setIsImportModalOpen(false);
+        setTimeout(() => resetImport(), 300);
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = ["Kode KRO", "Nama Detil", "Sobat ID", "Bulan", "Tahun", "Kuota Target"];
+        const sampleRow = ["2026.BMA.001", "Honor SKLNP", "276426", "Agustus", "2026", 40];
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+        worksheet['!cols'] = [
+            { wch: 22 },
+            { wch: 25 },
+            { wch: 16 },
+            { wch: 16 },
+            { wch: 12 },
+            { wch: 15 }
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template Import Penugasan");
+        XLSX.writeFile(workbook, "Template_Import_Penugasan_Mitra.xlsx");
+    };
+
+    const processFile = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                setImportData({ file, rows: jsonData });
+            } catch (err) {
+                console.error("Gagal membaca file excel:", err);
+                setImportData({ file, rows: [] });
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) processFile(file);
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+        else if (e.type === 'dragleave') setDragActive(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) processFile(file);
+    };
+
+    const handleImportSubmit = (e) => {
+        e.preventDefault();
+        if (!importData.file) return;
+        postImport(route('penugasan.import'), {
+            onSuccess: () => closeImportModal()
+        });
+    };
+
     const handleFilter = () => {
         router.get(route('penugasan.index'), {
             jenis_sbml: jenisSbml,
             kegiatan_id: kegiatanId,
+<<<<<<< HEAD
+            bulan,
+            tahun,
+=======
             status_honor: statusHonor,
             tanggal_mulai: tanggalMulai,
             tanggal_selesai: tanggalSelesai,
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
             search,
         }, { preserveState: true, replace: true });
     };
@@ -50,9 +179,14 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
     const handleReset = () => {
         setJenisSbml('');
         setKegiatanId('');
+<<<<<<< HEAD
+        setBulan('');
+        setTahun('');
+=======
         setStatusHonor('');
         setTanggalMulai('');
         setTanggalSelesai('');
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
         setSearch('');
         router.get(route('penugasan.index'));
     };
@@ -110,11 +244,60 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
             <div className="space-y-6">
 
                 {/* Page Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">Penugasan Mitra</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola penugasan mitra ke kegiatan</p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Penugasan Mitra</h1>
+                            {/* Widget Status Periode */}
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${isPeriodLocked
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                }`}>
+                                {isPeriodLocked ? <Lock size={13} /> : <Unlock size={13} />}
+                                Periode {namaBulan[activeBulan - 1]} {activeTahun}: {isPeriodLocked ? 'TERKUNCI' : 'TERBUKA'}
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Kelola alokasi kuota penugasan mitra per kegiatan & bulan anggaran</p>
                     </div>
+<<<<<<< HEAD
+
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {/* Tombol Kunci Periode Khusus PPK & Admin */}
+                        {isPPKOrAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => handleToggleKunci(activeBulan, activeTahun, isPeriodLocked)}
+                                className={`px-4 py-2 text-sm font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer ${isPeriodLocked
+                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                    : 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white'
+                                    }`}
+                                title={isPeriodLocked ? 'Klik untuk membuka kunci periode ini' : 'Klik untuk mengunci periode ini'}
+                            >
+                                {isPeriodLocked ? <Unlock size={16} /> : <Lock size={16} />}
+                                {isPeriodLocked ? 'Buka Kunci Periode' : 'Kunci Periode Bulan Ini'}
+                            </button>
+                        )}
+
+                        {/* Tombol Tambah Penugasan & Import Khusus Operator & Admin */}
+                        {canManagePenugasan && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={openImportModal}
+                                    className="px-4 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl hover:bg-emerald-100 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                                >
+                                    <FileSpreadsheet size={16} /> Import Excel
+                                </button>
+                                <Link
+                                    href={route('penugasan.create')}
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-xl transition flex items-center justify-center gap-1.5 shadow-md"
+                                >
+                                    <Plus size={16} /> Tambah Penugasan
+                                </Link>
+                            </>
+                        )}
+                    </div>
+=======
                     {canManagePenugasan && (
                         <div className="grid grid-cols-1 sm:flex items-center gap-2 w-full sm:w-auto">
                             <button
@@ -131,6 +314,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                             </Link>
                         </div>
                     )}
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                 </div>
 
                 {/* Flash Success Notification */}
@@ -183,14 +367,14 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                             </h3>
                                             <div className="flex items-center gap-2 mt-1.5">
                                                 <span className={`w-fit px-2 py-0.5 text-[10px] font-bold rounded flex items-center uppercase tracking-wide text-white ${(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan'
-                                                        ? 'bg-[#F26522]'
-                                                        : 'bg-[#3dbcc9]'
+                                                    ? 'bg-[#F26522]'
+                                                    : 'bg-[#3dbcc9]'
                                                     }`}>
                                                     {(kg.jenis_sbml || kg.jenis_kegiatan) === 'pendataan' ? 'Pendataan' : 'Pengolahan'}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 border border-gray-200 dark:border-gray-600 shadow-sm">
                                                     <Calendar size={10} className="text-gray-400 dark:text-gray-500" />
-                                                    {kg.tgl_mulai && kg.tgl_selesai 
+                                                    {kg.tgl_mulai && kg.tgl_selesai
                                                         ? `${kg.tgl_mulai} s/d ${kg.tgl_selesai}`
                                                         : '01 Jan - 31 Jan 2026'}
                                                 </span>
@@ -257,25 +441,46 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                             >
                                 <option value="">Semua Kegiatan</option>
                                 {semuaKegiatan?.map((kg) => (
-                                    <option key={kg.id} value={kg.id}>{kg.nama_kegiatan}</option>
+                                    <option key={kg.id} value={kg.id}>
+                                        {kg.kode_kegiatan ? `${kg.kode_kegiatan} - ` : ''}{kg.nama_kegiatan}
+                                    </option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Status Honor */}
-                        <div className="flex flex-col gap-1 min-w-[160px]">
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Status Honor</label>
+                        {/* Bulan */}
+                        <div className="flex flex-col gap-1 min-w-[130px]">
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Bulan</label>
                             <select
-                                value={statusHonor}
-                                onChange={(e) => setStatusHonor(e.target.value)}
+                                value={bulan}
+                                onChange={(e) => setBulan(e.target.value)}
                                 className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
                             >
-                                <option value="">Semua Status</option>
-                                <option value="sudah">Sudah Input</option>
-                                <option value="belum">Belum Input</option>
+                                <option value="">Semua Bulan</option>
+                                {namaBulan.map((name, idx) => (
+                                    <option key={idx + 1} value={idx + 1}>{name}</option>
+                                ))}
                             </select>
                         </div>
 
+<<<<<<< HEAD
+                        {/* Tahun */}
+                        <div className="flex flex-col gap-1 min-w-[110px]">
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Tahun</label>
+                            <select
+                                value={tahun}
+                                onChange={(e) => setTahun(e.target.value)}
+                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
+                            >
+                                <option value="">Semua Tahun</option>
+                                {(tahunList.length > 0 ? tahunList : [2025, 2026, 2027]).map((yr) => (
+                                    <option key={yr} value={yr}>{yr}</option>
+                                ))}
+                            </select>
+                        </div>
+
+
+=======
                         {/* Tanggal Mulai & Selesai */}
                         <div className="flex flex-col gap-1 min-w-[130px]">
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Tgl Mulai</label>
@@ -296,6 +501,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                             />
                         </div>
 
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                         {/* Search */}
                         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Cari</label>
@@ -339,6 +545,38 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
                     <div className="overflow-x-auto w-full">
                         <table className="w-full text-left border-collapse min-w-[800px] whitespace-nowrap">
+<<<<<<< HEAD
+                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <tr>
+                                    <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>
+                                    <th className="p-4 w-10 text-center">No</th>
+                                    <th className="p-4">Kegiatan & Detil</th>
+                                    <th className="p-4">Periode</th>
+                                    <th className="p-4">Mitra</th>
+                                    <th className="p-4 text-center">Kuota Target</th>
+                                    <th className="p-4 text-right">Total Honor</th>
+                                    <th className="p-4 text-center">Status</th>
+                                    <th className="p-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                                 {penugasan?.data && penugasan.data.length > 0 ? (
+                                    penugasan.data.map((item, index) => {
+                                        const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
+                                        const detilObj = item.detil_kegiatan || item.detilKegiatan;
+
+                                        return (
+                                            <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                                <td className="p-4 text-center"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="rounded text-orange-600" /></td>
+                                                <td className="p-4 text-center font-medium text-gray-400 dark:text-gray-500">{nomorUrut}</td>
+                                                <td className="p-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <p className="font-bold text-gray-900 dark:text-white leading-snug">
+                                                            {item.kegiatan?.nama_kegiatan ?? '-'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                            {detilObj?.nama_detil ?? 'Semua Detil'}
+=======
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             <tr>
                                 {canManagePenugasan && <th className="p-4 w-10 text-center"><input type="checkbox" checked={selectedIds.length === penugasan.data?.length && penugasan.data.length > 0} onChange={toggleSelectAll} className="rounded text-orange-600 focus:ring-orange-500" /></th>}
@@ -399,12 +637,44 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                                         </span>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                             Rp {totalHonor.toLocaleString('id-ID')}
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                                                         </p>
                                                     </div>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                                        ⏳ Belum Input
+                                                </td>
+                                                <td className="p-4 font-medium text-gray-800 dark:text-gray-200">
+                                                    {item.bulan && item.tahun
+                                                        ? `${namaBulan[item.bulan - 1] || item.bulan} ${item.tahun}`
+                                                        : '-'}
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <p className="font-bold text-gray-900 dark:text-white">
+                                                            {item.mitra?.nama_lengkap ?? '-'}
+                                                        </p>
+                                                        <p className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                                                            Sobat ID: {item.mitra?.sobat_id ?? '-'}
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                    {item.kuota_target ?? 0} {(detilObj?.satuan ?? '').toUpperCase()}
+                                                </td>
+                                                <td className="p-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                    Rp {new Intl.NumberFormat('id-ID').format(item.total_honor ?? 0)}
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                        }`}>
+                                                        {item.kegiatan?.status_aktif ? 'Aktif' : 'Non-Aktif'}
                                                     </span>
+<<<<<<< HEAD
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <Link
+=======
                                                 )}
                                             </td>
                                             {canManagePenugasan && (
@@ -418,6 +688,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                                             <Banknote size={15} />
                                                         </Link>
                                                         <Link
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                                                             href={route('penugasan.edit', item.id)}
                                                             title="Edit"
                                                             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
@@ -427,12 +698,43 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                                         <button
                                                             onClick={() => handleDelete(item.id)}
                                                             title="Hapus"
+<<<<<<< HEAD
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
+=======
                                                             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition cursor-pointer"
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                                                         >
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
                                                 </td>
+<<<<<<< HEAD
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="9" className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                            Tidak ada data penugasan yang ditemukan.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                            {penugasan?.data && penugasan.data.length > 0 && (
+                                <tfoot className="bg-gray-50 dark:bg-gray-700/80 border-t-2 border-gray-200 dark:border-gray-600 font-bold text-gray-900 dark:text-white text-sm">
+                                    <tr>
+                                        <td colSpan="6" className="p-4 text-right">
+                                            Total Keseluruhan (Halaman Ini):
+                                        </td>
+                                        <td className="p-4 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                                            Rp {new Intl.NumberFormat('id-ID').format(
+                                                penugasan.data.reduce((sum, item) => sum + (parseFloat(item.total_honor) || 0), 0)
+                                            )}
+                                        </td>
+                                        <td colSpan="2"></td>
+                                    </tr>
+                                </tfoot>
+=======
                                             )}
                                         </tr>
                                     );
@@ -446,9 +748,9 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                                         </div>
                                     </td>
                                 </tr>
+>>>>>>> 5e835a8fa1ffaf7ab79d203306d7e06dd24b2412
                             )}
-                        </tbody>
-                    </table>
+                        </table>
                     </div>
 
                     {/* Pagination */}
@@ -572,6 +874,129 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, filters }) 
                             >
                                 <Trash2 size={16} /> Hapus Data
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal Import Excel Penugasan Mitra */}
+                {isImportModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-150">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 bg-emerald-50/50 dark:bg-gray-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl dark:bg-emerald-950/60 dark:text-emerald-400">
+                                        <FileSpreadsheet size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Import Penugasan Mitra (.xlsx)</h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Unggah kolektif penugasan mitra (Mode Upsert)</p>
+                                    </div>
+                                </div>
+                                <button onClick={closeImportModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleImportSubmit} className="p-6 space-y-4">
+                                {/* Structured Error Display */}
+                                {importErrors.import && (
+                                    <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs flex items-center gap-2">
+                                        <AlertTriangle size={16} className="shrink-0 text-red-500" />
+                                        <span>{importErrors.import}</span>
+                                    </div>
+                                )}
+
+                                {importErrors.import_list && Array.isArray(importErrors.import_list) && importErrors.import_list.length > 0 && (
+                                    <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-xs space-y-1.5 max-h-44 overflow-y-auto">
+                                        <div className="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
+                                            <AlertTriangle size={15} />
+                                            <span>Gagal Import (Daftar Kesalahan Baris):</span>
+                                        </div>
+                                        <ul className="list-disc pl-4 space-y-1 text-rose-700 dark:text-rose-300">
+                                            {importErrors.import_list.map((err, idx) => (
+                                                <li key={idx}>{err}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* Info Box Format */}
+                                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-4 rounded-xl text-xs space-y-2.5 text-blue-900 dark:text-blue-200">
+                                    <p className="font-bold flex items-center gap-1.5">
+                                        <FileText size={16} className="text-blue-600 dark:text-blue-400" />
+                                        Ketentuan Format Import Excel Penugasan:
+                                    </p>
+                                    <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300 leading-relaxed">
+                                        <li>
+                                            Header kolom wajib: <span className="font-mono font-bold">Kode KRO, Nama Detil, Sobat ID, Bulan, Tahun, Kuota Target</span>
+                                        </li>
+                                        <li>Kolom <strong className="text-blue-950 dark:text-white">Bulan</strong> diisi teks nama bulan Indonesia (contoh: <span className="font-mono text-blue-700 font-bold">Agustus</span>).</li>
+                                        <li><strong className="text-blue-950 dark:text-white">Kode KRO, Nama Detil, dan Sobat ID</strong> harus sudah terdaftar di sistem.</li>
+                                        <li>System menggunakan mode <strong className="text-emerald-700 dark:text-emerald-400">UPSERT</strong>: Kombinasi (Detil + Mitra + Bulan + Tahun) yang sudah ada akan otomatis di-update kuota targetnya.</li>
+                                    </ul>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleDownloadTemplate}
+                                        className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3.5 py-2 rounded-lg border border-blue-300 dark:border-blue-700 shadow-xs cursor-pointer transition"
+                                    >
+                                        <Download size={14} /> Download Format Template Excel (.xlsx)
+                                    </button>
+                                </div>
+
+                                {/* Dropzone */}
+                                <div
+                                    onDragEnter={handleDrag}
+                                    onDragLeave={handleDrag}
+                                    onDragOver={handleDrag}
+                                    onDrop={handleDrop}
+                                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${dragActive
+                                            ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                                            : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls, .csv"
+                                        onChange={handleFileChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                                        <Upload className="text-emerald-600 dark:text-emerald-400" size={32} />
+                                        {importData.file ? (
+                                            <div className="space-y-0.5">
+                                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importData.file.name}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">{(importData.file.size / 1024).toFixed(1)} KB ({importData.rows?.length || 0} baris data)</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Pilih File Excel (.xlsx)</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Drag & drop atau klik untuk memilih file</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Footer Buttons */}
+                                <div className="flex items-center justify-end gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeImportModal}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition cursor-pointer"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!importData.file || processingImport}
+                                        className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                    >
+                                        <Upload size={16} />
+                                        <span>{processingImport ? 'Memproses Import...' : 'Proses Import'}</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}

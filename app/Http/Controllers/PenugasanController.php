@@ -6,6 +6,8 @@ use App\Models\Penugasan;
 use App\Models\Kegiatan;
 use App\Models\DetilKegiatan;
 use App\Models\Mitra;
+use App\Models\PeriodePengisian;
+use App\Models\SbmlLimit;
 use App\Http\Requests\UpdatePenugasanRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,12 +60,35 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         $penugasan = $query->latest()->paginate(15)->withQueryString();
-        $semuaKegiatan = Kegiatan::orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan']);
+        $semuaKegiatan = Kegiatan::orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
+
+        $tahunList = Penugasan::distinct()->whereNotNull('tahun')->pluck('tahun')->map(fn($t) => (int)$t)->sort()->values()->toArray();
+        if (empty($tahunList)) {
+            $currentYr = (int) date('Y');
+            $tahunList = [$currentYr - 1, $currentYr, $currentYr + 1];
+        }
+
+        $targetBulan = (int) ($request->input('bulan') ?: date('n'));
+        $targetTahun = (int) ($request->input('tahun') ?: date('Y'));
+
+        $periodeAktif = PeriodePengisian::where('bulan', $targetBulan)
+            ->where('tahun', $targetTahun)
+            ->first();
+
+        $statusPeriode = [
+            'bulan'      => $targetBulan,
+            'tahun'      => $targetTahun,
+            'status'     => $periodeAktif?->status ?? 'terbuka',
+            'is_locked'  => ($periodeAktif?->status ?? 'terbuka') === 'terkunci',
+            'dikunci_at' => $periodeAktif?->dikunci_at?->format('d M Y H:i'),
+        ];
 
         return Inertia::render('Penugasan/Index', [
             'penugasan'     => $penugasan,
             'semuaKegiatan' => $semuaKegiatan,
-            'filters'       => $request->only(['kegiatan_id', 'detil_kegiatan_id', 'tanggal_mulai', 'tanggal_selesai', 'search']),
+            'tahunList'     => $tahunList,
+            'statusPeriode' => $statusPeriode,
+            'filters'       => $request->only(['kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun', 'search', 'jenis_sbml', 'status_honor']),
         ]);
     }
 
@@ -72,6 +97,10 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function create()
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
+
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
 
         return Inertia::render('Penugasan/Create', [
@@ -163,6 +192,14 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
+
+        if ($request->has('bulan')) {
+            $request->merge(['bulan' => $this->parseBulanToInteger($request->bulan)]);
+        }
+
         $request->validate([
             'kegiatan_id'           => 'required|exists:kegiatans,id',
             'detil_kegiatan_id'     => 'required|exists:detil_kegiatan,id',
@@ -183,36 +220,82 @@ class PenugasanController extends Controller implements HasMiddleware
             'mitras.*.kuota_target.min'      => 'Kuota per mitra minimal 1.',
         ]);
 
+        // C.4 Validasi Periode Pengisian: Cek kunci sebelum store
+        $userRole = strtolower(auth()->user()->role ?? '');
+        $bulanNum = (int)$request->bulan;
+        $tahunNum = (int)$request->tahun;
+
+        $periode = PeriodePengisian::where('bulan', $bulanNum)->where('tahun', $tahunNum)->first();
+        if ($periode && $periode->status === 'terkunci' && $userRole !== 'ppk') {
+            return back()->withErrors(['periode' => "Periode {$bulanNum}/{$tahunNum} sudah dikunci. Hubungi PPK untuk membuka kunci."])->withInput();
+        }
+
+        $detil = DetilKegiatan::findOrFail($request->detil_kegiatan_id);
+        $hargaSatuan = (float)($detil->harga_satuan ?? 0);
+        $jenisSbml = $detil->jenis_sbml;
+
         try {
-            DB::transaction(function () use ($request) {
+            DB::transaction(function () use ($request, $detil, $hargaSatuan, $jenisSbml) {
                 foreach ($request->mitras as $mitraItem) {
+                    $mitraId = $mitraItem['id'];
+                    $kuotaTarget = (float)($mitraItem['kuota_target'] ?? 1);
+                    $totalHonorBaru = $kuotaTarget * $hargaSatuan;
+
                     $exists = Penugasan::where('detil_kegiatan_id', $request->detil_kegiatan_id)
-                        ->where('mitra_id', $mitraItem['id'])
-                        ->where('tanggal_mulai', $request->tanggal_mulai)
-                        ->where('tanggal_selesai', $request->tanggal_selesai)
+                        ->where('mitra_id', $mitraId)
+                        ->where('bulan', $request->bulan)
+                        ->where('tahun', $request->tahun)
                         ->exists();
 
                     if ($exists) {
-                        $mitra = Mitra::find($mitraItem['id']);
+                        $mitra = Mitra::find($mitraId);
                         $namaMitra = $mitra ? $mitra->nama_lengkap : 'Mitra';
                         throw new \Exception("Mitra {$namaMitra} sudah ditugaskan ke detil ini pada periode {$request->tanggal_mulai} s/d {$request->tanggal_selesai}.");
                     }
 
+                    // C.3 Validasi SBML — Cek SBML limit per mitra
+                    if ($jenisSbml) {
+                        $totalTerpakai = (float)Penugasan::where('mitra_id', $mitraId)
+                            ->where('bulan', $request->bulan)
+                            ->where('tahun', $request->tahun)
+                            ->whereHas('detilKegiatan', function ($q) use ($jenisSbml) {
+                                $q->where('jenis_sbml', $jenisSbml);
+                            })
+                            ->sum('total_honor');
+
+                        $sbmlLimit = SbmlLimit::where('jenis_kegiatan', $jenisSbml)
+                            ->where('tahun', $request->tahun)
+                            ->first();
+
+                        if ($sbmlLimit) {
+                            $batasSbml = (float)$sbmlLimit->batas_maksimal;
+                            if (($totalTerpakai + $totalHonorBaru) > $batasSbml) {
+                                $mitra = Mitra::find($mitraId);
+                                $namaMitra = $mitra ? $mitra->nama_lengkap : 'Mitra';
+                                $sisa = max(0, $batasSbml - $totalTerpakai);
+                                throw new \Exception("Total honor mitra {$namaMitra} untuk {$jenisSbml} bulan {$request->bulan}/{$request->tahun} akan melebihi batas SBML (Rp " . number_format($batasSbml, 0, ',', '.') . "). Sudah terpakai: Rp " . number_format($totalTerpakai, 0, ',', '.') . ", sisa: Rp " . number_format($sisa, 0, ',', '.') . ".");
+                            }
+                        }
+                    }
+
+                    // C.1 Method store(): Hitung honor otomatis
                     Penugasan::create([
-                        'kegiatan_id'       => $request->kegiatan_id,
-                        'detil_kegiatan_id' => $request->detil_kegiatan_id,
-                        'mitra_id'          => $mitraItem['id'],
-                        'tanggal_mulai'     => $request->tanggal_mulai,
-                        'tanggal_selesai'   => $request->tanggal_selesai,
-                        'kuota_target'      => $mitraItem['kuota_target'] ?? 1,
-                        'status'            => 'ditugaskan',
+                        'kegiatan_id'           => $request->kegiatan_id,
+                        'detil_kegiatan_id'     => $request->detil_kegiatan_id,
+                        'mitra_id'              => $mitraId,
+                        'bulan'                 => $request->bulan,
+                        'tahun'                 => $request->tahun,
+                        'kuota_target'          => $kuotaTarget,
+                        'harga_satuan_snapshot' => $hargaSatuan,
+                        'total_honor'           => $totalHonorBaru,
+                        'status'                => 'ditugaskan',
                     ]);
                 }
             });
         } catch (\Illuminate\Database\QueryException $e) {
-            return back()->withErrors(['mitras' => 'Terjadi duplikasi penugasan: Mitra sudah ditugaskan ke detil ini pada periode yang sama.']);
+            return back()->withErrors(['mitras' => 'Terjadi duplikasi penugasan: Mitra sudah ditugaskan ke detil ini pada periode yang sama.'])->withInput();
         } catch (\Exception $e) {
-            return back()->withErrors(['mitras' => $e->getMessage()]);
+            return back()->withErrors(['mitras' => $e->getMessage()])->withInput();
         }
 
         return redirect()->route('penugasan.index')
@@ -232,8 +315,11 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function edit(Penugasan $penugasan)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
         $penugasan->load(['kegiatan', 'mitra']);
-        $kegiatan = Kegiatan::where('status_aktif', true)->get(['id', 'nama_kegiatan']);
+        $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
         $mitra    = Mitra::where('status_aktif', true)->get(['id', 'nama_lengkap', 'sobat_id']);
 
         return Inertia::render('Penugasan/Edit', [
@@ -248,7 +334,63 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function update(UpdatePenugasanRequest $request, Penugasan $penugasan)
     {
-        $penugasan->update($request->validated());
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
+        $userRole = strtolower(auth()->user()->role ?? '');
+        $validated = $request->validated();
+
+        $bulanNum = (int)($validated['bulan'] ?? $penugasan->bulan);
+        $tahunNum = (int)($validated['tahun'] ?? $penugasan->tahun);
+
+        // C.4 Validasi Periode Pengisian: Cek kunci sebelum update
+        $periode = PeriodePengisian::where('bulan', $bulanNum)->where('tahun', $tahunNum)->first();
+        if ($periode && $periode->status === 'terkunci' && $userRole !== 'ppk') {
+            return back()->withErrors(['periode' => "Periode {$bulanNum}/{$tahunNum} sudah dikunci. Hubungi PPK untuk membuka kunci."])->withInput();
+        }
+
+        $detilId = $validated['detil_kegiatan_id'] ?? $penugasan->detil_kegiatan_id;
+        $mitraId = $validated['mitra_id'] ?? $penugasan->mitra_id;
+        $kuotaTarget = (float)($validated['kuota_target'] ?? $penugasan->kuota_target);
+
+        $detil = DetilKegiatan::findOrFail($detilId);
+        $hargaSatuan = (float)($detil->harga_satuan ?? 0);
+        $totalHonorBaru = $kuotaTarget * $hargaSatuan;
+        $jenisSbml = $detil->jenis_sbml;
+
+        // C.3 Validasi SBML pada Update
+        if ($jenisSbml) {
+            $totalTerpakai = (float)Penugasan::where('mitra_id', $mitraId)
+                ->where('bulan', $bulanNum)
+                ->where('tahun', $tahunNum)
+                ->where('id', '!=', $penugasan->id)
+                ->whereHas('detilKegiatan', function ($q) use ($jenisSbml) {
+                    $q->where('jenis_sbml', $jenisSbml);
+                })
+                ->sum('total_honor');
+
+            $sbmlLimit = SbmlLimit::where('jenis_kegiatan', $jenisSbml)
+                ->where('tahun', $tahunNum)
+                ->first();
+
+            if ($sbmlLimit) {
+                $batasSbml = (float)$sbmlLimit->batas_maksimal;
+                if (($totalTerpakai + $totalHonorBaru) > $batasSbml) {
+                    $mitra = Mitra::find($mitraId);
+                    $namaMitra = $mitra ? $mitra->nama_lengkap : 'Mitra';
+                    $sisa = max(0, $batasSbml - $totalTerpakai);
+                    return back()->withErrors([
+                        'kuota_target' => "Total honor mitra {$namaMitra} untuk {$jenisSbml} bulan {$bulanNum}/{$tahunNum} akan melebihi batas SBML (Rp " . number_format($batasSbml, 0, ',', '.') . "). Sudah terpakai: Rp " . number_format($totalTerpakai, 0, ',', '.') . ", sisa: Rp " . number_format($sisa, 0, ',', '.') . "."
+                    ])->withInput();
+                }
+            }
+        }
+
+        // C.2 Method update(): Recalculate snapshot & total_honor
+        $validated['harga_satuan_snapshot'] = $hargaSatuan;
+        $validated['total_honor']           = $totalHonorBaru;
+
+        $penugasan->update($validated);
 
         return redirect()->route('penugasan.index')->with('success', 'Perubahan data penugasan mitra berhasil disimpan.');
     }
@@ -258,6 +400,9 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function destroy(Penugasan $penugasan)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
         $penugasan->delete();
 
         return back()->with('success', '1 penugasan mitra berhasil dipindahkan ke Recycle Bin.');
@@ -350,5 +495,157 @@ class PenugasanController extends Controller implements HasMiddleware
         Penugasan::onlyTrashed()->whereIn('id', $request->ids)->forceDelete();
 
         return redirect()->back()->with('success', count($request->ids) . ' penugasan mitra telah dihapus secara permanen.');
+    }
+
+    /**
+     * Strict helper: Convert month input (string name or number) to integer (1-12) or null
+     */
+    private function parseBulanStrict($value)
+    {
+        if (is_numeric($value) && (int)$value >= 1 && (int)$value <= 12) {
+            return (int)$value;
+        }
+
+        $bulanMap = [
+            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+            'january' => 1, 'february' => 2, 'march' => 3, 'may' => 5,
+            'june' => 6, 'july' => 7, 'august' => 8, 'october' => 10, 'december' => 12,
+        ];
+
+        $key = strtolower(trim((string)$value));
+        return $bulanMap[$key] ?? null;
+    }
+
+    /**
+     * Import / Upsert Penugasan Mitra from Excel JSON rows data.
+     */
+    public function import(Request $request)
+    {
+        $rows = $request->input('rows');
+
+        if (!$rows || !is_array($rows) || count($rows) === 0) {
+            return redirect()->back()->withErrors([
+                'import' => 'File Excel kosong atau tidak berisi data yang dapat dibaca.'
+            ]);
+        }
+
+        $errors = [];
+        $validData = [];
+
+        foreach ($rows as $index => $row) {
+            $rowNum = $index + 2; // Baris 1 header
+
+            $getVal = function ($keys) use ($row) {
+                foreach ((array)$keys as $k) {
+                    if (array_key_exists($k, $row) && $row[$k] !== null && $row[$k] !== '') {
+                        return trim((string)$row[$k]);
+                    }
+                }
+                return '';
+            };
+
+            $kodeKro = $getVal(['Kode KRO', 'kode_kro', 'Kode_Kro', 'kode_kegiatan', 'KRO']);
+            $namaDetil = $getVal(['Nama Detil', 'nama_detil', 'Nama_Detil', 'detil_kegiatan', 'detil']);
+            $sobatId = $getVal(['Sobat ID', 'sobat_id', 'Sobat_Id', 'sobatid']);
+            $bulanRaw = $getVal(['Bulan', 'bulan']);
+            $tahunRaw = $getVal(['Tahun', 'tahun']);
+            $kuotaRaw = $getVal(['Kuota Target', 'kuota_target', 'Kuota_Target', 'kuota', 'target']);
+
+            // 1. Validasi & Cari Kegiatan by Kode KRO
+            if (empty($kodeKro)) {
+                $errors[] = "Baris {$rowNum}: Kode KRO wajib diisi.";
+                continue;
+            }
+
+            $kegiatan = Kegiatan::where('kode_kegiatan', $kodeKro)->first();
+            if (!$kegiatan) {
+                $errors[] = "Baris {$rowNum}: Kegiatan dengan Kode KRO '{$kodeKro}' tidak ditemukan.";
+                continue;
+            }
+
+            // 2. Validasi & Cari DetilKegiatan by kegiatan_id + nama_detil
+            if (empty($namaDetil)) {
+                $errors[] = "Baris {$rowNum}: Nama Detil wajib diisi.";
+                continue;
+            }
+
+            $detilKegiatan = DetilKegiatan::where('kegiatan_id', $kegiatan->id)
+                ->where('nama_detil', $namaDetil)
+                ->first();
+
+            if (!$detilKegiatan) {
+                $errors[] = "Baris {$rowNum}: Detil Kegiatan '{$namaDetil}' tidak ditemukan untuk Kode KRO '{$kodeKro}'.";
+                continue;
+            }
+
+            // 3. Validasi & Cari Mitra by Sobat ID
+            if (empty($sobatId)) {
+                $errors[] = "Baris {$rowNum}: Sobat ID wajib diisi.";
+                continue;
+            }
+
+            $mitra = Mitra::where('sobat_id', $sobatId)->first();
+            if (!$mitra) {
+                $errors[] = "Baris {$rowNum}: Mitra dengan Sobat ID '{$sobatId}' tidak ditemukan.";
+                continue;
+            }
+
+            // 4. Validasi Bulan (Strict nama bulan -> integer 1-12)
+            $bulanInt = $this->parseBulanStrict($bulanRaw);
+            if (!$bulanInt) {
+                $errors[] = "Baris {$rowNum}: Nama bulan '{$bulanRaw}' tidak dikenali (gunakan nama bulan Indonesia, contoh: 'Agustus').";
+                continue;
+            }
+
+            // 5. Validasi Tahun
+            $tahunInt = is_numeric($tahunRaw) ? (int)$tahunRaw : 0;
+            if ($tahunInt < 2000 || $tahunInt > 2100) {
+                $errors[] = "Baris {$rowNum}: Tahun ('{$tahunRaw}') tidak valid (harus berupa angka 4 digit).";
+                continue;
+            }
+
+            // 6. Validasi Kuota Target
+            $kuotaVal = is_numeric($kuotaRaw) ? (float)$kuotaRaw : 0;
+            if ($kuotaVal <= 0) {
+                $errors[] = "Baris {$rowNum}: Kuota Target ('{$kuotaRaw}') harus berupa angka lebih dari 0.";
+                continue;
+            }
+
+            $validData[] = [
+                'kegiatan_id'       => $kegiatan->id,
+                'detil_kegiatan_id' => $detilKegiatan->id,
+                'mitra_id'          => $mitra->id,
+                'bulan'             => $bulanInt,
+                'tahun'             => $tahunInt,
+                'kuota_target'      => $kuotaVal,
+                'status'            => 'ditugaskan',
+            ];
+        }
+
+        // Jika ada 1 error pun, batalkan seluruhnya
+        if (count($errors) > 0) {
+            return redirect()->back()->withErrors([
+                'import_list' => $errors
+            ]);
+        }
+
+        DB::transaction(function () use ($validData) {
+            foreach ($validData as $data) {
+                Penugasan::updateOrCreate(
+                    [
+                        'detil_kegiatan_id' => $data['detil_kegiatan_id'],
+                        'mitra_id'          => $data['mitra_id'],
+                        'bulan'             => $data['bulan'],
+                        'tahun'             => $data['tahun'],
+                    ],
+                    $data
+                );
+            }
+        });
+
+        $totalCount = count($validData);
+        return redirect()->back()->with('success', "Berhasil meng-import / meng-update {$totalCount} data Penugasan Mitra.");
     }
 }

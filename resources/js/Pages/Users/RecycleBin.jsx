@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Trash2, 
-    ArrowLeft, 
-    Info, 
-    Search, 
-    X, 
-    AlertTriangle, 
-    Trash, 
-    RotateCcw 
+import {
+    Trash2,
+    ArrowLeft,
+    Info,
+    Search,
+    X,
+    AlertTriangle,
+    Trash,
+    RotateCcw
 } from 'lucide-react';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 
@@ -27,8 +27,8 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
     const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
     // Extract items from pagination object or array
-    const userList = Array.isArray(trashedUsers) 
-        ? trashedUsers 
+    const userList = Array.isArray(trashedUsers)
+        ? trashedUsers
         : (trashedUsers?.data || []);
 
     const toggleSelectAll = (e) => {
@@ -84,14 +84,14 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
         setConfirmOpen(true);
     };
 
-    const totalItems = Array.isArray(trashedUsers) 
-        ? trashedUsers.length 
+    const totalItems = Array.isArray(trashedUsers)
+        ? trashedUsers.length
         : (trashedUsers?.total ?? userList.length);
 
     // Inertia GET for search & filtering
     const handleFilterSubmit = (e) => {
         if (e) e.preventDefault();
-        
+
         const targetRoute = typeof route === 'function' && route().has('users.recycle-bin')
             ? route('users.recycle-bin')
             : '/recycle-bin/users';
@@ -159,7 +159,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
             <Head title="Recycle Bin User - SIMITRA LITE" />
 
             <div className="space-y-6 p-2 md:p-4">
-                
+
                 {/* 1. Header Halaman */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-3">
@@ -194,7 +194,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                 {/* 3. Bagian Filter (Flexbox Horizontal) */}
                 <div className="bg-white dark:bg-gray-900 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <form onSubmit={handleFilterSubmit} className="flex flex-col md:flex-row gap-4 items-end w-full">
-                        
+
                         {/* Dropdown Role */}
                         <div className="w-full md:w-44 shrink-0">
                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -334,7 +334,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
 
                 {/* 5. Alert Merah (Peringatan Tabel) & 6. Tabel Data / Empty State */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden w-full">
-                    
+
                     {/* Banner Peringatan Tabel (Tepat di Atas Header Tabel) */}
                     <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-b border-red-200 dark:border-red-800/40 p-3 flex items-center gap-2 text-xs font-medium">
                         <AlertTriangle size={16} className="shrink-0 text-red-500" />
@@ -370,7 +370,7 @@ export default function RecycleBin({ trashedUsers = [], filters = {} }) {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-800">
                                 {userList.length > 0 ? (
                                     userList.map((user, index) => (
-                                        <tr 
+                                        <tr
                                             key={user.id || index}
                                             className={`transition-colors ${selectedIds.includes(user.id) ? 'bg-orange-50 dark:bg-orange-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40'}`}
                                         >

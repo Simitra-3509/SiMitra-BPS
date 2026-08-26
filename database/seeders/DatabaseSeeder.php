@@ -8,7 +8,6 @@ use App\Models\MasterKegiatan;
 use App\Models\Kegiatan;
 use App\Models\DetilKegiatan;
 use App\Models\Penugasan;
-use App\Models\Honorarium;
 use App\Models\SbmlLimit;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -152,18 +151,9 @@ class DatabaseSeeder extends Seeder
                 'bulan' => date('m'),
                 'tahun' => date('Y'),
                 'kuota_target' => rand(10, 50),
-                'status' => 'draft',
+                'status' => 'ditugaskan',
             ]);
-
-            if ($i <= 5) {
-                Honorarium::create([
-                    'penugasan_id' => $penugasan->id,
-                    'jumlah_honor' => rand(500000, 2000000),
-                    'tanggal_input' => now(),
-                    'keterangan' => 'Honor bulan berjalan',
-                    'status_persetujuan' => 'draft',
-                ]);
-            }
         }
+    }
     }
 }

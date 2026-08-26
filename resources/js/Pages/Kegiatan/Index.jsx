@@ -290,6 +290,9 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
+    const userRole = (auth?.user?.role || '').toLowerCase();
+    const canManageKegiatan = ['ppk', 'admin', 'administrator'].includes(userRole);
+
     return (
         <>
             <Head title="Master Kegiatan" />

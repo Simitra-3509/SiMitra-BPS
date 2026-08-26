@@ -6,15 +6,15 @@ use App\Http\Controllers\SbmlLimitController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\UserController; 
 use App\Http\Controllers\PenugasanController;
-use App\Http\Controllers\HonorariumController;
 use App\Http\Controllers\LaporanHonorController;
 use App\Http\Controllers\MonitoringKuotaController;
+use App\Http\Controllers\PeriodePengisianController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\Mitra;
 use App\Models\Kegiatan;
-use App\Models\Honorarium;
+use App\Models\Penugasan;
 use App\Models\SbmlLimit;
 
 Route::get('/', function () {
@@ -30,8 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', function () {
             $totalMitra = Mitra::where('status_aktif', true)->count();
             $kegiatanAktif = Kegiatan::where('status_aktif', true)->count();
-            $honorBulanIni = Honorarium::whereMonth('tanggal_input', date('m'))->whereYear('tanggal_input', date('Y'))->sum('jumlah_honor');
-            $jumlahInputHonor = Honorarium::whereMonth('tanggal_input', date('m'))->whereYear('tanggal_input', date('Y'))->count();
+            $honorBulanIni = (float) Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->sum('total_honor');
+            $jumlahPenugasanBulanIni = Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->count();
 
             $sbmlPendataan = SbmlLimit::where('jenis_kegiatan', 'pendataan')->first()?->batas_maksimal ?? 0;
             $sbmlPengolahan = SbmlLimit::where('jenis_kegiatan', 'pengolahan')->first()?->batas_maksimal ?? 0;
@@ -50,7 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $komposisiData = [
                 ['name' => 'Mitra', 'value' => $totalMitra],
                 ['name' => 'Kegiatan', 'value' => $kegiatanAktif],
-                ['name' => 'Input Honor', 'value' => $jumlahInputHonor],
+                ['name' => 'Penugasan', 'value' => $jumlahPenugasanBulanIni],
             ];
 
             return Inertia::render('Dashboard', [
@@ -58,7 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'totalMitra' => $totalMitra,
                     'kegiatanAktif' => $kegiatanAktif,
                     'honorBulanIni' => $honorBulanIni,
-                    'jumlahInputHonor' => $jumlahInputHonor,
+                    'jumlahInputHonor' => $jumlahPenugasanBulanIni,
                 ],
                 'sbml' => [
                     'pendataan' => $sbmlPendataan,
@@ -92,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('kegiatan/{kegiatan}/duplicate', [KegiatanController::class, 'duplicate'])->name('kegiatan.duplicate');
         Route::post('kegiatan/bulk-destroy', [KegiatanController::class, 'bulkDestroy'])->name('kegiatan.bulk-destroy');
         
+        Route::post('penugasan/import', [PenugasanController::class, 'import'])->name('penugasan.import');
         Route::resource('penugasan', PenugasanController::class);
         Route::get('/recycle-bin/penugasan', [PenugasanController::class, 'recycleBin'])->name('penugasan.recycle-bin');
         Route::post('/recycle-bin/penugasan/bulk-restore', [PenugasanController::class, 'bulkRestore'])->name('penugasan.bulk-restore');
@@ -103,21 +104,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
-        Route::resource('honorarium', HonorariumController::class);
-        Route::get('/recycle-bin/honorarium', [HonorariumController::class, 'recycleBin'])->name('honorarium.recycle-bin');
-        Route::post('/recycle-bin/honorarium/bulk-restore', [HonorariumController::class, 'bulkRestore'])->name('honorarium.bulk-restore');
-        Route::delete('/recycle-bin/honorarium/bulk-force-delete', [HonorariumController::class, 'bulkForceDelete'])->name('honorarium.bulk-force-delete');
-        Route::post('/recycle-bin/honorarium/{id}/restore', [HonorariumController::class, 'restore'])->name('honorarium.restore');
-        Route::delete('/recycle-bin/honorarium/{id}/force-delete', [HonorariumController::class, 'forceDelete'])->name('honorarium.force-delete');
-        Route::post('honorarium/{honorarium}/ajukan', [HonorariumController::class, 'ajukanPersetujuan'])->name('honorarium.ajukan');
-        Route::post('honorarium/{honorarium}/setujui', [HonorariumController::class, 'setujui'])->name('honorarium.setujui');
-        Route::post('honorarium/{honorarium}/tolak', [HonorariumController::class, 'tolak'])->name('honorarium.tolak');
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
         Route::get('laporan-honor/export', [LaporanHonorController::class, 'export'])->name('laporan-honor.export');
         Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
         Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');
         Route::get('monitoring-kuota/export', [MonitoringKuotaController::class, 'export'])->name('monitoring-kuota.export');
         Route::get('monitoring-kuota/{id}', [MonitoringKuotaController::class, 'show'])->name('monitoring-kuota.show');
+        Route::get('/periode-pengisian', [PeriodePengisianController::class, 'index'])->name('periode.index');
+        Route::post('/periode-pengisian/kunci', [PeriodePengisianController::class, 'kunci'])->name('periode.kunci');
+        Route::post('/periode-pengisian/buka', [PeriodePengisianController::class, 'buka'])->name('periode.buka');
     });
 
     // ==========================================
@@ -143,6 +138,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Mitra Routes
     Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+    Route::post('/mitra/import', [MitraController::class, 'import'])->name('mitra.import');
     Route::post('/mitra', [MitraController::class, 'store'])->name('mitra.store');
     Route::put('/mitra/{mitra}', [MitraController::class, 'update'])->name('mitra.update');
     Route::delete('/mitra/{mitra}', [MitraController::class, 'destroy'])->name('mitra.destroy');
