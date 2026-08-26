@@ -6,15 +6,14 @@ use App\Http\Controllers\SbmlLimitController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\UserController; 
 use App\Http\Controllers\PenugasanController;
-use App\Http\Controllers\HonorariumController;
 use App\Http\Controllers\LaporanHonorController;
 use App\Http\Controllers\MonitoringKuotaController;
+use App\Http\Controllers\PeriodePengisianController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\Mitra;
 use App\Models\Kegiatan;
-use App\Models\Honorarium;
 use App\Models\SbmlLimit;
 
 Route::get('/', function () {
@@ -104,22 +103,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
-        Route::resource('honorarium', HonorariumController::class);
-        Route::get('/recycle-bin/honorarium', [HonorariumController::class, 'recycleBin'])->name('honorarium.recycle-bin');
-        Route::post('/recycle-bin/honorarium/bulk-restore', [HonorariumController::class, 'bulkRestore'])->name('honorarium.bulk-restore');
-        Route::delete('/recycle-bin/honorarium/bulk-force-delete', [HonorariumController::class, 'bulkForceDelete'])->name('honorarium.bulk-force-delete');
-        Route::post('/recycle-bin/honorarium/{id}/restore', [HonorariumController::class, 'restore'])->name('honorarium.restore');
-        Route::delete('/recycle-bin/honorarium/{id}/force-delete', [HonorariumController::class, 'forceDelete'])->name('honorarium.force-delete');
-        Route::post('honorarium/{honorarium}/ajukan', [HonorariumController::class, 'ajukanPersetujuan'])->name('honorarium.ajukan');
-        Route::post('honorarium/{honorarium}/setujui', [HonorariumController::class, 'setujui'])->name('honorarium.setujui');
-        Route::post('honorarium/{honorarium}/tolak', [HonorariumController::class, 'tolak'])->name('honorarium.tolak');
-        Route::post('honorarium/{honorarium}/batalkan-persetujuan', [HonorariumController::class, 'batalkanPersetujuan'])->name('honorarium.batalkan');
         Route::get('laporan-honor', [LaporanHonorController::class, 'index'])->name('laporan-honor.index');
         Route::get('laporan-honor/export', [LaporanHonorController::class, 'export'])->name('laporan-honor.export');
         Route::get('laporan-honor/{id}', [LaporanHonorController::class, 'show'])->name('laporan-honor.show');
         Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');
         Route::get('monitoring-kuota/export', [MonitoringKuotaController::class, 'export'])->name('monitoring-kuota.export');
         Route::get('monitoring-kuota/{id}', [MonitoringKuotaController::class, 'show'])->name('monitoring-kuota.show');
+        Route::get('/periode-pengisian', [PeriodePengisianController::class, 'index'])->name('periode.index');
+        Route::post('/periode-pengisian/kunci', [PeriodePengisianController::class, 'kunci'])->name('periode.kunci');
+        Route::post('/periode-pengisian/buka', [PeriodePengisianController::class, 'buka'])->name('periode.buka');
     });
 
     // ==========================================

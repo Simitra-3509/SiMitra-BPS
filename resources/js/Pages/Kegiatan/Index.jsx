@@ -286,6 +286,9 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
+    const userRole = (auth?.user?.role || '').toLowerCase();
+    const canManageKegiatan = ['ppk', 'admin', 'administrator'].includes(userRole);
+
     return (
         <>
             <Head title="Master Kegiatan" />
@@ -298,22 +301,24 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Kelola kegiatan survei dan sensus</p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={openImportModal}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-2 shadow-md cursor-pointer w-full sm:w-auto"
-                        >
-                            <FileSpreadsheet size={18} /> Import Excel
-                        </button>
+                    {canManageKegiatan && (
+                        <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full sm:w-auto">
+                            <button
+                                type="button"
+                                onClick={openImportModal}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-[#00AA55] hover:bg-[#008844] rounded-lg transition flex items-center justify-center gap-2 shadow-md cursor-pointer w-full sm:w-auto"
+                            >
+                                <FileSpreadsheet size={18} /> Import Excel
+                            </button>
 
-                        <Link
-                            href={route('kegiatan.create')}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
-                        >
-                            <Plus size={18} /> Tambah Kegiatan
-                        </Link>
-                    </div>
+                            <Link
+                                href={route('kegiatan.create')}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-[#0080FF] hover:bg-[#0066CC] rounded-lg transition flex items-center justify-center gap-1.5 shadow-md w-full sm:w-auto"
+                            >
+                                <Plus size={18} /> Tambah Kegiatan
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Flash Success Notification */}

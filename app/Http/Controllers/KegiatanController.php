@@ -56,6 +56,9 @@ class KegiatanController extends Controller
      */
     public function store(Request $request)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['ppk', 'admin', 'administrator'])) {
+            abort(403, 'Hanya PPK dan Admin yang berhak menambah atau mengubah data kegiatan.');
+        }
         $validated = $request->validate([
             'nama_kegiatan'   => 'required|string|max:255',
             'kode_kegiatan'   => 'nullable|string|max:100',
@@ -155,6 +158,9 @@ class KegiatanController extends Controller
      */
     public function update(Request $request, Kegiatan $kegiatan)
     {
+        if (!in_array(strtolower(auth()->user()->role ?? ''), ['ppk', 'admin', 'administrator'])) {
+            abort(403, 'Hanya PPK dan Admin yang berhak menambah atau mengubah data kegiatan.');
+        }
         $validated = $request->validate([
             'nama_kegiatan'   => 'required|string|max:255',
             'kode_kegiatan'   => 'nullable|string|max:100',

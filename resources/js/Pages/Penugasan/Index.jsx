@@ -17,7 +17,6 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
 
     const [jenisSbml, setJenisSbml] = useState(filters?.jenis_sbml || '');
     const [kegiatanId, setKegiatanId] = useState(filters?.kegiatan_id || '');
-    const [statusHonor, setStatusHonor] = useState(filters?.status_honor || '');
     const [bulan, setBulan] = useState(filters?.bulan || '');
     const [tahun, setTahun] = useState(filters?.tahun || '');
     const [search, setSearch] = useState(filters?.search || '');
@@ -372,19 +371,6 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                             </select>
                         </div>
 
-                        {/* Status Honor */}
-                        <div className="flex flex-col gap-1 min-w-[140px]">
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Status Honor</label>
-                            <select
-                                value={statusHonor}
-                                onChange={(e) => setStatusHonor(e.target.value)}
-                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#D9531E] transition"
-                            >
-                                <option value="">Semua Status</option>
-                                <option value="sudah">Sudah Input</option>
-                                <option value="belum">Belum Input</option>
-                            </select>
-                        </div>
 
                         {/* Search */}
                         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
@@ -437,16 +423,14 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                                     <th className="p-4">Periode</th>
                                     <th className="p-4">Mitra</th>
                                     <th className="p-4 text-center">Kuota Target</th>
+                                    <th className="p-4 text-right">Total Honor</th>
                                     <th className="p-4 text-center">Status</th>
-                                    <th className="p-4 text-center">Honorarium</th>
                                     <th className="p-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                                {penugasan?.data && penugasan.data.length > 0 ? (
+                                 {penugasan?.data && penugasan.data.length > 0 ? (
                                     penugasan.data.map((item, index) => {
-                                        const totalHonor = item.honoraria?.reduce((sum, h) => sum + (h.jumlah_honor ?? 0), 0) ?? 0;
-                                        const sudahInput = item.honoraria?.length > 0;
                                         const nomorUrut = (penugasan.current_page - 1) * penugasan.per_page + index + 1;
                                         const detilObj = item.detil_kegiatan || item.detilKegiatan;
 
@@ -482,6 +466,9 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                                                 <td className="p-4 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
                                                     {item.kuota_target ?? 0} {(detilObj?.satuan ?? '').toUpperCase()}
                                                 </td>
+                                                <td className="p-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                    Rp {new Intl.NumberFormat('id-ID').format(item.total_honor ?? 0)}
+                                                </td>
                                                 <td className="p-4 text-center">
                                                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${item.kegiatan?.status_aktif
                                                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -491,30 +478,7 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                                                     </span>
                                                 </td>
                                                 <td className="p-4 text-center">
-                                                    {sudahInput ? (
-                                                        <div>
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                                                                ✓ Sudah Input
-                                                            </span>
-                                                            <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-1">
-                                                                Rp {totalHonor.toLocaleString('id-ID')}
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                                            ⏳ Belum Input
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="p-4 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
-                                                        <Link
-                                                            href={route('honorarium.create', { penugasan_id: item.id })}
-                                                            title="Input Honor"
-                                                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:text-emerald-500 rounded-lg transition flex items-center justify-center"
-                                                        >
-                                                            <Banknote size={15} />
-                                                        </Link>
                                                         <Link
                                                             href={route('penugasan.edit', item.id)}
                                                             title="Edit"
@@ -542,6 +506,21 @@ function Index({ penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], f
                                     </tr>
                                 )}
                             </tbody>
+                            {penugasan?.data && penugasan.data.length > 0 && (
+                                <tfoot className="bg-gray-50 dark:bg-gray-700/80 border-t-2 border-gray-200 dark:border-gray-600 font-bold text-gray-900 dark:text-white text-sm">
+                                    <tr>
+                                        <td colSpan="6" className="p-4 text-right">
+                                            Total Keseluruhan (Halaman Ini):
+                                        </td>
+                                        <td className="p-4 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                                            Rp {new Intl.NumberFormat('id-ID').format(
+                                                penugasan.data.reduce((sum, item) => sum + (parseFloat(item.total_honor) || 0), 0)
+                                            )}
+                                        </td>
+                                        <td colSpan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            )}
                         </table>
                     </div>
 

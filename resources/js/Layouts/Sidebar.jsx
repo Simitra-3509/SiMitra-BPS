@@ -12,6 +12,7 @@ import {
     CalendarDays,
     UserCheck,
     Banknote,
+    Lock,
     FileText,
     TrendingUp,
     User,
@@ -57,8 +58,7 @@ const Sidebar = forwardRef(function Sidebar({
         (counts?.recycleBinUser || 0) +
         (counts?.recycleBinMitra || 0) +
         (counts?.recycleBinKegiatan || 0) +
-        (counts?.recycleBinPenugasan || 0) +
-        (counts?.recycleBinHonorarium || 0);
+        (counts?.recycleBinPenugasan || 0);
 
     // Close flyout when clicking outside
     useEffect(() => {
@@ -274,6 +274,13 @@ const Sidebar = forwardRef(function Sidebar({
                         active={route().current('penugasan.*')}
                     />
 
+                    <NavItem
+                        href={route('periode.index')}
+                        icon={Lock}
+                        label="Kunci Periode Penugasan"
+                        active={route().current('periode.*')}
+                    />
+
                     {/* SECTION: TRANSAKSI */}
                     {isCollapsed ? (
                         <div className="my-3 border-t border-gray-800/80 mx-2" />
@@ -283,12 +290,6 @@ const Sidebar = forwardRef(function Sidebar({
                         </div>
                     )}
 
-                    <NavItem
-                        href={route('honorarium.index')}
-                        icon={Banknote}
-                        label="Input Honor"
-                        active={route().current('honorarium.*')}
-                    />
 
                     <NavItem
                         href={route('laporan-honor.index')}
@@ -398,21 +399,7 @@ const Sidebar = forwardRef(function Sidebar({
                                                     </span>
                                                 )}
                                             </Link>
-                                            <Link
-                                                href={route('honorarium.recycle-bin')}
-                                                onClick={() => setCollapsedRecycleFlyout(false)}
-                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${route().current('honorarium.recycle-bin') ? 'bg-[#D9531E] text-white font-bold' : 'text-gray-300 hover:bg-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <Banknote size={14} /> Recycle Bin Honorarium
-                                                </div>
-                                                {counts?.recycleBinHonorarium > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinHonorarium}
-                                                    </span>
-                                                )}
-                                            </Link>
+
                                         </div>
                                     )}
                                 </div>
@@ -525,21 +512,7 @@ const Sidebar = forwardRef(function Sidebar({
                                                 )}
                                             </Link>
 
-                                            {/* Recycle Bin Honorarium */}
-                                            <a
-                                                href="#"
-                                                className="flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors"
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <Banknote size={14} className="text-gray-400" />
-                                                    <span>Recycle Bin Honorarium</span>
-                                                </div>
-                                                {counts?.recycleBinHonorarium > 0 && (
-                                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                                        {counts.recycleBinHonorarium}
-                                                    </span>
-                                                )}
-                                            </a>
+
                                         </div>
                                     )}
                                 </div>
