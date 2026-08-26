@@ -10,7 +10,7 @@ const namaBulan = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList = [], statusPeriode, filters }) {
+function Index({ auth, penugasan, kegiatanTanpaMitra = [], semuaKegiatan, tahunList = [], statusPeriode, filters }) {
     const { flash } = usePage().props;
     const { toast } = useAppToast();
     const flashMessage = flash?.message || flash?.success;
@@ -63,6 +63,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
 
     // State for the Assign Mitra modal
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
+    const [mitraSearch, setMitraSearch] = useState('');
 
     // State for Import Excel Penugasan Mitra modal
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
