@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText, Lock, Unlock } from 'lucide-react';
 import AuthenticatedLayout, { useAppToast } from '@/Layouts/AuthenticatedLayout';
@@ -39,6 +39,8 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
         setConfirmConfig({
             title: isCurrentlyLocked ? 'Buka Kunci Periode' : 'Kunci Periode Pengisian',
             message: `Apakah Anda yakin ingin ${actionText} pengisian penugasan bulan ${namaBulan[targetBulan - 1]} ${targetTahun}?`,
+            confirmText: isCurrentlyLocked ? 'Ya, Buka Kunci' : 'Ya, Kunci Periode',
+            variant: isCurrentlyLocked ? 'unlock' : 'lock',
             onConfirm: () => {
                 router.post(route(routeName), {
                     bulan: targetBulan,
@@ -839,9 +841,9 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                 isOpen={confirmOpen}
                 title={confirmConfig.title}
                 message={confirmConfig.message}
-                confirmText="Ya, Hapus"
-                cancelText="Batal"
-                variant="danger"
+                confirmText={confirmConfig.confirmText}
+                cancelText={confirmConfig.cancelText || 'Batal'}
+                variant={confirmConfig.variant || 'danger'}
                 onConfirm={confirmConfig.onConfirm}
                 onCancel={() => setConfirmOpen(false)}
             />

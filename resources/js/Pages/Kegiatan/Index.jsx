@@ -18,8 +18,8 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const [cari, setCari] = useState(filters?.cari || '');
 
     // Role check
-    const userRole = auth?.user?.role;
-    const canManageKegiatan = ['admin', 'ppk'].includes(userRole);
+    const userRole = (auth?.user?.role || '').toLowerCase();
+    const canManageKegiatan = ['ppk', 'admin', 'administrator'].includes(userRole);
 
     // State untuk checklist (bulk delete)
     const [selectedIds, setSelectedIds] = useState([]);
@@ -290,8 +290,6 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
-    const userRole = (auth?.user?.role || '').toLowerCase();
-    const canManageKegiatan = ['ppk', 'admin', 'administrator'].includes(userRole);
 
     return (
         <>
