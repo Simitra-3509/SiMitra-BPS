@@ -138,6 +138,11 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
         reader.readAsBinaryString(file);
     };
 
+    const handleInputFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleFileChange(file);
+    };
+
     const handleImportSubmit = (e) => {
         e.preventDefault();
         if (!importData.rows || importData.rows.length === 0) {
@@ -493,7 +498,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                 <Search size={14} /> Cari
                             </button>
                             <button
-                                onClick={handleReset}
+                                onClick={handleResetFilter}
                                 className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-1.5"
                             >
                                 <X size={14} /> Reset

@@ -27,8 +27,8 @@ export default function Create({ kegiatan, kegiatanList }) {
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
-        tanggal_mulai: '',
-        tanggal_selesai: '',
+        bulan: String(new Date().getMonth() + 1),
+        tahun: String(new Date().getFullYear()),
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
     });
 
@@ -38,8 +38,13 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [selectedDetilInfo, setSelectedDetilInfo] = useState(null);
 
     const selectedKegiatan = listKegiatan.find((k) => String(k.id) === String(data.kegiatan_id));
-    const minDate = selectedKegiatan?.tanggal_mulai || '';
-    const maxDate = selectedKegiatan?.tanggal_selesai || '';
+
+    const namaBulan = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const currentYear = new Date().getFullYear();
+    const tahunOptions = [currentYear - 1, currentYear, currentYear + 1];
 
     // Modal Picker Mitra states (Tanpa filter kecamatan)
     const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
@@ -82,37 +87,44 @@ export default function Create({ kegiatan, kegiatanList }) {
         setSelectedDetilInfo(foundDetil || null);
 
         if (selectedDetilId && foundDetil) {
-            fetchPrevMonthAssignments(selectedDetilId, data.tanggal_mulai, data.tanggal_selesai);
+            fetchPrevMonthAssignments(selectedDetilId, data.bulan, data.tahun);
         } else {
             setPrevMonthData([]);
         }
     };
 
     // 4. Fetch data penugasan bulan sebelumnya
-    const fetchPrevMonthAssignments = (detilId, tglMulaiVal, tglSelesaiVal) => {
-        if (!detilId || !tglMulaiVal || !tglSelesaiVal) return;
+    const fetchPrevMonthAssignments = (detilId, bulanVal, tahunVal) => {
+        if (!detilId || !bulanVal || !tahunVal) return;
+
+        // Hitung bulan sebelumnya
+        let prevBulan = parseInt(bulanVal) - 1;
+        let prevTahun = parseInt(tahunVal);
+        if (prevBulan < 1) { prevBulan = 12; prevTahun -= 1; }
 
         axios.get(route('api.penugasan.prev-month'), {
             params: {
                 detil_kegiatan_id: detilId,
-                tanggal_mulai: tglMulaiVal,
-                tanggal_selesai: tglSelesaiVal
+                bulan: prevBulan,
+                tahun: prevTahun,
             }
         })
         .then((res) => {
             const list = res.data?.data || [];
             setPrevMonthData(list);
-            setPrevPeriodeName(res.data?.prev_periode || 'Periode Sebelumnya');
+            setPrevPeriodeName(res.data?.prev_bulan_nama
+                ? `${res.data.prev_bulan_nama} ${res.data.prev_tahun}`
+                : 'Periode Sebelumnya');
         })
         .catch((err) => console.error('Error fetching prev month:', err));
     };
 
-    // Refetch prev month when dates changes
+    // Refetch prev month when bulan/tahun changes
     useEffect(() => {
         if (data.detil_kegiatan_id) {
-            fetchPrevMonthAssignments(data.detil_kegiatan_id, data.tanggal_mulai, data.tanggal_selesai);
+            fetchPrevMonthAssignments(data.detil_kegiatan_id, data.bulan, data.tahun);
         }
-    }, [data.tanggal_mulai, data.tanggal_selesai]);
+    }, [data.bulan, data.tahun]);
 
     // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, TANPA kecamatan)
     useEffect(() => {
@@ -276,39 +288,63 @@ export default function Create({ kegiatan, kegiatanList }) {
         }
     };
 
-    // SECTION C: Render Info Sisa Volume Detil DIPA
+    // SECTION C: Render Info Sisa Volume Detil DIPA (dengan live preview form)
     const renderSisaVolumeInfo = () => {
         if (!selectedDetilInfo) return null;
 
-        const targetDipa = selectedDetilInfo.jumlah || 0;
-        const sudahDitugaskan = selectedDetilInfo.total_kuota_terpakai || 0;
-        const sisaVolume = targetDipa - sudahDitugaskan;
-        const satuanStr = selectedDetilInfo.satuan || 'Volume';
+        const targetDipa        = parseFloat(selectedDetilInfo.jumlah) || 0;
+        const sudahDiDB         = parseFloat(selectedDetilInfo.total_kuota_terpakai) || 0;
+        const kuotaFormIni      = data.mitras.reduce((sum, m) => sum + (parseFloat(m.kuota_target) || 0), 0);
+        const totalTerpakai     = sudahDiDB + kuotaFormIni;
+        const sisaSetelahInput  = targetDipa - totalTerpakai;
+        const satuanStr         = selectedDetilInfo.satuan || 'Volume';
+        const isOver            = sisaSetelahInput < 0;
 
-        const formatNum = (num) => new Intl.NumberFormat('id-ID').format(num);
+        const formatNum = (num) => new Intl.NumberFormat('id-ID').format(Math.abs(num));
 
         return (
-            <div className={`p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
-                sisaVolume >= 0 
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200' 
-                    : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+            <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
+                isOver
+                    ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
+                    : sisaSetelahInput === 0
+                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                        : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
             }`}>
-                <div className="flex items-center gap-2.5">
-                    <Calculator size={18} className={sisaVolume >= 0 ? 'text-emerald-600' : 'text-amber-600'} />
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-bold uppercase tracking-wider text-[11px]">Sisa Volume Detil:</span>
-                        <span>Target DIPA: <strong className="font-mono">{formatNum(targetDipa)} {satuanStr}</strong></span>
-                        <span>—</span>
-                        <span>Sudah ditugaskan: <strong className="font-mono">{formatNum(sudahDitugaskan)} {satuanStr}</strong></span>
-                    </div>
+                {/* Header */}
+                <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
+                    <Calculator size={15} className={isOver ? 'text-red-500' : sisaSetelahInput === 0 ? 'text-amber-500' : 'text-emerald-600'} />
+                    <span>Sisa Volume Detil DIPA</span>
                 </div>
-                <div className="shrink-0 font-bold">
+
+                {/* Grid Info */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-1">
+                    <span className="text-gray-600 dark:text-gray-400">Target DIPA:</span>
+                    <span className="font-mono font-bold">{formatNum(targetDipa)} {satuanStr}</span>
+
+                    <span className="text-gray-600 dark:text-gray-400">Sudah ditugaskan (tersimpan):</span>
+                    <span className="font-mono font-bold">{formatNum(sudahDiDB)} {satuanStr}</span>
+
+                    {kuotaFormIni > 0 && (
+                        <>
+                            <span className="text-blue-600 dark:text-blue-400">+ Input form ini:</span>
+                            <span className="font-mono font-bold text-blue-700 dark:text-blue-300">+{formatNum(kuotaFormIni)} {satuanStr}</span>
+                        </>
+                    )}
+                </div>
+
+                {/* Sisa badge */}
+                <div className="flex items-center justify-between pt-1 border-t border-current/20">
+                    <span className="font-semibold">
+                        {isOver ? '⚠ Melebihi Target DIPA' : 'Sisa setelah input ini:'}
+                    </span>
                     <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${
-                        sisaVolume >= 0 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200' 
-                            : 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
+                        isOver
+                            ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
+                            : sisaSetelahInput === 0
+                                ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
+                                : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
                     }`}>
-                        Sisa: {formatNum(sisaVolume)} {satuanStr}
+                        {isOver ? '-' : ''}{formatNum(sisaSetelahInput)} {satuanStr}
                     </span>
                 </div>
             </div>
@@ -496,37 +532,34 @@ export default function Create({ kegiatan, kegiatanList }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Tanggal Mulai <span className="text-red-500">*</span>
+                                    Bulan <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="date"
-                                    value={data.tanggal_mulai}
-                                    min={minDate}
-                                    max={maxDate}
-                                    onChange={(e) => setData('tanggal_mulai', e.target.value)}
-                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none cursor-pointer"
-                                />
-                                {errors.tanggal_mulai && <p className="text-xs text-red-500">{errors.tanggal_mulai}</p>}
-                                {minDate && maxDate && (
-                                    <p className="text-[10px] text-gray-500">Maksimum periode: {minDate} s/d {maxDate}</p>
-                                )}
+                                <select
+                                    value={data.bulan}
+                                    onChange={(e) => setData('bulan', e.target.value)}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                >
+                                    {namaBulan.map((nama, idx) => (
+                                        <option key={idx + 1} value={String(idx + 1)}>{nama}</option>
+                                    ))}
+                                </select>
+                                {errors.bulan && <p className="text-xs text-red-500">{errors.bulan}</p>}
                             </div>
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Tanggal Selesai <span className="text-red-500">*</span>
+                                    Tahun <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="date"
-                                    value={data.tanggal_selesai}
-                                    min={data.tanggal_mulai || minDate}
-                                    max={maxDate}
-                                    onChange={(e) => setData('tanggal_selesai', e.target.value)}
-                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none font-mono cursor-pointer"
-                                />
-                                {errors.tanggal_selesai && <p className="text-xs text-red-500">{errors.tanggal_selesai}</p>}
+                                <select
+                                    value={data.tahun}
+                                    onChange={(e) => setData('tahun', e.target.value)}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                >
+                                    {tahunOptions.map((y) => (
+                                        <option key={y} value={String(y)}>{y}</option>
+                                    ))}
+                                </select>
+                                {errors.tahun && <p className="text-xs text-red-500">{errors.tahun}</p>}
                             </div>
                         </div>
                     </div>
@@ -640,7 +673,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                     {/* Actions Submit */}
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="text-xs text-gray-500">
-                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {data.tanggal_mulai} s/d {data.tanggal_selesai}.
+                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {namaBulan[parseInt(data.bulan) - 1]} {data.tahun}.
                         </div>
                         <div className="flex items-center gap-3">
                             <Link

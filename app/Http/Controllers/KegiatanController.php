@@ -94,7 +94,9 @@ class KegiatanController extends Controller implements HasMiddleware
             'detil.*.harga_satuan.required' => 'Harga satuan wajib diisi.',
         ]);
 
-        DB::transaction(function () use ($validated) {
+        $kegiatan = null;
+
+        DB::transaction(function () use ($validated, &$kegiatan) {
             $totalAnggaran = 0;
             foreach ($validated['detil'] as $detilData) {
                 $totalAnggaran += (float)$detilData['jumlah'] * (float)$detilData['harga_satuan'];
