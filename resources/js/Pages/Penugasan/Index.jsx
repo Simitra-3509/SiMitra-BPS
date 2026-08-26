@@ -23,6 +23,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [mitraSearch, setMitraSearch] = useState('');
 
     const userRole = (auth?.user?.role || usePage().props?.auth?.user?.role || '').toLowerCase();
     const canManagePenugasan = ['operator', 'admin', 'administrator'].includes(userRole);
