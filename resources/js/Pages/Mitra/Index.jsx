@@ -55,17 +55,17 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "Sobat ID", "Nama Lengkap", "Nama Bank", "No Rekening", 
+            "Sobat ID", "Nama Lengkap", "Nama Bank", "No Rekening",
             "Nama Pemilik Rekening", "Alamat", "Kecamatan", "Catatan"
         ];
         const sampleRow = [
-            "458217", "Hasan Basri", "BNI", "1234567890", 
+            "458217", "Hasan Basri", "BNI", "1234567890",
             "Hasan Basri", "Jl. Mawar No. 5", "Sumbersari", "Mitra aktif"
         ];
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
         worksheet['!cols'] = [
-            { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 18 }, 
+            { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 18 },
             { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 30 }
         ];
 
@@ -382,8 +382,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full border ${mitra.status_aktif
-                                                        ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-400 dark:border-green-800'
-                                                        : 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-400 dark:border-red-800'
+                                                    ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-400 dark:border-green-800'
+                                                    : 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-400 dark:border-red-800'
                                                     }`}>
                                                     {mitra.status_aktif ? 'Aktif' : 'Nonaktif'}
                                                 </span>
@@ -436,8 +436,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                     onClick={() => router.get(link.url)}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                     className={`px-3 py-1 text-xs rounded-md ${link.active
-                                            ? 'bg-simitra-orange text-white font-bold'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                        ? 'bg-simitra-orange text-white font-bold'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                                         } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                             ))}
@@ -607,8 +607,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <h2 className="text-xl font-black text-white tracking-tight">{detailMitra.nama_lengkap}</h2>
                                         <span className={`px-2.5 py-0.5 text-[11px] font-extrabold uppercase rounded-full tracking-wider ${detailMitra.status_aktif
-                                                ? 'bg-emerald-400 text-emerald-950'
-                                                : 'bg-red-400 text-red-950'
+                                            ? 'bg-emerald-400 text-emerald-950'
+                                            : 'bg-red-400 text-red-950'
                                             }`}>
                                             {detailMitra.status_aktif ? 'Aktif' : 'Nonaktif'}
                                         </span>
@@ -676,14 +676,14 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                             {/* Section: Catatan */}
                             {detailMitra.catatan && (
-                            <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
-                                    <FileText size={15} /> Catatan
-                                </h3>
-                                <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-sm text-gray-700 dark:text-gray-300">
-                                    {detailMitra.catatan}
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
+                                        <FileText size={15} /> Catatan
+                                    </h3>
+                                    <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-sm text-gray-700 dark:text-gray-300">
+                                        {detailMitra.catatan}
+                                    </div>
                                 </div>
-                            </div>
                             )}
                         </div>
 
@@ -775,8 +775,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 onDragOver={handleDrag}
                                 onDrop={handleDrop}
                                 className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${dragActive
-                                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
-                                        : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
+                                    ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                                    : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
                                     }`}
                             >
                                 <input
