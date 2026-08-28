@@ -131,12 +131,11 @@ class DatabaseSeeder extends Seeder
         for ($i = 1; $i <= 27; $i++) {
             $sample = $sampleMitras[($i - 1) % count($sampleMitras)];
             $mitra = Mitra::create([
-                'nik' => '3509' . str_pad($i, 12, '0', STR_PAD_LEFT),
                 'nama_lengkap' => $i <= count($sampleMitras) ? $sample['nama'] : $sample['nama'] . ' (' . $i . ')',
-                'sobat_id' => $sample['sobat'],
+                'sobat_id' => $sample['sobat'] . $i,
                 'no_rekening' => $sample['rek'],
                 'nama_bank' => $sample['bank'],
-                'no_telepon' => $sample['hp'],
+                'nama_pemilik_rekening' => $sample['nama'],
                 'alamat' => 'Kabupaten Jember',
                 'status_aktif' => $sample['status'],
             ]);

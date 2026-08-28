@@ -54,8 +54,7 @@ class PenugasanController extends Controller implements HasMiddleware
         if ($request->filled('search')) {
             $query->whereHas('mitra', function ($q) use ($request) {
                 $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
-                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%')
-                  ->orWhere('nik', 'like', '%' . $request->search . '%');
+                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
             });
         }
 

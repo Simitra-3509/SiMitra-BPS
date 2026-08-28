@@ -56,7 +56,7 @@ function Edit({ penugasan, kegiatan, mitra, auth }) {
                         >
                             <option value="">-- Pilih Mitra --</option>
                             {mitra.map((mt) => (
-                                <option key={mt.id} value={mt.id}>{mt.nama_lengkap} ({mt.nik})</option>
+                                <option key={mt.id} value={mt.id}>{mt.nama_lengkap} ({mt.sobat_id || '-'})</option>
                             ))}
                         </select>
                         {errors.mitra_id && <p className="text-xs text-red-500 mt-1">{errors.mitra_id}</p>}

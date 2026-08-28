@@ -55,21 +55,18 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "NIK", "Nama Lengkap", "Sobat ID", "No Telepon", "No WhatsApp",
-            "Jenis Kelamin", "Tanggal Lahir", "Alamat", "Desa", "Kecamatan",
-            "Ijazah Terakhir", "Keahlian", "No Rekening", "Nama Bank"
+            "Sobat ID", "Nama Lengkap", "Nama Bank", "No Rekening", 
+            "Nama Pemilik Rekening", "Alamat", "Kecamatan", "Catatan"
         ];
         const sampleRow = [
-            "3509000000000028", "Hasan Basri", "458217", "081234567890", "081234567890",
-            "L", "1990-05-14", "Jl. Mawar No. 5", "Sumbersari", "Sumbersari",
-            "S1", "Statistik, Komputer", "1234567890", "BNI"
+            "458217", "Hasan Basri", "BNI", "1234567890", 
+            "Hasan Basri", "Jl. Mawar No. 5", "Sumbersari", "Mitra aktif"
         ];
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
         worksheet['!cols'] = [
-            { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-            { wch: 14 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 18 },
-            { wch: 16 }, { wch: 22 }, { wch: 18 }, { wch: 15 }
+            { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 18 }, 
+            { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 30 }
         ];
 
         const workbook = XLSX.utils.book_new();
@@ -129,13 +126,14 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     // Form for Create & Edit
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
-        nik: '',
-        nama_lengkap: '',
         sobat_id: '',
-        no_rekening: '',
+        nama_lengkap: '',
         nama_bank: '',
-        no_telepon: '',
+        no_rekening: '',
+        nama_pemilik_rekening: '',
         alamat: '',
+        kecamatan: '',
+        catatan: '',
         status_aktif: true,
     });
 
@@ -169,13 +167,14 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
         clearErrors();
         setEditingMitra(mitra);
         setData({
-            nik: mitra.nik,
-            nama_lengkap: mitra.nama_lengkap,
             sobat_id: mitra.sobat_id || '',
-            no_rekening: mitra.no_rekening || '',
+            nama_lengkap: mitra.nama_lengkap,
             nama_bank: mitra.nama_bank || '',
-            no_telepon: mitra.no_telepon || '',
+            no_rekening: mitra.no_rekening || '',
+            nama_pemilik_rekening: mitra.nama_pemilik_rekening || '',
             alamat: mitra.alamat || '',
+            kecamatan: mitra.kecamatan || '',
+            catatan: mitra.catatan || '',
             status_aktif: Boolean(mitra.status_aktif),
         });
         setIsCreateModalOpen(true);
@@ -309,7 +308,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 <div className="relative w-full">
                                     <input
                                         type="text"
-                                        placeholder="Nama, NIK, atau Sobat ID..."
+                                        placeholder="Nama atau Sobat ID..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
                                         className="w-full pl-3 pr-10 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 text-sm rounded-lg focus:ring-1 focus:ring-simitra-orange"
@@ -349,9 +348,8 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                         />
                                     </th>
                                     <th className="p-4">NAMA</th>
-                                    <th className="p-4">NIK</th>
                                     <th className="p-4">SOBAT ID</th>
-                                    <th className="p-4">NO. TELEPON</th>
+                                    <th className="p-4">REKENING</th>
                                     <th className="p-4 text-center">STATUS</th>
                                     <th className="p-4 text-center">AKSI</th>
                                 </tr>
@@ -371,14 +369,16 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                             <td className="p-4 font-bold text-gray-900 dark:text-white">
                                                 {mitra.nama_lengkap}
                                             </td>
-                                            <td className="p-4 font-mono font-medium text-rose-500">
-                                                {mitra.nik}
-                                            </td>
                                             <td className="p-4 font-mono text-rose-500">
                                                 {mitra.sobat_id || '-'}
                                             </td>
-                                            <td className="p-4 text-gray-800 dark:text-gray-200 font-mono">
-                                                {mitra.no_telepon || '-'}
+                                            <td className="p-4">
+                                                {mitra.nama_bank || mitra.no_rekening ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">{mitra.nama_bank || '-'}</span>
+                                                        <span className="font-mono text-sm font-semibold text-gray-800 dark:text-gray-200">{mitra.no_rekening || '-'}</span>
+                                                    </div>
+                                                ) : '-'}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full border ${mitra.status_aktif
@@ -455,29 +455,16 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                         </h3>
 
                         <form onSubmit={handleSubmit} className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">NIK (16 Digit)</label>
-                                    <input
-                                        type="text"
-                                        maxLength={16}
-                                        value={data.nik}
-                                        onChange={(e) => setData('nik', e.target.value)}
-                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                        required
-                                    />
-                                    {errors.nik && <span className="text-xs text-red-500 mt-1 block">{errors.nik}</span>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">SOBAT ID</label>
-                                    <input
-                                        type="text"
-                                        value={data.sobat_id}
-                                        onChange={(e) => setData('sobat_id', e.target.value)}
-                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    />
-                                </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">SOBAT ID</label>
+                                <input
+                                    type="text"
+                                    value={data.sobat_id}
+                                    onChange={(e) => setData('sobat_id', e.target.value)}
+                                    className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    required
+                                />
+                                {errors.sobat_id && <span className="text-xs text-red-500 mt-1 block">{errors.sobat_id}</span>}
                             </div>
 
                             <div>
@@ -492,7 +479,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 {errors.nama_lengkap && <span className="text-xs text-red-500 mt-1 block">{errors.nama_lengkap}</span>}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Bank</label>
                                     <input
@@ -512,15 +499,45 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                         className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Pemilik Rekening</label>
+                                    <input
+                                        type="text"
+                                        value={data.nama_pemilik_rekening}
+                                        onChange={(e) => setData('nama_pemilik_rekening', e.target.value)}
+                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kecamatan</label>
+                                    <input
+                                        type="text"
+                                        value={data.kecamatan}
+                                        onChange={(e) => setData('kecamatan', e.target.value)}
+                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Alamat</label>
+                                    <input
+                                        type="text"
+                                        value={data.alamat}
+                                        onChange={(e) => setData('alamat', e.target.value)}
+                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">No. Telepon / WhatsApp</label>
-                                <input
-                                    type="text"
-                                    value={data.no_telepon}
-                                    onChange={(e) => setData('no_telepon', e.target.value)}
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Catatan</label>
+                                <textarea
+                                    value={data.catatan}
+                                    onChange={(e) => setData('catatan', e.target.value)}
                                     className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    rows="2"
                                 />
                             </div>
 
@@ -597,8 +614,6 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs text-orange-100 font-mono flex-wrap">
-                                        <span>NIK: {detailMitra.nik}</span>
-                                        <span>•</span>
                                         <span>Sobat ID: {detailMitra.sobat_id || '-'}</span>
                                     </div>
                                 </div>
@@ -607,55 +622,18 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                         {/* Content Grid */}
                         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-                            {/* Grid Section 1: Informasi Kontak & Identitas */}
-                            <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
-                                    <User size={15} /> Identitas & Kontak
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Jenis Kelamin</span>
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 capitalize">
-                                            {detailMitra.jenis_kelamin || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Tanggal Lahir</span>
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                            {detailMitra.tanggal_lahir || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">No. Telepon</span>
-                                        <span className="text-sm font-semibold font-mono text-gray-800 dark:text-gray-200">
-                                            {detailMitra.no_telepon || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">No. WhatsApp</span>
-                                        <span className="text-sm font-semibold font-mono text-emerald-600 dark:text-emerald-400">
-                                            {detailMitra.no_whatsapp || detailMitra.no_telepon || '-'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Grid Section 2: Alamat & Domisili */}
+
+                            {/* Grid Section: Alamat & Domisili */}
                             <div>
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
                                     <MapPin size={15} /> Domisili & Alamat
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
-                                    <div className="sm:col-span-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
+                                    <div className="sm:col-span-1">
                                         <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Alamat Lengkap</span>
                                         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                             {detailMitra.alamat || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Desa / Kelurahan</span>
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 capitalize">
-                                            {detailMitra.desa || '-'}
                                         </span>
                                     </div>
                                     <div>
@@ -667,33 +645,14 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 </div>
                             </div>
 
-                            {/* Grid Section 3: Pendidikan & Keahlian */}
-                            <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
-                                    <GraduationCap size={15} /> Pendidikan & Keahlian
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Ijazah Terakhir</span>
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase">
-                                            {detailMitra.ijazah_terakhir || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Keahlian</span>
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                            {detailMitra.keahlian || '-'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Grid Section 4: Pembayaran / Bank */}
+
+                            {/* Grid Section: Pembayaran / Bank */}
                             <div>
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
                                     <CreditCard size={15} /> Rekening Pembayaran
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
                                     <div>
                                         <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Nama Bank</span>
                                         <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">
@@ -706,8 +665,26 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                             {detailMitra.no_rekening || '-'}
                                         </span>
                                     </div>
+                                    <div>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Pemilik Rekening</span>
+                                        <span className="text-sm font-bold text-gray-900 dark:text-white capitalize">
+                                            {detailMitra.nama_pemilik_rekening || '-'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Section: Catatan */}
+                            {detailMitra.catatan && (
+                            <div>
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
+                                    <FileText size={15} /> Catatan
+                                </h3>
+                                <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-sm text-gray-700 dark:text-gray-300">
+                                    {detailMitra.catatan}
+                                </div>
+                            </div>
+                            )}
                         </div>
 
                         {/* Footer */}
@@ -737,7 +714,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Import Data Mitra Excel (.xlsx)</h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Unggah kolektif data Mitra Statistik (Upsert NIK)</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Unggah kolektif data Mitra Statistik (Upsert Sobat ID)</p>
                                 </div>
                             </div>
                             <button onClick={closeImportModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
@@ -776,11 +753,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 </p>
                                 <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300 leading-relaxed">
                                     <li>
-                                        Header kolom: <span className="font-mono font-bold">NIK, Nama Lengkap, Sobat ID, No Telepon, No WhatsApp, Jenis Kelamin, Tanggal Lahir, Alamat, Desa, Kecamatan, Ijazah Terakhir, Keahlian, No Rekening, Nama Bank</span>
+                                        Header kolom: <span className="font-mono font-bold">Sobat ID, Nama Lengkap, Nama Bank, No Rekening, Nama Pemilik Rekening, Alamat, Kecamatan, Catatan</span>
                                     </li>
-                                    <li><strong className="text-blue-950 dark:text-white">NIK & Nama Lengkap wajib diisi</strong> (NIK tepat 16 digit angka).</li>
-                                    <li>Format Tanggal Lahir: <span className="font-mono text-blue-700 font-bold">YYYY-MM-DD</span>.</li>
-                                    <li>System menggunakan mode <strong className="text-emerald-700 dark:text-emerald-400">UPSERT</strong>: NIK yang sudah ada akan otomatis di-update data terbarunya.</li>
+                                    <li><strong className="text-blue-950 dark:text-white">Sobat ID & Nama Lengkap wajib diisi</strong>.</li>
+                                    <li>System menggunakan mode <strong className="text-emerald-700 dark:text-emerald-400">UPSERT</strong>: Sobat ID yang sudah ada akan otomatis di-update data terbarunya.</li>
                                 </ul>
 
                                 <button

@@ -480,7 +480,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                                 <input
                                     type="text"
-                                    placeholder="Nama/NIK mitra, nama kegiatan..."
+                                    placeholder="Nama/Sobat ID mitra, nama kegiatan..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={handleKeyDown}
@@ -692,7 +692,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                             type="text"
                                             value={mitraSearch}
                                             onChange={(e) => setMitraSearch(e.target.value)}
-                                            placeholder="Ketik nama atau NIK mitra..."
+                                            placeholder="Ketik nama atau Sobat ID mitra..."
                                             className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
                                         />
                                     </div>

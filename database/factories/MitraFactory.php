@@ -18,13 +18,14 @@ class MitraFactory extends Factory
     public function definition(): array
     {
         return [
-            'nik' => $this->faker->numerify('################'),
-            'nama_lengkap' => $this->faker->name(),
-            'sobat_id' => $this->faker->numerify('######'),
+            'sobat_id' => (string)$this->faker->unique()->numberBetween(100000, 999999),
+            'nama_lengkap' => $this->faker->name,
+            'nama_bank' => $this->faker->randomElement(['BSI', 'BRI', 'Mandiri', 'BCA']),
             'no_rekening' => $this->faker->numerify('##########'),
-            'nama_bank' => $this->faker->randomElement(['BCA', 'Mandiri', 'BNI', 'BRI', 'Danamon']),
-            'no_telepon' => $this->faker->phoneNumber(),
-            'alamat' => $this->faker->address(),
+            'nama_pemilik_rekening' => $this->faker->name,
+            'alamat' => $this->faker->address,
+            'kecamatan' => $this->faker->city,
+            'catatan' => $this->faker->sentence(),
             'status_aktif' => $this->faker->boolean(80),
         ];
     }
