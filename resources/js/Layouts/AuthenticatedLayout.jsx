@@ -18,7 +18,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
     const [isCollapsed, setIsCollapsed] = useState(() => {
         return localStorage.getItem('sidebar_collapsed') === 'true';
     });
-    
+
     const [mobileOpen, setMobileOpen] = useState(false);
     const sidebarRef = useRef(null);
     const topbarRef = useRef(null);
@@ -57,9 +57,9 @@ export default function AuthenticatedLayout({ user, header, children }) {
         <ToastContext.Provider value={{ toast }}>
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors flex">
                 {/* Sidebar (Desktop & Mobile) */}
-                <Sidebar 
+                <Sidebar
                     ref={sidebarRef}
-                    user={resolvedUser} 
+                    user={resolvedUser}
                     isCollapsed={isCollapsed}
                     setIsCollapsed={setIsCollapsed}
                     toggleSidebar={toggleSidebar}
@@ -69,23 +69,22 @@ export default function AuthenticatedLayout({ user, header, children }) {
 
                 {/* Mobile Backdrop Overlay */}
                 {mobileOpen && (
-                    <div 
+                    <div
                         onClick={() => setMobileOpen(false)}
                         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
                     />
                 )}
 
                 {/* Main Content Area */}
-                <div 
-                    className={`flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen ${
-                        isCollapsed ? 'md:ml-20' : 'md:ml-64'
-                    }`}
+                <div
+                    className={`flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen ${isCollapsed ? 'md:ml-20' : 'md:ml-64'
+                        }`}
                 >
                     {/* Topbar */}
-                    <Topbar 
+                    <Topbar
                         ref={topbarRef}
-                        user={resolvedUser} 
-                        header={header} 
+                        user={resolvedUser}
+                        header={header}
                         isCollapsed={isCollapsed}
                         toggleSidebar={toggleSidebar}
                         setMobileOpen={setMobileOpen}

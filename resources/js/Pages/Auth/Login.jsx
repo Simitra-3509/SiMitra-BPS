@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import InputError from '@/Components/InputError';
 import { Head, useForm } from '@inertiajs/react';
 import { User, Lock, Eye, EyeOff, LogIn, Shield, BarChart3, Activity, Users2 } from 'lucide-react';
+import AmbientLineChart from '@/Components/AmbientLineChart';
 
 export default function Login({ status, canResetPassword }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +27,7 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <>
-            <Head title="SIMITRA Lite — Login" />
+            <Head title="SIMITRA — Login" />
 
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -101,6 +102,12 @@ export default function Login({ status, canResetPassword }) {
                     display: flex; align-items: center; justify-content: center;
                     box-shadow: 0 0 20px rgba(249,115,22,0.4);
                 }
+                .brand-logo .logo-img {
+                    width: 42px; height: 42px;
+                    border-radius: 10px;
+                    object-fit: contain;
+                    box-shadow: 0 0 20px rgba(249,115,22,0.4);
+                }
                 .brand-logo .logo-text-main {
                     font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: 0.05em;
                 }
@@ -116,6 +123,8 @@ export default function Login({ status, canResetPassword }) {
                 }
                 .left-hero h2 span { color: #f97316; }
                 .left-hero p { font-size: 0.875rem; color: #94a3b8; line-height: 1.7; max-width: 340px; }
+
+
 
                 /* Stats cards */
                 .stats-row { display: flex; gap: 0.75rem; margin-top: 2rem; }
@@ -172,14 +181,17 @@ export default function Login({ status, canResetPassword }) {
                     text-align: center;
                     margin-bottom: 2rem;
                 }
+
+
                 .icon-ring {
                     width: 72px; height: 72px;
-                    background: linear-gradient(135deg, #ea580c, #f97316);
+                    background: transparent;
                     border-radius: 50%;
                     display: flex; align-items: center; justify-content: center;
                     margin: 0 auto 1.25rem;
                     box-shadow: 0 0 0 8px rgba(234,88,12,0.12), 0 0 0 16px rgba(234,88,12,0.06);
                     position: relative;
+                    overflow: hidden;
                 }
                 .icon-ring::after {
                     content: '';
@@ -187,6 +199,11 @@ export default function Login({ status, canResetPassword }) {
                     border-radius: 50%;
                     border: 2px solid rgba(249,115,22,0.3);
                     animation: ripplePulse 2s ease-in-out infinite;
+                }
+                .icon-ring img {
+                    width: 100%; height: 100%;
+                    object-fit: cover;
+                    border-radius: 50%;
                 }
                 @keyframes ripplePulse {
                     0%, 100% { opacity: 1; transform: scale(1); }
@@ -356,9 +373,7 @@ export default function Login({ status, canResetPassword }) {
 
                     <div className="left-content">
                         <div className="brand-logo">
-                            <div className="logo-icon">
-                                <BarChart3 size={22} color="#fff" strokeWidth={2.5} />
-                            </div>
+                            <img src="/logo.png" alt="SIMITRA" className="logo-img" />
                             <div>
                                 <div className="logo-text-main">SIMITRA</div>
                                 <div className="logo-text-sub">BPS Kabupaten Jember</div>
@@ -374,6 +389,9 @@ export default function Login({ status, canResetPassword }) {
                         <p>
                             Platform manajemen mitra statistik BPS Kabupaten Jember yang terintegrasi untuk pengelolaan kegiatan, penugasan, dan honorarium secara efisien.
                         </p>
+
+                        {/* ══ Minimalist Animated Line Chart ══ */}
+                        <AmbientLineChart />
 
                         <div className="stats-row">
                             <div className="stat-card">
@@ -395,7 +413,7 @@ export default function Login({ status, canResetPassword }) {
                                     <BarChart3 size={16} color="#f97316" />
                                 </div>
                                 <div className="stat-label">Sistem</div>
-                                <div className="stat-val">v1.0</div>
+                                <div className="stat-val">v2.0</div>
                             </div>
                         </div>
                     </div>
@@ -412,9 +430,9 @@ export default function Login({ status, canResetPassword }) {
                         {/* Header */}
                         <div className="card-header">
                             <div className="icon-ring">
-                                <Users2 size={30} color="#fff" strokeWidth={2} />
+                                <img src="/logo.png" alt="SIMITRA" />
                             </div>
-                            <h1>SIMITRA Lite</h1>
+                            <h1>SIMITRA</h1>
                             <p>Masuk ke Akun Anda</p>
                         </div>
 
@@ -517,7 +535,7 @@ export default function Login({ status, canResetPassword }) {
                         {/* Footer */}
                         <div className="card-footer">
                             <div className="org">BPS Kabupaten Jember</div>
-                            <div className="version">SIMITRA Lite V1.0 · Sensus Ekonomi 2026</div>
+                            <div className="version">SIMITRA V2.0 · Sensus Ekonomi 2026</div>
                             <div className="dev">Developed by <a href="#">Nanang Pamungkas</a></div>
                         </div>
 
