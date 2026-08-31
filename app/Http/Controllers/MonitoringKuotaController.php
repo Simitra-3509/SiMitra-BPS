@@ -51,7 +51,7 @@ class MonitoringKuotaController extends Controller
         if ($cari) {
             $query->where(function($q) use ($cari) {
                 $q->where('mitras.nama_lengkap', 'like', "%{$cari}%")
-                  ->orWhere('mitras.nik', 'like', "%{$cari}%");
+                  ->orWhere('mitras.sobat_id', 'like', "%{$cari}%");
             });
         }
 
@@ -75,7 +75,7 @@ class MonitoringKuotaController extends Controller
 
             return [
                 'id' => $mitra->id,
-                'nik' => $mitra->nik,
+                'sobat_id' => $mitra->sobat_id,
                 'nama_lengkap' => $mitra->nama_lengkap,
                 'terpakai_pendataan' => (float)$mitra->terpakai_pendataan,
                 'terpakai_pengolahan' => (float)$mitra->terpakai_pengolahan,
@@ -184,7 +184,7 @@ class MonitoringKuotaController extends Controller
         if ($cari) {
             $query->where(function($q) use ($cari) {
                 $q->where('mitras.nama_lengkap', 'like', "%{$cari}%")
-                  ->orWhere('mitras.nik', 'like', "%{$cari}%");
+                  ->orWhere('mitras.sobat_id', 'like', "%{$cari}%");
             });
         }
 
@@ -205,7 +205,7 @@ class MonitoringKuotaController extends Controller
 
             return [
                 'id' => $mitra->id,
-                'nik' => $mitra->nik,
+                'sobat_id' => $mitra->sobat_id,
                 'nama_lengkap' => $mitra->nama_lengkap,
                 'terpakai_pendataan' => (float)$mitra->terpakai_pendataan,
                 'terpakai_pengolahan' => (float)$mitra->terpakai_pengolahan,
@@ -242,7 +242,7 @@ class MonitoringKuotaController extends Controller
         $columns = array(
             'No', 
             'Nama Mitra', 
-            'NIK', 
+            'Sobat ID', 
             'Honor Pendataan', 
             'Sisa Pendataan', 
             'Persentase Pendataan', 
@@ -262,7 +262,7 @@ class MonitoringKuotaController extends Controller
                 fputcsv($file, array(
                     $no++,
                     $row['nama_lengkap'],
-                    $row['nik'],
+                    $row['sobat_id'],
                     $row['terpakai_pendataan'],
                     $batasPendataan - $row['terpakai_pendataan'],
                     $row['usage_pendataan_pct'] . '%',

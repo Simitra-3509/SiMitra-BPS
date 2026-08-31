@@ -72,7 +72,7 @@ export default function RecycleBin({ mitras, filters }) {
                             <div className="relative w-full">
                                 <input
                                     type="text"
-                                    placeholder="Cari NIK / Nama..."
+                                    placeholder="Cari Sobat ID / Nama..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full pl-3 pr-10 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-simitra-orange"
@@ -99,7 +99,7 @@ export default function RecycleBin({ mitras, filters }) {
                         <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300 min-w-[800px] whitespace-nowrap">
                             <thead className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 uppercase text-xs font-semibold border-b border-gray-200 dark:border-gray-600">
                                 <tr>
-                                    <th className="px-6 py-4">NIK</th>
+                                    <th className="px-6 py-4">Sobat ID</th>
                                     <th className="px-6 py-4">Nama Lengkap</th>
                                     <th className="px-6 py-4">Alamat</th>
                                     <th className="px-6 py-4">Tanggal Dihapus</th>
@@ -110,7 +110,7 @@ export default function RecycleBin({ mitras, filters }) {
                                 {mitras.data.length > 0 ? (
                                     mitras.data.map((mitra) => (
                                         <tr key={mitra.id} className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                            <td className="px-6 py-4 font-mono font-medium text-gray-900 dark:text-white">{mitra.nik}</td>
+                                            <td className="px-6 py-4 font-mono font-medium text-gray-900 dark:text-white">{mitra.sobat_id || '-'}</td>
                                             <td className="px-6 py-4 font-semibold text-gray-800 dark:text-gray-100">{mitra.nama_lengkap}</td>
                                             <td className="px-6 py-4">{mitra.alamat || '-'}</td>
                                             <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">

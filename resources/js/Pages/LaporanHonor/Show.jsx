@@ -22,7 +22,7 @@ const formatRupiah = (number) => {
 export default function Show({ id }) {
     // Dummy Data Based on ID
     const data = id == 3 ? {
-        mitra: { nama_lengkap: 'Dewi Sartika', nik: '3201123456789003', npwp: '34.567.890.1-003.000', email: 'dewi.sartika@email.com' },
+        mitra: { nama_lengkap: 'Dewi Sartika', sobat_id: '458217', npwp: '34.567.890.1-003.000', email: 'dewi.sartika@email.com' },
         periode: 'Mei 2026',
         jenis_sbml: 'Pendataan',
         rincian: [
@@ -33,7 +33,7 @@ export default function Show({ id }) {
         total_pencairan: 3500000,
         jumlah_transaksi: 3,
     } : id == 2 ? {
-        mitra: { nama_lengkap: 'Xander Halim', nik: '3201123456789002', npwp: '98.765.432.1-002.000', email: 'xander.halim@email.com' },
+        mitra: { nama_lengkap: 'Xander Halim', sobat_id: '458218', npwp: '98.765.432.1-002.000', email: 'xander.halim@email.com' },
         periode: 'Mei 2026',
         jenis_sbml: 'Pengolahan',
         rincian: [
@@ -42,7 +42,7 @@ export default function Show({ id }) {
         total_pencairan: 2400000,
         jumlah_transaksi: 1,
     } : {
-        mitra: { nama_lengkap: 'Budi Santoso', nik: '3201123456789001', npwp: '12.345.678.9-001.000', email: 'budi.santoso@email.com' },
+        mitra: { nama_lengkap: 'Budi Santoso', sobat_id: '458219', npwp: '12.345.678.9-001.000', email: 'budi.santoso@email.com' },
         periode: 'Mei 2026',
         jenis_sbml: 'Pengolahan',
         rincian: [
@@ -101,8 +101,8 @@ export default function Show({ id }) {
                                     <p className="font-semibold text-gray-900 dark:text-white">{data.mitra.nama_lengkap}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">NIK</p>
-                                    <p className="font-medium text-gray-900 dark:text-gray-200">{data.mitra.nik}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Sobat ID</p>
+                                    <p className="font-medium text-gray-900 dark:text-gray-200">{data.mitra.sobat_id || '-'}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">NPWP</p>

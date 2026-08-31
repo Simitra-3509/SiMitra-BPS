@@ -17,10 +17,21 @@ class EnsureUserHasRole
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
-        $userRole = strtolower($user?->role ?? '');
-        $allowedRoles = array_map('strtolower', $roles);
+        if (! $user) {
+            return redirect()->route('login');
+        }
 
-        if (! $user || (! empty($roles) && ! in_array($userRole, $allowedRoles))) {
+        $userRole = strtolower($user->role ?? '');
+        if ($userRole === 'administrator') {
+            $userRole = 'admin';
+        }
+
+        $allowedRoles = array_map(function ($r) {
+            $r = strtolower($r);
+            return $r === 'administrator' ? 'admin' : $r;
+        }, $roles);
+
+        if (! empty($roles) && ! in_array($userRole, $allowedRoles)) {
             abort(Response::HTTP_FORBIDDEN, 'Anda tidak memiliki hak akses untuk membuka halaman ini.');
         }
 

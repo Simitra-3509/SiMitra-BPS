@@ -245,7 +245,7 @@ export default function Index({
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="Cari nama/NIK mitra..."
+                                    placeholder="Cari nama/Sobat ID mitra..."
                                     value={cari}
                                     onChange={(e) => setCari(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') applyFilter(); }}
@@ -264,7 +264,7 @@ export default function Index({
                                 <tr>
                                     <th className="p-4 w-12 text-center">NO</th>
                                     <th className="p-4">MITRA</th>
-                                    <th className="p-4">NIK</th>
+                                    <th className="p-4">SOBAT ID</th>
                                     <th className="p-4 text-center">JENIS SBML</th>
                                     <th className="p-4 text-right">BATAS PAGU</th>
                                     <th className="p-4 text-right">TERPAKAI</th>
@@ -290,7 +290,7 @@ export default function Index({
                                                     {(data.current_page - 1) * perPage + index + 1}
                                                 </td>
                                                 <td className="p-4 font-bold text-gray-900 dark:text-white align-top" rowSpan={totalRows}>{item.nama_lengkap}</td>
-                                                <td className="p-4 text-gray-500 dark:text-gray-400 align-top" rowSpan={totalRows}>{item.nik}</td>
+                                                <td className="p-4 text-gray-500 dark:text-gray-400 align-top" rowSpan={totalRows}>{item.sobat_id || '-'}</td>
                                                 
                                                 <td className="p-4 text-center">
                                                     <span className="inline-block px-2 py-0.5 text-[10px] font-bold rounded text-white bg-[#F26522] uppercase tracking-wide">PENDATAAN</span>
@@ -326,7 +326,7 @@ export default function Index({
                                                         {(data.current_page - 1) * perPage + index + 1}
                                                     </td>
                                                     <td className="p-4 font-bold text-gray-900 dark:text-white align-top" rowSpan={totalRows}>{item.nama_lengkap}</td>
-                                                    <td className="p-4 text-gray-500 dark:text-gray-400 align-top" rowSpan={totalRows}>{item.nik}</td>
+                                                    <td className="p-4 text-gray-500 dark:text-gray-400 align-top" rowSpan={totalRows}>{item.sobat_id || '-'}</td>
                                                     </>
                                                 )}
                                                 <td className="p-4 text-center border-t border-gray-100 dark:border-gray-700">

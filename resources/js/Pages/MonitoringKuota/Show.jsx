@@ -118,7 +118,7 @@ export default function Show({ mitra, penugasans, bulan, tahun, ringkasan }) {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{mitra.nama_lengkap}</h2>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">NIK: {mitra.nik}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sobat ID: {mitra.sobat_id || '-'}</p>
                                 </div>
                             </div>
                             

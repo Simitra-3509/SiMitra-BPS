@@ -27,8 +27,8 @@ export default function Create({ kegiatan, kegiatanList }) {
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
-        tanggal_mulai: '',
-        tanggal_selesai: '',
+        bulan: String(new Date().getMonth() + 1),
+        tahun: String(new Date().getFullYear()),
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
     });
 
@@ -38,8 +38,13 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [selectedDetilInfo, setSelectedDetilInfo] = useState(null);
 
     const selectedKegiatan = listKegiatan.find((k) => String(k.id) === String(data.kegiatan_id));
-    const minDate = selectedKegiatan?.tanggal_mulai || '';
-    const maxDate = selectedKegiatan?.tanggal_selesai || '';
+
+    const namaBulan = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const currentYear = new Date().getFullYear();
+    const tahunOptions = [currentYear - 1, currentYear, currentYear + 1];
 
     // Modal Picker Mitra states (Tanpa filter kecamatan)
     const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
@@ -48,11 +53,17 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
 
-    // Salin periode sebelumnya states
-    const [prevMonthData, setPrevMonthData] = useState([]);
-    const [prevPeriodeName, setPrevPeriodeName] = useState('');
+    // Salin dari Periode — state
+    const [copySourceBulan, setCopySourceBulan] = useState('');
+    const [copySourceTahun, setCopySourceTahun] = useState('');
+    const [copyData, setCopyData] = useState([]);       // hasil fetch
+    const [copyLoading, setCopyLoading] = useState(false);
+    const [copyPeriodeName, setCopyPeriodeName] = useState('');
     const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
     const [selectedPrevMitraIds, setSelectedPrevMitraIds] = useState([]);
+
+    // Import Excel — placeholder state
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // 1. Handling Pilih Kegiatan -> Fetch Detil langsung
     const handleKegiatanChange = (e) => {
@@ -64,7 +75,7 @@ export default function Create({ kegiatan, kegiatanList }) {
         }));
         setDetilList([]);
         setSelectedDetilInfo(null);
-        setPrevMonthData([]);
+        setCopyData([]);
 
         if (selectedId) {
             axios.get(route('api.penugasan.detil', selectedId))
@@ -82,37 +93,43 @@ export default function Create({ kegiatan, kegiatanList }) {
         setSelectedDetilInfo(foundDetil || null);
 
         if (selectedDetilId && foundDetil) {
-            fetchPrevMonthAssignments(selectedDetilId, data.tanggal_mulai, data.tanggal_selesai);
+            // No auto-fetch on detil change; user will open copy modal manually
         } else {
-            setPrevMonthData([]);
+            setCopyData([]);
         }
     };
 
-    // 4. Fetch data penugasan bulan sebelumnya
-    const fetchPrevMonthAssignments = (detilId, tglMulaiVal, tglSelesaiVal) => {
-        if (!detilId || !tglMulaiVal || !tglSelesaiVal) return;
-
+    // 4. Fetch copy source — bisa dari bulan manapun
+    const fetchCopySource = (detilId, bulanSumber, tahunSumber) => {
+        if (!detilId || !bulanSumber || !tahunSumber) return;
+        setCopyLoading(true);
         axios.get(route('api.penugasan.prev-month'), {
-            params: {
-                detil_kegiatan_id: detilId,
-                tanggal_mulai: tglMulaiVal,
-                tanggal_selesai: tglSelesaiVal
-            }
+            params: { detil_kegiatan_id: detilId, bulan: bulanSumber, tahun: tahunSumber }
         })
         .then((res) => {
             const list = res.data?.data || [];
-            setPrevMonthData(list);
-            setPrevPeriodeName(res.data?.prev_periode || 'Periode Sebelumnya');
+            setCopyData(list);
+            setCopyPeriodeName(
+                res.data?.prev_bulan_nama
+                    ? `${res.data.prev_bulan_nama} ${res.data.prev_tahun}`
+                    : `${bulanSumber}/${tahunSumber}`
+            );
+            setSelectedPrevMitraIds(list.map((i) => i.mitra_id));
         })
-        .catch((err) => console.error('Error fetching prev month:', err));
+        .catch((err) => console.error('Error fetching copy source:', err))
+        .finally(() => setCopyLoading(false));
     };
 
-    // Refetch prev month when dates changes
+    // Refetch when bulan/tahun changes — initialize copy source to previous month
     useEffect(() => {
-        if (data.detil_kegiatan_id) {
-            fetchPrevMonthAssignments(data.detil_kegiatan_id, data.tanggal_mulai, data.tanggal_selesai);
-        }
-    }, [data.tanggal_mulai, data.tanggal_selesai]);
+        const bln = parseInt(data.bulan);
+        const thn = parseInt(data.tahun);
+        let prevB = bln - 1, prevT = thn;
+        if (prevB < 1) { prevB = 12; prevT -= 1; }
+        setCopySourceBulan(String(prevB));
+        setCopySourceTahun(String(prevT));
+        setCopyData([]);
+    }, [data.bulan, data.tahun]);
 
     // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, TANPA kecamatan)
     useEffect(() => {
@@ -190,10 +207,11 @@ export default function Create({ kegiatan, kegiatanList }) {
         setData('mitras', updated);
     };
 
-    // Modal Salin dari Bulan Lalu Handlers
+    // Buka modal salin — fetch source saat itu juga
     const openCopyModal = () => {
-        setSelectedPrevMitraIds(prevMonthData.map((item) => item.mitra_id));
+        if (!data.detil_kegiatan_id) return;
         setIsCopyModalOpen(true);
+        fetchCopySource(data.detil_kegiatan_id, copySourceBulan, copySourceTahun);
     };
 
     const toggleSelectPrevMitra = (mitraId) => {
@@ -206,16 +224,15 @@ export default function Create({ kegiatan, kegiatanList }) {
 
     const toggleSelectAllPrev = (e) => {
         if (e.target.checked) {
-            setSelectedPrevMitraIds(prevMonthData.map((item) => item.mitra_id));
+            setSelectedPrevMitraIds(copyData.map((item) => item.mitra_id));
         } else {
             setSelectedPrevMitraIds([]);
         }
     };
 
     const handleApplyCopyPrev = () => {
-        const chosen = prevMonthData.filter((item) => selectedPrevMitraIds.includes(item.mitra_id));
+        const chosen = copyData.filter((item) => selectedPrevMitraIds.includes(item.mitra_id));
         const currentMitras = [...data.mitras];
-
         chosen.forEach((item) => {
             const exists = currentMitras.some((m) => m.id === item.mitra_id);
             if (!exists) {
@@ -227,7 +244,6 @@ export default function Create({ kegiatan, kegiatanList }) {
                 });
             }
         });
-
         setData('mitras', currentMitras);
         setIsCopyModalOpen(false);
     };
@@ -276,39 +292,63 @@ export default function Create({ kegiatan, kegiatanList }) {
         }
     };
 
-    // SECTION C: Render Info Sisa Volume Detil DIPA
+    // SECTION C: Render Info Sisa Volume Detil DIPA (dengan live preview form)
     const renderSisaVolumeInfo = () => {
         if (!selectedDetilInfo) return null;
 
-        const targetDipa = selectedDetilInfo.jumlah || 0;
-        const sudahDitugaskan = selectedDetilInfo.total_kuota_terpakai || 0;
-        const sisaVolume = targetDipa - sudahDitugaskan;
-        const satuanStr = selectedDetilInfo.satuan || 'Volume';
+        const targetDipa        = parseFloat(selectedDetilInfo.jumlah) || 0;
+        const sudahDiDB         = parseFloat(selectedDetilInfo.total_kuota_terpakai) || 0;
+        const kuotaFormIni      = data.mitras.reduce((sum, m) => sum + (parseFloat(m.kuota_target) || 0), 0);
+        const totalTerpakai     = sudahDiDB + kuotaFormIni;
+        const sisaSetelahInput  = targetDipa - totalTerpakai;
+        const satuanStr         = selectedDetilInfo.satuan || 'Volume';
+        const isOver            = sisaSetelahInput < 0;
 
-        const formatNum = (num) => new Intl.NumberFormat('id-ID').format(num);
+        const formatNum = (num) => new Intl.NumberFormat('id-ID').format(Math.abs(num));
 
         return (
-            <div className={`p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
-                sisaVolume >= 0 
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200' 
-                    : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+            <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
+                isOver
+                    ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
+                    : sisaSetelahInput === 0
+                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                        : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
             }`}>
-                <div className="flex items-center gap-2.5">
-                    <Calculator size={18} className={sisaVolume >= 0 ? 'text-emerald-600' : 'text-amber-600'} />
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-bold uppercase tracking-wider text-[11px]">Sisa Volume Detil:</span>
-                        <span>Target DIPA: <strong className="font-mono">{formatNum(targetDipa)} {satuanStr}</strong></span>
-                        <span>—</span>
-                        <span>Sudah ditugaskan: <strong className="font-mono">{formatNum(sudahDitugaskan)} {satuanStr}</strong></span>
-                    </div>
+                {/* Header */}
+                <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
+                    <Calculator size={15} className={isOver ? 'text-red-500' : sisaSetelahInput === 0 ? 'text-amber-500' : 'text-emerald-600'} />
+                    <span>Sisa Volume Detil DIPA</span>
                 </div>
-                <div className="shrink-0 font-bold">
+
+                {/* Grid Info */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-1">
+                    <span className="text-gray-600 dark:text-gray-400">Target DIPA:</span>
+                    <span className="font-mono font-bold">{formatNum(targetDipa)} {satuanStr}</span>
+
+                    <span className="text-gray-600 dark:text-gray-400">Sudah ditugaskan (tersimpan):</span>
+                    <span className="font-mono font-bold">{formatNum(sudahDiDB)} {satuanStr}</span>
+
+                    {kuotaFormIni > 0 && (
+                        <>
+                            <span className="text-blue-600 dark:text-blue-400">+ Input form ini:</span>
+                            <span className="font-mono font-bold text-blue-700 dark:text-blue-300">+{formatNum(kuotaFormIni)} {satuanStr}</span>
+                        </>
+                    )}
+                </div>
+
+                {/* Sisa badge */}
+                <div className="flex items-center justify-between pt-1 border-t border-current/20">
+                    <span className="font-semibold">
+                        {isOver ? '⚠ Melebihi Target DIPA' : 'Sisa setelah input ini:'}
+                    </span>
                     <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${
-                        sisaVolume >= 0 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200' 
-                            : 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
+                        isOver
+                            ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
+                            : sisaSetelahInput === 0
+                                ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
+                                : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
                     }`}>
-                        Sisa: {formatNum(sisaVolume)} {satuanStr}
+                        {isOver ? '-' : ''}{formatNum(sisaSetelahInput)} {satuanStr}
                     </span>
                 </div>
             </div>
@@ -472,85 +512,97 @@ export default function Create({ kegiatan, kegiatanList }) {
                         )}
                     </div>
 
-                    {/* SECTION 2: Periode Bulan & Tahun & Tombol Salin */}
+                    {/* SECTION 2: Periode Bulan & Tahun */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 space-y-5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-3">
                             <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <Calendar size={18} className="text-[#D9531E]" />
                                 2. Periode Penugasan
                             </h3>
-
-                            {/* Tombol Salin dari Periode Lalu */}
-                            {selectedDetilInfo && selectedDetilInfo.frekuensi_penugasan !== 'bulanan' && prevMonthData.length > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={openCopyModal}
-                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 dark:text-indigo-300 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
-                                >
-                                    <Copy size={14} />
-                                    <span>Salin Penugasan dari {prevPeriodeName} ({prevMonthData.length} Mitra)</span>
-                                </button>
-                            )}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Tanggal Mulai <span className="text-red-500">*</span>
+                                    Bulan <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="date"
-                                    value={data.tanggal_mulai}
-                                    min={minDate}
-                                    max={maxDate}
-                                    onChange={(e) => setData('tanggal_mulai', e.target.value)}
-                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none cursor-pointer"
-                                />
-                                {errors.tanggal_mulai && <p className="text-xs text-red-500">{errors.tanggal_mulai}</p>}
-                                {minDate && maxDate && (
-                                    <p className="text-[10px] text-gray-500">Maksimum periode: {minDate} s/d {maxDate}</p>
-                                )}
+                                <select
+                                    value={data.bulan}
+                                    onChange={(e) => setData('bulan', e.target.value)}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                >
+                                    {namaBulan.map((nama, idx) => (
+                                        <option key={idx + 1} value={String(idx + 1)}>{nama}</option>
+                                    ))}
+                                </select>
+                                {errors.bulan && <p className="text-xs text-red-500">{errors.bulan}</p>}
                             </div>
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Tanggal Selesai <span className="text-red-500">*</span>
+                                    Tahun <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="date"
-                                    value={data.tanggal_selesai}
-                                    min={data.tanggal_mulai || minDate}
-                                    max={maxDate}
-                                    onChange={(e) => setData('tanggal_selesai', e.target.value)}
-                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none font-mono cursor-pointer"
-                                />
-                                {errors.tanggal_selesai && <p className="text-xs text-red-500">{errors.tanggal_selesai}</p>}
+                                <select
+                                    value={data.tahun}
+                                    onChange={(e) => setData('tahun', e.target.value)}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                >
+                                    {tahunOptions.map((y) => (
+                                        <option key={y} value={String(y)}>{y}</option>
+                                    ))}
+                                </select>
+                                {errors.tahun && <p className="text-xs text-red-500">{errors.tahun}</p>}
                             </div>
                         </div>
                     </div>
 
-                    {/* SECTION 3: TABEL MITRA TERPILIH (Dengan Kolom Total & Polos tanpa angka judul) */}
+                    {/* SECTION 3: TABEL MITRA TERPILIH */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 space-y-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-4">
                             <div>
                                 <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <UserPlus size={18} className="text-[#D9531E]" />
                                     Daftar Mitra Terpilih ({data.mitras.length})
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-0.5">Gunakan Modal Picker untuk mencari Sobat ID / Nama Mitra</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Tambahkan mitra lewat tombol di bawah</p>
                             </div>
 
-                            {/* Trigger Modal Picker Mitra */}
-                            <button
-                                type="button"
-                                onClick={handleOpenPickerModal}
-                                className="bg-[#D9531E] hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition cursor-pointer shrink-0"
-                            >
-                                <Users size={16} />
-                                <span>Pilih & Cari Mitra</span>
-                            </button>
+                            {/* Tombol Aksi — Import | Salin | Pilih */}
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                {/* Import Excel — hijau */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsImportModalOpen(true)}
+                                    disabled={!data.detil_kegiatan_id}
+                                    title={!data.detil_kegiatan_id ? 'Pilih detil terlebih dahulu' : 'Import dari Excel'}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#1D6F42] hover:bg-[#155733] rounded-xl shadow-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                                    Import Excel
+                                </button>
+
+                                {/* Salin dari Bulan — oranye */}
+                                <button
+                                    type="button"
+                                    onClick={openCopyModal}
+                                    disabled={!data.detil_kegiatan_id}
+                                    title={!data.detil_kegiatan_id ? 'Pilih detil terlebih dahulu' : 'Salin dari bulan lain'}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#D9531E] hover:bg-orange-600 rounded-xl shadow-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <Copy size={14} />
+                                    Salin dari Bulan Lain
+                                </button>
+
+                                {/* Pilih & Cari Mitra — biru */}
+                                <button
+                                    type="button"
+                                    onClick={handleOpenPickerModal}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition cursor-pointer"
+                                >
+                                    <Users size={14} />
+                                    Pilih &amp; Cari Mitra
+                                </button>
+                            </div>
                         </div>
 
                         {/* TABEL MITRA TERPILIH (Judul polos + Kolom Total + Kolom nama disempitkan) */}
@@ -640,7 +692,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                     {/* Actions Submit */}
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="text-xs text-gray-500">
-                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {data.tanggal_mulai} s/d {data.tanggal_selesai}.
+                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {namaBulan[parseInt(data.bulan) - 1]} {data.tahun}.
                         </div>
                         <div className="flex items-center gap-3">
                             <Link
@@ -769,93 +821,140 @@ export default function Create({ kegiatan, kegiatanList }) {
                 </div>
             </Modal>
 
-            {/* Modal Salin dari Periode Lalu */}
+            {/* ===== MODAL SALIN DARI BULAN LAIN ===== */}
             <Modal show={isCopyModalOpen} onClose={() => setIsCopyModalOpen(false)} maxWidth="2xl">
                 <div className="p-6 space-y-4">
+                    {/* Header */}
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
-                        <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Copy size={18} className="text-indigo-600" />
-                            Salin Penugasan dari {prevPeriodeName}
-                        </h3>
-                        <button
-                            type="button"
-                            onClick={() => setIsCopyModalOpen(false)}
-                            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
-                        >
+                        <div className="flex items-center gap-2">
+                            <Copy size={18} className="text-[#D9531E]" />
+                            <h3 className="text-base font-bold text-gray-900 dark:text-white">Salin Daftar Mitra dari Periode Lain</h3>
+                        </div>
+                        <button type="button" onClick={() => setIsCopyModalOpen(false)}
+                            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer">
                             <X size={18} />
                         </button>
                     </div>
 
-                    <div className="bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200 p-3.5 rounded-xl text-xs flex items-start gap-2.5">
-                        <Info size={18} className="shrink-0 mt-0.5 text-indigo-600" />
-                        <p>Pilih mitra dari penugasan bulan sebelumnya yang akan disalin ke periode form ini. Mitra yang dicentang akan otomatis dimasukkan ke area "daftar mitra terpilih".</p>
+                    {/* Picker Bulan & Tahun Sumber */}
+                    <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/50 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
+                            <Calendar size={14} /> Pilih Periode Sumber yang Ingin Disalin
+                        </p>
+                        <div className="flex flex-wrap items-end gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Bulan Sumber</label>
+                                <select
+                                    value={copySourceBulan}
+                                    onChange={(e) => setCopySourceBulan(e.target.value)}
+                                    className="px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                >
+                                    {namaBulan.map((nm, idx) => (
+                                        <option key={idx + 1} value={String(idx + 1)}>{nm}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Tahun Sumber</label>
+                                <select
+                                    value={copySourceTahun}
+                                    onChange={(e) => setCopySourceTahun(e.target.value)}
+                                    className="px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                >
+                                    {tahunOptions.map((y) => (
+                                        <option key={y} value={String(y)}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => fetchCopySource(data.detil_kegiatan_id, copySourceBulan, copySourceTahun)}
+                                disabled={copyLoading}
+                                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#D9531E] hover:bg-orange-600 rounded-xl transition cursor-pointer disabled:opacity-60"
+                            >
+                                {copyLoading ? (
+                                    <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
+                                ) : (
+                                    <Search size={13} />
+                                )}
+                                Tampilkan Data
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl max-h-72 overflow-y-auto">
+                    {/* Info box */}
+                    <div className="bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-200 p-3 rounded-xl text-xs flex items-start gap-2">
+                        <Info size={15} className="shrink-0 mt-0.5 text-blue-500" />
+                        <p>Pilih mitra dari periode sumber yang dipilih. Mitra yang dicentang akan ditambahkan ke daftar mitra (kuota ikut disalin).</p>
+                    </div>
+
+                    {/* Tabel hasil */}
+                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl max-h-64 overflow-y-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead className="bg-gray-50 dark:bg-gray-900/60 sticky top-0 border-b border-gray-200 dark:border-gray-700 text-gray-500 uppercase text-[10px] tracking-wider">
                                 <tr>
                                     <th className="py-2.5 px-3 w-10 text-center">
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
-                                            checked={prevMonthData.length > 0 && selectedPrevMitraIds.length === prevMonthData.length}
-                                            onChange={toggleSelectAllPrev}
-                                        />
+                                        <input type="checkbox" className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
+                                            checked={copyData.length > 0 && selectedPrevMitraIds.length === copyData.length}
+                                            onChange={toggleSelectAllPrev} />
                                     </th>
                                     <th className="py-2.5 px-3 font-bold">Sobat ID</th>
                                     <th className="py-2.5 px-3 font-bold">Nama Mitra</th>
-                                    <th className="py-2.5 px-3 font-bold text-right">Kuota Bulan Lalu</th>
+                                    <th className="py-2.5 px-3 font-bold text-right">Kuota ({namaBulan[parseInt(copySourceBulan)-1]})</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-                                {prevMonthData.map((item) => {
-                                    const isChecked = selectedPrevMitraIds.includes(item.mitra_id);
-                                    return (
-                                        <tr key={item.mitra_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/20">
-                                            <td className="py-2.5 px-3 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
-                                                    checked={isChecked}
-                                                    onChange={() => toggleSelectPrevMitra(item.mitra_id)}
-                                                />
-                                            </td>
-                                            <td className="py-2.5 px-3 font-mono font-bold text-[#D9531E]">
-                                                {item.sobat_id || '-'}
-                                            </td>
-                                            <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white">
-                                                {item.nama_lengkap}
-                                            </td>
-                                            <td className="py-2.5 px-3 font-mono font-bold text-right text-gray-800 dark:text-gray-200">
-                                                {item.kuota_target}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {copyLoading ? (
+                                    <tr><td colSpan="4" className="py-8 text-center text-xs text-gray-400 animate-pulse">Memuat data...</td></tr>
+                                ) : copyData.length > 0 ? (
+                                    copyData.map((item) => {
+                                        const isChecked = selectedPrevMitraIds.includes(item.mitra_id);
+                                        const alreadyAdded = data.mitras.some((m) => m.id === item.mitra_id);
+                                        return (
+                                            <tr key={item.mitra_id}
+                                                onClick={() => !alreadyAdded && toggleSelectPrevMitra(item.mitra_id)}
+                                                className={`transition cursor-pointer ${
+                                                    alreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
+                                                    : isChecked ? 'bg-orange-50 dark:bg-orange-950/20'
+                                                    : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
+                                                }`}>
+                                                <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                                    <input type="checkbox" className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
+                                                        checked={isChecked} disabled={alreadyAdded}
+                                                        onChange={() => toggleSelectPrevMitra(item.mitra_id)} />
+                                                </td>
+                                                <td className="py-2.5 px-3 font-mono font-bold text-[#D9531E]">{item.sobat_id || '-'}</td>
+                                                <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white">
+                                                    {item.nama_lengkap}
+                                                    {alreadyAdded && <span className="ml-2 text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">Sudah ada</span>}
+                                                </td>
+                                                <td className="py-2.5 px-3 font-mono font-bold text-right text-gray-800 dark:text-gray-200">{item.kuota_target}</td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr><td colSpan="4" className="py-8 text-center text-xs text-gray-400">
+                                        {copySourceBulan ? 'Tidak ada penugasan pada periode ini untuk detil yang dipilih.' : 'Pilih periode sumber lalu klik Tampilkan Data.'}
+                                    </td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
 
+                    {/* Footer */}
                     <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                         <span className="text-xs text-gray-500">
-                            {selectedPrevMitraIds.length} mitra dipilih dari {prevMonthData.length}
+                            {selectedPrevMitraIds.length} dipilih dari {copyData.length} mitra
                         </span>
                         <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsCopyModalOpen(false)}
-                                className="px-4 py-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 transition cursor-pointer"
-                            >
+                            <button type="button" onClick={() => setIsCopyModalOpen(false)}
+                                className="px-4 py-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 transition cursor-pointer">
                                 Batal
                             </button>
-                            <button
-                                type="button"
-                                disabled={selectedPrevMitraIds.length === 0}
+                            <button type="button" disabled={selectedPrevMitraIds.length === 0}
                                 onClick={handleApplyCopyPrev}
-                                className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer"
-                            >
-                                Pakai yang Dicentang ({selectedPrevMitraIds.length})
+                                className="px-5 py-2 text-xs font-bold text-white bg-[#D9531E] hover:bg-orange-600 rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer">
+                                Salin {selectedPrevMitraIds.length} Mitra
                             </button>
                         </div>
                     </div>

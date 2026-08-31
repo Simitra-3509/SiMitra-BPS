@@ -54,8 +54,7 @@ class PenugasanController extends Controller implements HasMiddleware
         if ($request->filled('search')) {
             $query->whereHas('mitra', function ($q) use ($request) {
                 $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
-                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%')
-                  ->orWhere('nik', 'like', '%' . $request->search . '%');
+                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -114,7 +113,14 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function getDetilByKegiatan($kegiatan_id)
     {
-        $detilList = DetilKegiatan::where('kegiatan_id', $kegiatan_id)->get();
+        $detilList = DetilKegiatan::where('kegiatan_id', $kegiatan_id)
+            ->withSum('penugasans', 'kuota_target')
+            ->get()
+            ->map(function ($detil) {
+                $detil->total_kuota_terpakai = (float)($detil->penugasans_sum_kuota_target ?? 0);
+                return $detil;
+            });
+
         return response()->json($detilList);
     }
 
@@ -148,19 +154,17 @@ class PenugasanController extends Controller implements HasMiddleware
     public function getPrevMonthPenugasan(Request $request)
     {
         $detilId = $request->get('detil_kegiatan_id');
-        $tanggalMulai = $request->get('tanggal_mulai');
+        $bulan   = (int)$request->get('bulan');
+        $tahun   = (int)$request->get('tahun');
 
-        if (!$detilId || !$tanggalMulai) {
+        if (!$detilId || !$bulan || !$tahun) {
             return response()->json([]);
         }
 
-        // Hitung tanggal mulai bulan sebelumnya
-        $prevMulai = date('Y-m-d', strtotime('-1 month', strtotime($tanggalMulai)));
-
-        // Cari penugasan dengan tanggal mulai yang sama di bulan sebelumnya
         $prevPenugasan = Penugasan::with('mitra')
             ->where('detil_kegiatan_id', $detilId)
-            ->where('tanggal_mulai', $prevMulai)
+            ->where('bulan', $bulan)
+            ->where('tahun', $tahun)
             ->get();
 
         $result = $prevPenugasan->map(function ($item) {
@@ -177,12 +181,10 @@ class PenugasanController extends Controller implements HasMiddleware
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
-        
-        $prevBulanNum = (int)date('n', strtotime($prevMulai));
 
         return response()->json([
-            'prev_bulan_nama' => $namaBulanList[$prevBulanNum],
-            'prev_tahun'      => date('Y', strtotime($prevMulai)),
+            'prev_bulan_nama' => $namaBulanList[$bulan] ?? '',
+            'prev_tahun'      => $tahun,
             'data'            => $result,
         ]);
     }
@@ -196,24 +198,20 @@ class PenugasanController extends Controller implements HasMiddleware
             abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
         }
 
-        if ($request->has('bulan')) {
-            $request->merge(['bulan' => $this->parseBulanToInteger($request->bulan)]);
-        }
 
         $request->validate([
             'kegiatan_id'           => 'required|exists:kegiatans,id',
             'detil_kegiatan_id'     => 'required|exists:detil_kegiatan,id',
-            'tanggal_mulai'         => 'required|date',
-            'tanggal_selesai'       => 'required|date|after_or_equal:tanggal_mulai',
+            'bulan'                 => 'required|integer|min:1|max:12',
+            'tahun'                 => 'required|integer|min:2000|max:2100',
             'mitras'                => 'required|array|min:1',
             'mitras.*.id'           => 'required|exists:mitras,id',
             'mitras.*.kuota_target' => 'required|numeric|min:1',
         ], [
             'kegiatan_id.required'           => 'Kegiatan wajib dipilih.',
             'detil_kegiatan_id.required'     => 'Detil rincian wajib dipilih.',
-            'tanggal_mulai.required'         => 'Tanggal mulai wajib diisi.',
-            'tanggal_selesai.required'       => 'Tanggal selesai wajib diisi.',
-            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama dengan atau lebih besar dari tanggal mulai.',
+            'bulan.required'                 => 'Bulan penugasan wajib dipilih.',
+            'tahun.required'                 => 'Tahun penugasan wajib diisi.',
             'mitras.required'                => 'Minimal 1 mitra harus dipilih.',
             'mitras.min'                     => 'Minimal 1 mitra harus dipilih.',
             'mitras.*.kuota_target.required' => 'Kuota per mitra wajib diisi.',
@@ -231,8 +229,29 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         $detil = DetilKegiatan::findOrFail($request->detil_kegiatan_id);
-        $hargaSatuan = (float)($detil->harga_satuan ?? 0);
-        $jenisSbml = $detil->jenis_sbml;
+        $hargaSatuan  = (float)($detil->harga_satuan ?? 0);
+        $jenisSbml    = $detil->jenis_sbml;
+        $jumlahDipa   = (float)($detil->jumlah ?? 0); // Target volume DIPA
+
+        // ── Validasi Kuota DIPA ─────────────────────────────────────────────────
+        // Total kuota yang sudah tersimpan untuk detil ini (semua bulan/tahun)
+        $kuotaTerpakai = (float)Penugasan::where('detil_kegiatan_id', $request->detil_kegiatan_id)
+            ->sum('kuota_target');
+
+        // Total kuota yang akan ditambahkan sekarang
+        $kuotaBaru = collect($request->mitras)->sum(fn($m) => (float)($m['kuota_target'] ?? 0));
+
+        if ($jumlahDipa > 0 && ($kuotaTerpakai + $kuotaBaru) > $jumlahDipa) {
+            $sisa = max(0, $jumlahDipa - $kuotaTerpakai);
+            return back()->withErrors([
+                'mitras' => "Total kuota penugasan akan melebihi target DIPA untuk detil ini."
+                          . " Target DIPA: " . number_format($jumlahDipa, 0, ',', '.')
+                          . ", sudah terpakai: " . number_format($kuotaTerpakai, 0, ',', '.')
+                          . ", sisa: " . number_format($sisa, 0, ',', '.')
+                          . ". Input Anda menambahkan: " . number_format($kuotaBaru, 0, ',', '.') . "."
+            ])->withInput();
+        }
+        // ────────────────────────────────────────────────────────────────────────
 
         try {
             DB::transaction(function () use ($request, $detil, $hargaSatuan, $jenisSbml) {
@@ -250,7 +269,7 @@ class PenugasanController extends Controller implements HasMiddleware
                     if ($exists) {
                         $mitra = Mitra::find($mitraId);
                         $namaMitra = $mitra ? $mitra->nama_lengkap : 'Mitra';
-                        throw new \Exception("Mitra {$namaMitra} sudah ditugaskan ke detil ini pada periode {$request->tanggal_mulai} s/d {$request->tanggal_selesai}.");
+                        throw new \Exception("Mitra {$namaMitra} sudah ditugaskan ke detil ini pada periode {$request->bulan}/{$request->tahun}.");
                     }
 
                     // C.3 Validasi SBML — Cek SBML limit per mitra
@@ -385,6 +404,26 @@ class PenugasanController extends Controller implements HasMiddleware
                 }
             }
         }
+
+        // ── Validasi Kuota DIPA pada Update ─────────────────────────────────────
+        $jumlahDipa = (float)($detil->jumlah ?? 0);
+        if ($jumlahDipa > 0) {
+            // Total kuota tersimpan KECUALI record yang sedang diedit
+            $kuotaTerpakai = (float)Penugasan::where('detil_kegiatan_id', $detilId)
+                ->where('id', '!=', $penugasan->id)
+                ->sum('kuota_target');
+
+            if (($kuotaTerpakai + $kuotaTarget) > $jumlahDipa) {
+                $sisa = max(0, $jumlahDipa - $kuotaTerpakai);
+                return back()->withErrors([
+                    'kuota_target' => "Kuota target melebihi sisa DIPA untuk detil ini."
+                                   . " Target DIPA: " . number_format($jumlahDipa, 0, ',', '.')
+                                   . ", sudah terpakai (mitra lain): " . number_format($kuotaTerpakai, 0, ',', '.')
+                                   . ", sisa tersedia: " . number_format($sisa, 0, ',', '.') . "."
+                ])->withInput();
+            }
+        }
+        // ────────────────────────────────────────────────────────────────────────
 
         // C.2 Method update(): Recalculate snapshot & total_honor
         $validated['harga_satuan_snapshot'] = $hargaSatuan;

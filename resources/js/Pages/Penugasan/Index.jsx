@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Fragment } from 'react';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
 import { Search, X, FileSpreadsheet, Plus, Edit, Trash2, Eye, Banknote, AlertTriangle, ChevronLeft, ChevronRight, Calendar, CheckCircle2, Upload, Download, FileText, Lock, Unlock } from 'lucide-react';
 import AuthenticatedLayout, { useAppToast } from '@/Layouts/AuthenticatedLayout';
@@ -23,10 +23,11 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
     const [showBanner, setShowBanner] = useState(true);
     const [showAllKegiatan, setShowAllKegiatan] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [mitraSearch, setMitraSearch] = useState('');
 
     const userRole = (auth?.user?.role || usePage().props?.auth?.user?.role || '').toLowerCase();
     const canManagePenugasan = ['operator', 'admin', 'administrator'].includes(userRole);
-    const isPPKOrAdmin = ['ppk', 'admin', 'administrator'].includes(userRole);
+    const isPPK = userRole === 'ppk';
 
     const activeBulan = statusPeriode?.bulan || (bulan ? parseInt(bulan) : new Date().getMonth() + 1);
     const activeTahun = statusPeriode?.tahun || (tahun ? parseInt(tahun) : new Date().getFullYear());
@@ -63,7 +64,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
 
     // State for the Assign Mitra modal
     const [assignModal, setAssignModal] = useState({ isOpen: false, kegiatan: null });
-    const [mitraSearch, setMitraSearch] = useState('');
 
     // State for Import Excel Penugasan Mitra modal
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -102,30 +102,6 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
         XLSX.writeFile(workbook, "Template_Import_Penugasan_Mitra.xlsx");
     };
 
-    const processFile = (file) => {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const firstSheet = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheet];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                setImportData({ file, rows: jsonData });
-            } catch (err) {
-                console.error("Gagal membaca file excel:", err);
-                setImportData({ file, rows: [] });
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files?.[0];
-        if (file) processFile(file);
-    };
-
     const handleDrag = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -137,68 +113,60 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
         e.preventDefault();
         e.stopPropagation();
         setDragActive(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) processFile(file);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileChange(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleFileChange = (file) => {
+        if (!file) return;
+        setImportData('file', file);
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                setImportData('rows', data);
+            } catch (err) {
+                toast.error('Gagal membaca file Excel. Pastikan format file valid.');
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const handleInputFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleFileChange(file);
     };
 
     const handleImportSubmit = (e) => {
         e.preventDefault();
-        if (!importData.file) return;
+        if (!importData.rows || importData.rows.length === 0) {
+            toast.error('Pilih file Excel terlebih dahulu yang berisi data penugasan.');
+            return;
+        }
+
         postImport(route('penugasan.import'), {
-            onSuccess: () => closeImportModal()
-        });
-    };
-
-    const handleFilter = () => {
-        router.get(route('penugasan.index'), {
-            jenis_sbml: jenisSbml,
-            kegiatan_id: kegiatanId,
-            bulan,
-            tahun,
-            search,
-        }, { preserveState: true, replace: true });
-    };
-
-    const handleReset = () => {
-        setJenisSbml('');
-        setKegiatanId('');
-        setBulan('');
-        setTahun('');
-        setSearch('');
-        router.get(route('penugasan.index'));
-    };
-
-    const handleDelete = (id) => {
-        setConfirmConfig({
-            title: 'Hapus Penugasan',
-            message: 'Apakah Anda yakin ingin menghapus penugasan ini? Data akan dipindahkan ke Recycle Bin.',
-            onConfirm: () => {
-                router.delete(route('penugasan.destroy', id));
-                setConfirmOpen(false);
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Data Penugasan Mitra berhasil di-import!');
+                closeImportModal();
             },
+            onError: (errs) => {
+                toast.error('Terjadi kesalahan saat meng-import data penugasan.');
+            }
         });
-        setConfirmOpen(true);
-    };
-
-    const handleBulkDelete = () => {
-        if (selectedIds.length === 0) return;
-        setConfirmConfig({
-            title: `Hapus ${selectedIds.length} Penugasan`,
-            message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} penugasan yang dipilih?`,
-            onConfirm: () => {
-                router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
-                    onSuccess: () => { setSelectedIds([]); setConfirmOpen(false); },
-                });
-            },
-        });
-        setConfirmOpen(true);
     };
 
     const toggleSelectAll = () => {
-        if (selectedIds.length === penugasan.data.length) {
+        if (selectedIds.length === (penugasan?.data?.length || 0)) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(penugasan.data.map(item => item.id));
+            setSelectedIds(penugasan?.data?.map(item => item.id) || []);
         }
     };
 
@@ -208,6 +176,65 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
         } else {
             setSelectedIds([...selectedIds, id]);
         }
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        setConfirmConfig({
+            title: 'Hapus Penugasan Terpilih',
+            message: `Apakah Anda yakin ingin memindahkan ${selectedIds.length} data penugasan ke Recycle Bin?`,
+            confirmText: 'Ya, Hapus Terpilih',
+            variant: 'danger',
+            onConfirm: () => {
+                router.post(route('penugasan.bulk-destroy'), { ids: selectedIds }, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success(`${selectedIds.length} penugasan mitra berhasil dipindahkan ke Recycle Bin.`);
+                        setSelectedIds([]);
+                        setConfirmOpen(false);
+                    }
+                });
+            }
+        });
+        setConfirmOpen(true);
+    };
+
+    const handleDelete = (id) => {
+        setConfirmConfig({
+            title: 'Hapus Penugasan',
+            message: 'Apakah Anda yakin ingin memindahkan data penugasan ini ke Recycle Bin?',
+            confirmText: 'Ya, Hapus',
+            variant: 'danger',
+            onConfirm: () => {
+                router.delete(route('penugasan.destroy', id), {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success('Penugasan mitra berhasil dipindahkan ke Recycle Bin.');
+                        setConfirmOpen(false);
+                    }
+                });
+            }
+        });
+        setConfirmOpen(true);
+    };
+
+    const handleFilter = () => {
+        router.get(route('penugasan.index'), {
+            jenis_sbml: jenisSbml,
+            kegiatan_id: kegiatanId,
+            bulan: bulan,
+            tahun: tahun,
+            search: search,
+        }, { preserveState: true });
+    };
+
+    const handleResetFilter = () => {
+        setJenisSbml('');
+        setKegiatanId('');
+        setBulan('');
+        setTahun('');
+        setSearch('');
+        router.get(route('penugasan.index'));
     };
 
     const handleKeyDown = (e) => {
@@ -238,8 +265,8 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
-                        {/* Tombol Kunci Periode Khusus PPK & Admin */}
-                        {isPPKOrAdmin && (
+                        {/* Tombol Kunci Periode Khusus PPK Saja */}
+                        {isPPK && (
                             <button
                                 type="button"
                                 onClick={() => handleToggleKunci(activeBulan, activeTahun, isPeriodLocked)}
@@ -254,8 +281,8 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                             </button>
                         )}
 
-                        {/* Tombol Tambah Penugasan & Import Khusus Operator & Admin */}
-                        {canManagePenugasan && (
+                        {/* Tombol Tambah Penugasan & Import Khusus Operator & Admin saat TERBUKA */}
+                        {canManagePenugasan && !isPeriodLocked && (
                             <>
                                 <button
                                     type="button"
@@ -274,6 +301,17 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                         )}
                     </div>
                 </div>
+
+                {/* Warning Banner saat TERKUNCI */}
+                {isPeriodLocked && (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <Lock className="shrink-0 text-amber-600 dark:text-amber-400" size={20} />
+                        <div>
+                            <p className="font-bold text-sm">Periode Pengisian Terkunci</p>
+                            <p className="text-xs opacity-90">Pengisian dan pengeditan data penugasan bulan {namaBulan[activeBulan - 1]} {activeTahun} sedang dikunci oleh PPK. Hubungi PPK jika diperlukan pembukaan kunci untuk penyesuaian data.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Flash Success Notification */}
                 {flashMessage && (
@@ -442,7 +480,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                                 <input
                                     type="text"
-                                    placeholder="Nama/NIK mitra, nama kegiatan..."
+                                    placeholder="Nama/Sobat ID mitra, nama kegiatan..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={handleKeyDown}
@@ -460,7 +498,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                 <Search size={14} /> Cari
                             </button>
                             <button
-                                onClick={handleReset}
+                                onClick={handleResetFilter}
                                 className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-1.5"
                             >
                                 <X size={14} /> Reset
@@ -541,22 +579,28 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                                     </span>
                                                 </td>
                                                 <td className="p-4 text-center">
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        <Link
-                                                            href={route('penugasan.edit', item.id)}
-                                                            title="Edit"
-                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
-                                                        >
-                                                            <Edit size={15} />
-                                                        </Link>
-                                                        <button
-                                                            onClick={() => handleDelete(item.id)}
-                                                            title="Hapus"
-                                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
-                                                        >
-                                                            <Trash2 size={15} />
-                                                        </button>
-                                                    </div>
+                                                    {canManagePenugasan && !isPeriodLocked ? (
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <Link
+                                                                href={route('penugasan.edit', item.id)}
+                                                                title="Edit"
+                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded-lg transition inline-flex items-center justify-center"
+                                                            >
+                                                                <Edit size={15} />
+                                                            </Link>
+                                                            <button
+                                                                onClick={() => handleDelete(item.id)}
+                                                                title="Hapus"
+                                                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-500 rounded-lg transition inline-flex items-center justify-center"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 font-medium italic flex items-center justify-center gap-1">
+                                                            {isPeriodLocked ? <Lock size={12} /> : null} {isPeriodLocked ? 'Terkunci' : '-'}
+                                                        </span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -648,7 +692,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                             type="text"
                                             value={mitraSearch}
                                             onChange={(e) => setMitraSearch(e.target.value)}
-                                            placeholder="Ketik nama atau NIK mitra..."
+                                            placeholder="Ketik nama atau Sobat ID mitra..."
                                             className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D9531E]/20 focus:border-[#D9531E] transition"
                                         />
                                     </div>
