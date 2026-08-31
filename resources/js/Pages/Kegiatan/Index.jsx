@@ -59,9 +59,9 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
 
     const handleDownloadTemplate = () => {
         const data = [
-            ["Kode KRO", "Nama Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Nama Detil", "Jenis SBML", "Satuan", "Jumlah", "Harga Satuan"],
-            ["2026.BMA.001", "Sensus Ekonomi 2026", "2026-09-01", "2026-09-30", "Honor SKLNP", "pendataan", "DOK", 40, 91000],
-            ["2026.BMA.001", "Sensus Ekonomi 2026", "2026-09-01", "2026-09-30", "Honor sksppi", "pendataan", "DOK", 60, 75000]
+            ["Kode KRO", "Nama Kegiatan", "Nama Detil", "Jenis SBML", "Satuan", "Jumlah", "Harga Satuan"],
+            ["2026.BMA.001", "Sensus Ekonomi 2026", "Honor SKLNP", "pendataan", "DOK", 40, 91000],
+            ["2026.BMA.001", "Sensus Ekonomi 2026", "Honor sksppi", "pendataan", "DOK", 60, 75000]
         ];
 
         const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -69,8 +69,6 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         worksheet['!cols'] = [
             { wch: 18 },
             { wch: 35 },
-            { wch: 16 },
-            { wch: 16 },
             { wch: 22 },
             { wch: 15 },
             { wch: 12 },
@@ -799,13 +797,10 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
                         </div>
                         <ul className="space-y-1.5 text-xs text-gray-300 list-disc list-inside leading-relaxed pl-1">
                             <li>
-                                Format kolom header: <span className="font-mono text-blue-300 font-bold">Kode KRO, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, Nama Detil, Jenis SBML, Satuan, Jumlah, Harga Satuan</span>
+                                Format kolom header: <span className="font-mono text-blue-300 font-bold">Kode KRO, Nama Kegiatan, Nama Detil, Jenis SBML, Satuan, Jumlah, Harga Satuan</span>
                             </li>
                             <li>
                                 Nilai Jenis SBML: <span className="font-bold text-white">pendataan atau pengolahan</span>
-                            </li>
-                            <li>
-                                <span className="font-bold text-white">Format Tanggal:</span> YYYY-MM-DD (contoh: <span className="font-mono text-blue-300">2026-09-01</span>).
                             </li>
                         </ul>
 
