@@ -39,10 +39,9 @@ class MonitoringKuotaController extends Controller
                      ->whereNull('k.deleted_at');
             })
             ->leftJoin('detil_kegiatan as dk', 'dk.kegiatan_id', '=', 'k.id')
-            ->leftJoin('honoraria as h', 'h.penugasan_id', '=', 'p.id')
             ->selectRaw("
-                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pendataan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pendataan,
-                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pengolahan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pengolahan,
+                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pendataan' THEN p.total_honor ELSE 0 END), 0) as terpakai_pendataan,
+                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pengolahan' THEN p.total_honor ELSE 0 END), 0) as terpakai_pengolahan,
                 COUNT(DISTINCT CASE WHEN dk.jenis_sbml = 'pendataan' THEN p.id ELSE NULL END) as transaksi_pendataan,
                 COUNT(DISTINCT CASE WHEN dk.jenis_sbml = 'pengolahan' THEN p.id ELSE NULL END) as transaksi_pengolahan
             ")
@@ -172,10 +171,9 @@ class MonitoringKuotaController extends Controller
                      ->whereNull('k.deleted_at');
             })
             ->leftJoin('detil_kegiatan as dk', 'dk.kegiatan_id', '=', 'k.id')
-            ->leftJoin('honoraria as h', 'h.penugasan_id', '=', 'p.id')
             ->selectRaw("
-                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pendataan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pendataan,
-                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pengolahan' THEN h.jumlah_honor ELSE 0 END), 0) as terpakai_pengolahan,
+                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pendataan' THEN p.total_honor ELSE 0 END), 0) as terpakai_pendataan,
+                COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pengolahan' THEN p.total_honor ELSE 0 END), 0) as terpakai_pengolahan,
                 COUNT(DISTINCT CASE WHEN dk.jenis_sbml = 'pendataan' THEN p.id ELSE NULL END) as transaksi_pendataan,
                 COUNT(DISTINCT CASE WHEN dk.jenis_sbml = 'pengolahan' THEN p.id ELSE NULL END) as transaksi_pengolahan
             ")
@@ -289,7 +287,7 @@ class MonitoringKuotaController extends Controller
         $bulan = $request->input('bulan', date('m'));
         $tahun = $request->input('tahun', date('Y'));
         
-        $penugasans = Penugasan::with(['kegiatan.detilKegiatan', 'honoraria'])
+        $penugasans = Penugasan::with(['kegiatan.detilKegiatan'])
             ->where('mitra_id', $id)
             ->where('bulan', $bulan)
             ->where('tahun', $tahun)
@@ -305,8 +303,7 @@ class MonitoringKuotaController extends Controller
         foreach ($penugasans as $p) {
             if (!$p->kegiatan) continue;
             
-            $honorTotal = $p->honoraria->sum('jumlah_honor');
-            $p->total_honor = $honorTotal;
+            $honorTotal = $p->total_honor ?? 0;
             
             // Cek jenis_sbml dari detil_kegiatan
             $detils = $p->kegiatan?->detilKegiatan ?? collect();

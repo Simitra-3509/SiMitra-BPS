@@ -522,6 +522,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                     <th className="p-4 w-10 text-center">No</th>
                                     <th className="p-4">Kegiatan & Detil</th>
                                     <th className="p-4">Periode</th>
+                                    <th className="p-4">Tanggal Penugasan</th>
                                     <th className="p-4">Mitra</th>
                                     <th className="p-4 text-center">Kuota Target</th>
                                     <th className="p-4 text-right">Total Honor</th>
@@ -553,6 +554,17 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                                     {item.bulan && item.tahun
                                                         ? `${namaBulan[item.bulan - 1] || item.bulan} ${item.tahun}`
                                                         : '-'}
+                                                </td>
+                                                <td className="p-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    {item.tanggal_mulai && item.tanggal_selesai ? (
+                                                        <span>
+                                                            {new Date(item.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} 
+                                                            <span className="mx-1 text-gray-400">-</span>
+                                                            {new Date(item.tanggal_selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400 italic">Belum diatur</span>
+                                                    )}
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col gap-0.5">
