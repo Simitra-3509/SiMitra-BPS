@@ -61,3 +61,26 @@ input[type="number"] {
     appearance: textfield;
 }
 
+/* Fix native date/time picker icon color & popup in dark mode */
+html.dark {
+    color-scheme: dark;
+}
+
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="month"],
+.dark input[type="time"],
+input[type="date"]:is(.dark *),
+input[type="datetime-local"]:is(.dark *) {
+    color-scheme: dark !important;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="month"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(100) !important;
+    cursor: pointer;
+}
+

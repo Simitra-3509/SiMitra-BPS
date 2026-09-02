@@ -35,12 +35,26 @@ class PenugasanController extends Controller implements HasMiddleware
     {
         $query = Penugasan::with(['kegiatan', 'detilKegiatan', 'mitra']);
 
+        if ($request->filled('jenis_sbml')) {
+            $query->whereHas('detilKegiatan', function ($q) use ($request) {
+                $q->where('jenis_sbml', $request->jenis_sbml);
+            });
+        }
+
         if ($request->filled('kegiatan_id')) {
             $query->where('kegiatan_id', $request->kegiatan_id);
         }
 
         if ($request->filled('detil_kegiatan_id')) {
             $query->where('detil_kegiatan_id', $request->detil_kegiatan_id);
+        }
+
+        if ($request->filled('bulan')) {
+            $query->where('bulan', $request->bulan);
+        }
+
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
         }
 
         if ($request->filled('tanggal_mulai')) {
@@ -52,9 +66,15 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('search')) {
-            $query->whereHas('mitra', function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
-                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
+            $query->where(function($sub) use ($request) {
+                $sub->whereHas('mitra', function ($q) use ($request) {
+                    $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
+                      ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
+                })->orWhereHas('kegiatan', function ($q) use ($request) {
+                    $q->where('nama_kegiatan', 'like', '%' . $request->search . '%');
+                })->orWhereHas('detilKegiatan', function ($q) use ($request) {
+                    $q->where('nama_detil', 'like', '%' . $request->search . '%');
+                });
             });
         }
 
@@ -101,10 +121,17 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
+        $kecamatanList = Mitra::whereNotNull('kecamatan')
+            ->where('kecamatan', '!=', '')
+            ->select('kecamatan')
+            ->distinct()
+            ->orderBy('kecamatan')
+            ->pluck('kecamatan');
 
         return Inertia::render('Penugasan/Create', [
             'kegiatan'     => $kegiatan,
             'kegiatanList' => $kegiatan,
+            'kecamatanList' => $kecamatanList,
         ]);
     }
 
@@ -125,23 +152,55 @@ class PenugasanController extends Controller implements HasMiddleware
     }
 
     /**
-     * API: Search Mitra (by Sobat ID / Nama Lengkap)
+     * API: Search Mitra (by Sobat ID / Nama Lengkap / Kecamatan)
      */
     public function searchMitra(Request $request)
     {
         $q = trim($request->get('q', ''));
+        $kecamatan = trim($request->get('kecamatan', ''));
         $query = Mitra::where('status_aktif', true);
 
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
                 $sub->where('sobat_id', 'like', "%{$q}%")
                     ->orWhere('nama_lengkap', 'like', "%{$q}%")
-                    ->orWhere('alamat', 'like', "%{$q}%");
+                    ->orWhere('alamat', 'like', "%{$q}%")
+                    ->orWhere('kecamatan', 'like', "%{$q}%");
             });
         }
 
-        $mitraList = $query->orderBy('nama_lengkap')->limit(20)->get(['id', 'sobat_id', 'nama_lengkap', 'alamat']);
+        if ($kecamatan !== '' && $kecamatan !== 'semua') {
+            $query->where('kecamatan', 'like', "%{$kecamatan}%");
+        }
+
+        $mitraList = $query->orderBy('nama_lengkap')->limit(50)->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
         return response()->json($mitraList);
+    }
+
+    /**
+     * API: Bulk Lookup Mitra by Sobat IDs
+     */
+    public function bulkLookupMitra(Request $request)
+    {
+        $request->validate([
+            'sobat_ids' => 'required|array|min:1',
+            'sobat_ids.*' => 'required|string',
+        ]);
+
+        $rawSobatIds = array_map('trim', $request->sobat_ids);
+        $sobatIds = array_unique(array_filter($rawSobatIds));
+
+        $mitras = Mitra::where('status_aktif', true)
+            ->whereIn('sobat_id', $sobatIds)
+            ->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
+
+        $foundSobatIds = $mitras->pluck('sobat_id')->toArray();
+        $notFoundSobatIds = array_values(array_diff($sobatIds, $foundSobatIds));
+
+        return response()->json([
+            'mitras' => $mitras,
+            'not_found_sobat_ids' => $notFoundSobatIds,
+        ]);
     }
 
     /**
@@ -198,7 +257,17 @@ class PenugasanController extends Controller implements HasMiddleware
         if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
             abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
         }
-
+        if ($request->filled('tanggal_mulai')) {
+            try {
+                $dt = \Carbon\Carbon::parse($request->tanggal_mulai);
+                if (!$request->filled('bulan')) {
+                    $request->merge(['bulan' => $dt->month]);
+                }
+                if (!$request->filled('tahun')) {
+                    $request->merge(['tahun' => $dt->year]);
+                }
+            } catch (\Exception $e) {}
+        }
 
         $request->validate([
             'kegiatan_id'           => 'required|exists:kegiatans,id',
@@ -258,32 +327,11 @@ class PenugasanController extends Controller implements HasMiddleware
             ])->withInput();
         }
 
-        // C.5 Validasi Rentang Tanggal Mulai dan Selesai (Server-side)
-        $bulanNama = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-        ];
-        
         $tglMulai = $request->tanggal_mulai ?? null;
         $tglSelesai = $request->tanggal_selesai ?? null;
 
-        if ($tglMulai) {
-            $dtMulai = \Carbon\Carbon::parse($tglMulai);
-            if ($dtMulai->month !== $bulanNum || $dtMulai->year !== $tahunNum) {
-                return back()->withErrors(['tanggal_mulai' => "Tanggal mulai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
-            }
-        }
-        if ($tglSelesai) {
-            $dtSelesai = \Carbon\Carbon::parse($tglSelesai);
-            if ($dtSelesai->month !== $bulanNum || $dtSelesai->year !== $tahunNum) {
-                return back()->withErrors(['tanggal_selesai' => "Tanggal selesai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
-            }
-        }
-        // ────────────────────────────────────────────────────────────────────────
-
         try {
-            DB::transaction(function () use ($request, $detil, $hargaSatuan, $jenisSbml) {
+            DB::transaction(function () use ($request, $detil, $hargaSatuan, $jenisSbml, $tglMulai, $tglSelesai) {
                 foreach ($request->mitras as $mitraItem) {
                     $mitraId = $mitraItem['id'];
                     $kuotaTarget = (float)($mitraItem['kuota_target'] ?? 1);
