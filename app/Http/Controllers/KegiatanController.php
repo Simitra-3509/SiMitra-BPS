@@ -371,35 +371,83 @@ class KegiatanController extends Controller implements HasMiddleware
      */
     public function import(Request $request)
     {
-        $rows = $request->input('rows', []);
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls'
+        ]);
 
-        if (empty($rows) && $request->hasFile('file')) {
-            $file = $request->file('file');
-            $extension = strtolower($file->getClientOriginalExtension());
+        $file = $request->file('file');
+        
+        $rows = [];
 
-            if (in_array($extension, ['csv', 'txt'])) {
-                $handle = fopen($file->getRealPath(), 'r');
-                $header = null;
-                while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                    if (count($row) === 1 && str_contains($row[0], ';')) {
-                        $row = explode(';', $row[0]);
-                    }
-                    if (!$header) {
-                        $header = array_map(function ($h) {
-                            return strtolower(trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $h)));
-                        }, $row);
-                    } else {
-                        if (count($row) === count($header)) {
-                            $rows[] = array_combine($header, array_map('trim', $row));
-                        }
-                    }
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+            // Gunakan formatData = false agar nilai angka dan tanggal berupa raw value (tanpa format string spt 'Rp', dsb)
+            $allRows = $worksheet->toArray(null, true, false, true);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal membaca file Excel. Pastikan format file benar dan ekstensi zip (ZipArchive) aktif di server.');
+        }
+
+        // Cari baris header secara dinamis
+        $headerRow = null;
+        $headerRowNum = 1;
+        
+        foreach ($allRows as $index => $row) {
+            $foundKegiatan = false;
+            $foundDetil = false;
+            
+            foreach ($row as $colLetter => $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $clean = strtolower(trim((string)$val));
+                    if (str_contains($clean, 'kegiatan')) $foundKegiatan = true;
+                    if (str_contains($clean, 'detil')) $foundDetil = true;
                 }
-                fclose($handle);
+            }
+            
+            if ($foundKegiatan && $foundDetil) {
+                $headerRow = $row;
+                $headerRowNum = $index;
+                break;
+            }
+        }
+
+        if (!$headerRow) {
+             return redirect()->back()->with('error', 'Format header tidak ditemukan. Pastikan ada baris dengan kolom "Nama Kegiatan" dan "Nama Detil".');
+        }
+
+        // Hapus baris header dan baris di atasnya
+        foreach (range(1, $headerRowNum) as $i) {
+            unset($allRows[$i]);
+        }
+
+        $headers = array_map(function ($val) {
+            return trim(strtolower((string)$val));
+        }, $headerRow);
+
+        $colMap = [];
+        foreach ($headers as $colLetter => $headerName) {
+            if ($headerName !== '') {
+                $cleanHeader = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $headerName);
+                $cleanHeader = preg_replace('/\s+/', ' ', $cleanHeader);
+                $colMap[$colLetter] = $cleanHeader;
+            }
+        }
+
+        foreach ($allRows as $row) {
+            $mappedRow = [];
+            $isEmpty = true;
+            foreach ($colMap as $colLetter => $headerName) {
+                $val = isset($row[$colLetter]) ? trim((string)$row[$colLetter]) : '';
+                $mappedRow[$headerName] = $val;
+                if ($val !== '') $isEmpty = false;
+            }
+            if (!$isEmpty) {
+                $rows[] = $mappedRow;
             }
         }
 
         if (empty($rows)) {
-            return redirect()->back()->with('error', 'File import kosong atau data tidak dapat dibaca.');
+            return redirect()->back()->with('error', 'File import kosong atau data tidak dapat dibaca setelah menemukan header.');
         }
 
         $importedKegiatans = 0;
