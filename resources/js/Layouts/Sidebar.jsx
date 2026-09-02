@@ -223,7 +223,7 @@ const Sidebar = forwardRef(function Sidebar({
                                 href={route('sbml.index')}
                                 icon={Settings}
                                 label="Batas SBML"
-                                active={route().current('sbml.index')}
+                                active={route().current('sbml.*')}
                             />
                         </>
                     )}
@@ -244,7 +244,7 @@ const Sidebar = forwardRef(function Sidebar({
                                     href={route('users.index')}
                                     icon={Users}
                                     label="Manajemen User"
-                                    active={route().current('users.index')}
+                                    active={route().current('users.*')}
                                 />
                             )}
 
@@ -252,7 +252,7 @@ const Sidebar = forwardRef(function Sidebar({
                                 href={route('mitra.index')}
                                 icon={Contact}
                                 label="Master Mitra"
-                                active={route().current('mitra.index')}
+                                active={route().current('mitra.*')}
                             />
                         </>
                     )}
@@ -272,7 +272,7 @@ const Sidebar = forwardRef(function Sidebar({
                                 href={route('kegiatan.index')}
                                 icon={CalendarCheck}
                                 label="Kegiatan"
-                                active={route().current('kegiatan.index')}
+                                active={route().current('kegiatan.*')}
                             />
 
                             <NavItem
