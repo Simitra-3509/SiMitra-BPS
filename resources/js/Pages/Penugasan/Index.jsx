@@ -69,10 +69,10 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [dragActive, setDragActive] = useState(false);
 
-    const { data: importData, setData: setImportData, post: postImport, processing: processingImport, errors: importErrors, reset: resetImport } = useForm({
-        file: null,
-        rows: []
-    });
+    const [importFile, setImportFile] = useState(null);
+    const [importRowCount, setImportRowCount] = useState(0);
+    const [importErrors, setImportErrors] = useState({});
+    const [processingImport, setProcessingImport] = useState(false);
 
     const openImportModal = () => {
         setIsImportModalOpen(true);
@@ -80,7 +80,9 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
 
     const closeImportModal = () => {
         setIsImportModalOpen(false);
-        setTimeout(() => resetImport(), 300);
+        setImportFile(null);
+        setImportRowCount(0);
+        setImportErrors({});
     };
 
     const handleDownloadTemplate = () => {
@@ -120,22 +122,25 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
 
     const handleFileChange = (file) => {
         if (!file) return;
-        setImportData('file', file);
-
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
-                const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
-                setImportData('rows', data);
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+                const rowCount = Math.max(0, range.e.r);
+                setImportFile(file);
+                setImportRowCount(rowCount);
+                setImportErrors({});
             } catch (err) {
                 toast.error('Gagal membaca file Excel. Pastikan format file valid.');
+                setImportFile(null);
+                setImportRowCount(0);
             }
         };
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
     };
 
     const handleInputFileChange = (e) => {
@@ -145,19 +150,28 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
 
     const handleImportSubmit = (e) => {
         e.preventDefault();
-        if (!importData.rows || importData.rows.length === 0) {
+        if (!importFile) {
             toast.error('Pilih file Excel terlebih dahulu yang berisi data penugasan.');
             return;
         }
 
-        postImport(route('penugasan.import'), {
+        setProcessingImport(true);
+        setImportErrors({});
+
+        router.post(route('penugasan.import'), {
+            file: importFile,
+        }, {
+            forceFormData: true,
             preserveScroll: true,
+            onFinish: () => setProcessingImport(false),
             onSuccess: () => {
                 toast.success('Data Penugasan Mitra berhasil di-import!');
                 closeImportModal();
             },
             onError: (errs) => {
                 toast.error('Terjadi kesalahan saat meng-import data penugasan.');
+                setProcessingImport(false);
+                setImportErrors(errs);
             }
         });
     };
@@ -778,10 +792,10 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
 
                             <form onSubmit={handleImportSubmit} className="p-6 space-y-4">
                                 {/* Structured Error Display */}
-                                {importErrors.import && (
+                                {(importErrors.import || importErrors.file) && (
                                     <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs flex items-center gap-2">
                                         <AlertTriangle size={16} className="shrink-0 text-red-500" />
-                                        <span>{importErrors.import}</span>
+                                        <span>{importErrors.import || importErrors.file}</span>
                                     </div>
                                 )}
 
@@ -842,10 +856,10 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                     />
                                     <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
                                         <Upload className="text-emerald-600 dark:text-emerald-400" size={32} />
-                                        {importData.file ? (
+                                        {importFile ? (
                                             <div className="space-y-0.5">
-                                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importData.file.name}</span>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">{(importData.file.size / 1024).toFixed(1)} KB ({importData.rows?.length || 0} baris data)</span>
+                                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importFile.name}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">{(importFile.size / 1024).toFixed(1)} KB ({importRowCount || 0} baris data)</span>
                                             </div>
                                         ) : (
                                             <>
@@ -867,7 +881,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={!importData.file || processingImport}
+                                        disabled={!importFile || processingImport}
                                         className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                     >
                                         <Upload size={16} />

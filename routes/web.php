@@ -111,9 +111,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/mitra/{mitra}', [MitraController::class, 'update'])->name('mitra.update');
         Route::delete('/mitra/{mitra}', [MitraController::class, 'destroy'])->name('mitra.destroy');
         Route::post('/mitra/import', [MitraController::class, 'import'])->name('mitra.import');
+        Route::post('/mitra/bulk-destroy', [MitraController::class, 'bulkDestroy'])->name('mitra.bulk-destroy');
 
         // Recycle Bin Mitra (OPERATOR & ADMIN)
         Route::get('/recycle-bin/mitra', [MitraController::class, 'recycleBin'])->name('mitra.recycle-bin');
+        Route::post('/recycle-bin/mitra/bulk-restore', [MitraController::class, 'bulkRestore'])->name('mitra.bulk-restore');
+        Route::delete('/recycle-bin/mitra/bulk-force-delete', [MitraController::class, 'bulkForceDelete'])->name('mitra.bulk-force-delete');
+        Route::delete('/recycle-bin/mitra/empty', [MitraController::class, 'emptyRecycleBin'])->name('mitra.empty-recycle-bin');
+        Route::post('/recycle-bin/mitra/restore-all', [MitraController::class, 'restoreAll'])->name('mitra.restore-all');
         Route::post('/recycle-bin/mitra/{id}/restore', [MitraController::class, 'restore'])->name('mitra.restore');
         Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
     });

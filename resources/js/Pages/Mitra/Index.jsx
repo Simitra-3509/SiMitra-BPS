@@ -4,13 +4,15 @@ import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router, usePage, Link } from '@inertiajs/react';
 import { Plus, Search, Edit2, Trash2, X, Trash, Eye, User, Phone, MapPin, CreditCard, GraduationCap, Briefcase, Calendar, ShieldCheck, Mail, FileSpreadsheet, Download, Upload, FileText, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
-export default function Index({ mitras, filters, banksList, deletedCount }) {
+export default function Index({ auth, mitras, filters, kecamatanList, desaByKecamatan, deletedCount }) {
     const { flash, counts } = usePage().props;
     const { toast } = useAppToast();
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'semua');
-    const [bank, setBank] = useState(filters.bank || 'semua');
+    const [kecamatan, setKecamatan] = useState(filters.kecamatan || 'semua');
+    const [desa, setDesa] = useState(filters.desa || 'semua');
     const [perPage, setPerPage] = useState(filters.per_page || 20);
     const [selectedIds, setSelectedIds] = useState([]);
 
@@ -39,10 +41,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [dragActive, setDragActive] = useState(false);
 
-    const { data: importData, setData: setImportData, post: postImport, processing: processingImport, errors: importErrors, reset: resetImport } = useForm({
-        file: null,
-        rows: []
-    });
+    const [processingImport, setProcessingImport] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importRowCount, setImportRowCount] = useState(0);
+    const [importErrors, setImportErrors] = useState({});
 
     const openImportModal = () => {
         setIsImportModalOpen(true);
@@ -50,23 +52,22 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const closeImportModal = () => {
         setIsImportModalOpen(false);
-        setTimeout(() => resetImport(), 300);
+        setImportFile(null);
+        setImportRowCount(0);
+        setImportErrors({});
     };
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "Sobat ID", "Nama Lengkap", "Nama Bank", "No Rekening",
-            "Nama Pemilik Rekening", "Alamat", "Kecamatan", "Catatan"
+            "Sobat ID", "Nama Lengkap", "Kecamatan", "Desa"
         ];
         const sampleRow = [
-            "458217", "Hasan Basri", "BNI", "1234567890",
-            "Hasan Basri", "Jl. Mawar No. 5", "Sumbersari", "Mitra aktif"
+            "276426", "Budi Santoso", "Sumbersari", "Antirogo"
         ];
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
         worksheet['!cols'] = [
-            { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 18 },
-            { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 30 }
+            { wch: 18 }, { wch: 28 }, { wch: 20 }, { wch: 20 }
         ];
 
         const workbook = XLSX.utils.book_new();
@@ -76,18 +77,23 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const processFile = (file) => {
         if (!file) return;
+        // Hitung jumlah baris untuk preview info saja
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
                 const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheet];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                setImportData({ file, rows: jsonData });
+                const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+                const rowCount = Math.max(0, range.e.r); // exclude header row
+                setImportFile(file);
+                setImportRowCount(rowCount);
+                setImportErrors({});
             } catch (err) {
                 console.error("Gagal membaca file excel:", err);
-                setImportData({ file, rows: [] });
+                setImportFile(null);
+                setImportRowCount(0);
             }
         };
         reader.readAsArrayBuffer(file);
@@ -118,9 +124,22 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const handleImportSubmit = (e) => {
         e.preventDefault();
-        if (!importData.file) return;
-        postImport(route('mitra.import'), {
-            onSuccess: () => closeImportModal()
+        if (!importFile) return;
+
+        setProcessingImport(true);
+        setImportErrors({});
+
+        router.post(route('mitra.import'), {
+            file: importFile,
+        }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => setProcessingImport(false),
+            onError: (errors) => {
+                setProcessingImport(false);
+                setImportErrors(errors);
+            },
+            onSuccess: () => closeImportModal(),
         });
     };
 
@@ -139,13 +158,14 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
     const handleFilterSubmit = (e) => {
         if (e) e.preventDefault();
-        router.get(route('mitra.index'), { search, status, bank, per_page: perPage }, { preserveState: true });
+        router.get(route('mitra.index'), { search, status, kecamatan, desa, per_page: perPage }, { preserveState: true });
     };
 
     const handleReset = () => {
         setSearch('');
         setStatus('semua');
-        setBank('semua');
+        setKecamatan('semua');
+        setDesa('semua');
         setPerPage(20);
         router.get(route('mitra.index'), {}, { preserveState: true });
     };
@@ -199,10 +219,32 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
         }
     };
 
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        setConfirmConfig({
+            title: 'Hapus Data Mitra Terpilih',
+            message: `Apakah Anda yakin ingin memindahkan ${selectedIds.length} data Mitra ke Recycle Bin?`,
+            confirmText: 'Ya, Hapus Terpilih',
+            variant: 'danger',
+            onConfirm: () => {
+                router.post(route('mitra.bulk-destroy'), { ids: selectedIds }, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setSelectedIds([]);
+                        setConfirmOpen(false);
+                    }
+                });
+            }
+        });
+        setConfirmOpen(true);
+    };
+
     const handleDelete = (mitraId) => {
         setConfirmConfig({
             title: 'Hapus Data Mitra',
             message: 'Apakah Anda yakin ingin memindahkan data Mitra ini ke Recycle Bin?',
+            confirmText: 'Ya, Hapus',
+            variant: 'danger',
             onConfirm: () => {
                 router.delete(route('mitra.destroy', mitraId));
                 setConfirmOpen(false);
@@ -286,17 +328,36 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                             </select>
                         </div>
 
-                        {/* Bank Filter */}
+                        {/* Kecamatan Filter */}
                         <div className="w-full md:w-44">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Bank</label>
+                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kecamatan</label>
                             <select
-                                value={bank}
-                                onChange={(e) => setBank(e.target.value)}
-                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 text-sm rounded-lg focus:ring-1 focus:ring-simitra-orange"
+                                value={kecamatan}
+                                onChange={(e) => {
+                                    setKecamatan(e.target.value);
+                                    setDesa('semua'); // Reset desa to 'semua' when changing kecamatan
+                                }}
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 text-sm rounded-lg focus:ring-1 focus:ring-simitra-orange capitalize"
                             >
-                                <option value="semua">Semua Bank</option>
-                                {banksList.map((b, idx) => (
-                                    <option key={idx} value={b}>{b}</option>
+                                <option value="semua">Semua Kecamatan</option>
+                                {kecamatanList.map((k, idx) => (
+                                    <option key={idx} value={k} className="capitalize">{k.toLowerCase()}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Desa Filter */}
+                        <div className="w-full md:w-44">
+                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Desa</label>
+                            <select
+                                value={desa}
+                                onChange={(e) => setDesa(e.target.value)}
+                                disabled={kecamatan === 'semua'}
+                                className="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 text-sm rounded-lg focus:ring-1 focus:ring-simitra-orange capitalize disabled:opacity-50 disabled:bg-gray-50 dark:disabled:bg-gray-800"
+                            >
+                                <option value="semua">Semua Desa</option>
+                                {kecamatan !== 'semua' && desaByKecamatan[kecamatan] && desaByKecamatan[kecamatan].map((d, idx) => (
+                                    <option key={idx} value={d} className="capitalize">{d.toLowerCase()}</option>
                                 ))}
                             </select>
                         </div>
@@ -347,9 +408,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                             className="rounded border-gray-600 text-simitra-orange focus:ring-simitra-orange"
                                         />
                                     </th>
-                                    <th className="p-4">NAMA</th>
                                     <th className="p-4">SOBAT ID</th>
-                                    <th className="p-4">REKENING</th>
+                                    <th className="p-4">NAMA</th>
+                                    <th className="p-4">KECAMATAN</th>
+                                    <th className="p-4">DESA</th>
                                     <th className="p-4 text-center">STATUS</th>
                                     <th className="p-4 text-center">AKSI</th>
                                 </tr>
@@ -366,19 +428,17 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                                     className="rounded border-gray-300 text-simitra-orange focus:ring-simitra-orange"
                                                 />
                                             </td>
-                                            <td className="p-4 font-bold text-gray-900 dark:text-white">
-                                                {mitra.nama_lengkap}
-                                            </td>
                                             <td className="p-4 font-mono text-rose-500">
                                                 {mitra.sobat_id || '-'}
                                             </td>
-                                            <td className="p-4">
-                                                {mitra.nama_bank || mitra.no_rekening ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">{mitra.nama_bank || '-'}</span>
-                                                        <span className="font-mono text-sm font-semibold text-gray-800 dark:text-gray-200">{mitra.no_rekening || '-'}</span>
-                                                    </div>
-                                                ) : '-'}
+                                            <td className="p-4 font-bold text-gray-900 dark:text-white">
+                                                {mitra.nama_lengkap}
+                                            </td>
+                                            <td className="p-4 text-gray-700 dark:text-gray-300 capitalize">
+                                                {mitra.kecamatan ? mitra.kecamatan.toLowerCase() : '-'}
+                                            </td>
+                                            <td className="p-4 text-gray-700 dark:text-gray-300 capitalize">
+                                                {mitra.alamat ? mitra.alamat.toLowerCase().replace('desa ', '') : '-'}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full border ${mitra.status_aktif
@@ -724,10 +784,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
 
                         <form onSubmit={handleImportSubmit} className="p-6 space-y-4">
                             {/* Structured Error Display */}
-                            {importErrors.import && (
-                                <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs flex items-center gap-2">
+                            {(importErrors.import || importErrors.file) && (
+                                <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-xl text-xs flex items-center gap-2">
                                     <AlertTriangle size={16} className="shrink-0 text-red-500" />
-                                    <span>{importErrors.import}</span>
+                                    <span>{importErrors.import || importErrors.file}</span>
                                 </div>
                             )}
 
@@ -753,7 +813,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 </p>
                                 <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300 leading-relaxed">
                                     <li>
-                                        Header kolom: <span className="font-mono font-bold">Sobat ID, Nama Lengkap, Nama Bank, No Rekening, Nama Pemilik Rekening, Alamat, Kecamatan, Catatan</span>
+                                        Header kolom: <span className="font-mono font-bold">Sobat ID, Nama Lengkap, Kecamatan (Alamat Kecamatan), Desa (Alamat Desa/Kel)</span>
                                     </li>
                                     <li><strong className="text-blue-950 dark:text-white">Sobat ID & Nama Lengkap wajib diisi</strong>.</li>
                                     <li>System menggunakan mode <strong className="text-emerald-700 dark:text-emerald-400">UPSERT</strong>: Sobat ID yang sudah ada akan otomatis di-update data terbarunya.</li>
@@ -787,10 +847,10 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 />
                                 <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
                                     <Upload className="text-emerald-600 dark:text-emerald-400" size={32} />
-                                    {importData.file ? (
+                                    {importFile ? (
                                         <div className="space-y-0.5">
-                                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importData.file.name}</span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">{(importData.file.size / 1024).toFixed(1)} KB ({importData.rows?.length || 0} baris data)</span>
+                                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importFile.name}</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">{(importFile.size / 1024).toFixed(1)} KB ({importRowCount || 0} baris data)</span>
                                         </div>
                                     ) : (
                                         <>
@@ -812,7 +872,7 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!importData.file || processingImport}
+                                    disabled={!importFile || processingImport}
                                     className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     <Upload size={16} />
@@ -823,6 +883,45 @@ export default function Index({ mitras, filters, banksList, deletedCount }) {
                     </div>
                 </div>
             )}
+
+            {/* Floating Action Bar untuk Bulk Delete */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#1B2335] text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-5">
+                    <div className="flex items-center gap-3 border-r border-gray-700 pr-6">
+                        <span className="w-6 h-6 bg-[#F26522] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {selectedIds.length}
+                        </span>
+                        <span className="text-sm font-medium">Data Terpilih</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedIds([])}
+                            className="px-2 py-2 text-sm font-medium text-gray-300 hover:text-white transition cursor-pointer"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleBulkDelete}
+                            className="px-4 py-2 text-sm font-medium bg-[#ef4444] hover:bg-red-600 text-white rounded-lg flex items-center gap-2 transition shadow-sm cursor-pointer"
+                        >
+                            <Trash2 size={16} /> Hapus Data
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+                onConfirm={confirmConfig.onConfirm}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.confirmText}
+                variant={confirmConfig.variant}
+            />
         </AuthenticatedLayout>
     );
 }

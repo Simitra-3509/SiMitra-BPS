@@ -562,35 +562,117 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function import(Request $request)
     {
-        $rows = $request->input('rows');
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ], [
+            'file.required' => 'File Excel wajib diunggah.',
+            'file.mimes' => 'File harus berformat .xlsx atau .xls.',
+            'file.max' => 'Ukuran file maksimal 10MB.',
+        ]);
 
-        if (!$rows || !is_array($rows) || count($rows) === 0) {
+        try {
+            $file = $request->file('file');
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $allRows = $sheet->toArray(null, true, true, true);
+        } catch (\Exception $e) {
             return redirect()->back()->withErrors([
-                'import' => 'File Excel kosong atau tidak berisi data yang dapat dibaca.'
+                'import' => 'Gagal membaca file Excel: ' . $e->getMessage()
             ]);
+        }
+
+        if (count($allRows) < 2) {
+            return redirect()->back()->withErrors([
+                'import' => 'File Excel kosong atau hanya berisi header tanpa data.'
+            ]);
+        }
+
+        // Cari baris header secara dinamis
+        $headerRow = null;
+        $headerRowNum = 1;
+        $colMap = [];
+        
+        foreach ($allRows as $index => $row) {
+            $foundKro = false;
+            $foundDetil = false;
+            $foundSobat = false;
+            
+            foreach ($row as $colLetter => $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $clean = strtolower(trim((string)$val));
+                    if (str_contains($clean, 'kro') || str_contains($clean, 'kode')) $foundKro = true;
+                    if (str_contains($clean, 'detil')) $foundDetil = true;
+                    if (str_contains($clean, 'sobat') || str_contains($clean, 'id')) $foundSobat = true;
+                }
+            }
+            
+            if ($foundKro && $foundDetil && $foundSobat) {
+                $headerRow = $row;
+                $headerRowNum = $index;
+                break;
+            }
+        }
+
+        if (!$headerRow) {
+             return redirect()->back()->withErrors([
+                 'import' => 'Format header tidak ditemukan. Pastikan ada baris dengan kolom "Kode KRO", "Nama Detil", dan "Sobat ID".'
+             ]);
+        }
+
+        // Hapus baris header dan baris di atasnya
+        foreach (range(1, $headerRowNum) as $i) {
+            unset($allRows[$i]);
+        }
+
+        $headers = array_map(function ($val) {
+            return trim(strtolower((string)$val));
+        }, $headerRow);
+
+        $colMap = [];
+        foreach ($headers as $colLetter => $headerName) {
+            if (empty($headerName)) continue;
+            if (str_contains($headerName, 'kode') || str_contains($headerName, 'kro')) {
+                $colMap['kode_kro'] = $colLetter;
+            } elseif (str_contains($headerName, 'nama detil') || str_contains($headerName, 'detil')) {
+                $colMap['nama_detil'] = $colLetter;
+            } elseif (str_contains($headerName, 'sobat') || str_contains($headerName, 'id')) {
+                $colMap['sobat_id'] = $colLetter;
+            } elseif ($headerName === 'bulan') {
+                $colMap['bulan'] = $colLetter;
+            } elseif ($headerName === 'tahun') {
+                $colMap['tahun'] = $colLetter;
+            } elseif (str_contains($headerName, 'kuota') || str_contains($headerName, 'target')) {
+                $colMap['kuota_target'] = $colLetter;
+            }
+        }
+
+        if (!isset($colMap['kode_kro']) || !isset($colMap['nama_detil']) || !isset($colMap['sobat_id'])) {
+             return redirect()->back()->withErrors([
+                 'import' => 'Format header tidak sesuai. Pastikan ada kolom "Kode KRO", "Nama Detil", dan "Sobat ID".'
+             ]);
         }
 
         $errors = [];
         $validData = [];
 
-        foreach ($rows as $index => $row) {
-            $rowNum = $index + 2; // Baris 1 header
-
-            $getVal = function ($keys) use ($row) {
-                foreach ((array)$keys as $k) {
-                    if (array_key_exists($k, $row) && $row[$k] !== null && $row[$k] !== '') {
-                        return trim((string)$row[$k]);
-                    }
+        for ($rowNum = 2; $rowNum <= count($allRows); $rowNum++) {
+            $row = $allRows[$rowNum];
+            
+            $isEmpty = true;
+            foreach ($row as $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $isEmpty = false;
+                    break;
                 }
-                return '';
-            };
+            }
+            if ($isEmpty) continue;
 
-            $kodeKro = $getVal(['Kode KRO', 'kode_kro', 'Kode_Kro', 'kode_kegiatan', 'KRO']);
-            $namaDetil = $getVal(['Nama Detil', 'nama_detil', 'Nama_Detil', 'detil_kegiatan', 'detil']);
-            $sobatId = $getVal(['Sobat ID', 'sobat_id', 'Sobat_Id', 'sobatid']);
-            $bulanRaw = $getVal(['Bulan', 'bulan']);
-            $tahunRaw = $getVal(['Tahun', 'tahun']);
-            $kuotaRaw = $getVal(['Kuota Target', 'kuota_target', 'Kuota_Target', 'kuota', 'target']);
+            $kodeKro   = trim((string)($row[$colMap['kode_kro'] ?? ''] ?? ''));
+            $namaDetil = trim((string)($row[$colMap['nama_detil'] ?? ''] ?? ''));
+            $sobatId   = trim((string)($row[$colMap['sobat_id'] ?? ''] ?? ''));
+            $bulanRaw  = trim((string)($row[$colMap['bulan'] ?? ''] ?? ''));
+            $tahunRaw  = trim((string)($row[$colMap['tahun'] ?? ''] ?? ''));
+            $kuotaRaw  = trim((string)($row[$colMap['kuota_target'] ?? ''] ?? ''));
 
             // 1. Validasi & Cari Kegiatan by Kode KRO
             if (empty($kodeKro)) {
@@ -663,10 +745,14 @@ class PenugasanController extends Controller implements HasMiddleware
             ];
         }
 
-        // Jika ada 1 error pun, batalkan seluruhnya
-        if (count($errors) > 0) {
+        if (count($validData) === 0) {
+            $errMessage = 'File Excel tidak berisi data penugasan yang valid. Pastikan format baris sesuai dengan template.';
+            if (count($errors) > 0) {
+                $errMessage = 'Terjadi kesalahan pada data (contoh: Kode KRO, Sobat ID tidak ditemukan).';
+            }
             return redirect()->back()->withErrors([
-                'import_list' => $errors
+                'import' => $errMessage,
+                'import_list' => array_slice($errors, 0, 50)
             ]);
         }
 

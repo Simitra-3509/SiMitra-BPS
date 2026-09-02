@@ -23,7 +23,7 @@ import Modal from '@/Components/Modal';
 export default function Create({ kegiatan, kegiatanList }) {
     const listKegiatan = kegiatanList || kegiatan || [];
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, transform, processing, errors } = useForm({
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
@@ -197,10 +197,10 @@ export default function Create({ kegiatan, kegiatanList }) {
     };
 
     const handleKuotaChange = (mitraId, val) => {
-        const kuotaVal = Math.max(1, parseFloat(val) || 1);
+        const sanitized = val === '' ? '' : val.replace(/[^0-9]/g, '');
         const updated = data.mitras.map((m) => {
             if (m.id === mitraId) {
-                return { ...m, kuota_target: kuotaVal };
+                return { ...m, kuota_target: sanitized };
             }
             return m;
         });
@@ -358,7 +358,7 @@ export default function Create({ kegiatan, kegiatanList }) {
     // Total harga keseluruhan baris mitra di form utama
     const hargaSatuan = selectedDetilInfo?.harga_satuan || 0;
     const totalKeseluruhan = data.mitras.reduce((sum, m) => {
-        return sum + ((m.kuota_target || 1) * hargaSatuan);
+        return sum + ((parseInt(m.kuota_target, 10) || 0) * hargaSatuan);
     }, 0);
 
     const handleSubmit = (e) => {
@@ -368,6 +368,14 @@ export default function Create({ kegiatan, kegiatanList }) {
             alert('Minimal 1 mitra harus dipilih.');
             return;
         }
+
+        transform((data) => ({
+            ...data,
+            mitras: data.mitras.map((m) => ({
+                ...m,
+                kuota_target: Math.max(1, parseInt(m.kuota_target, 10) || 1)
+            }))
+        }));
 
         post(route('penugasan.store'));
     };
@@ -622,7 +630,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
                                     {data.mitras.length > 0 ? (
                                         data.mitras.map((mitraItem) => {
-                                            const rowTotal = (mitraItem.kuota_target || 1) * (selectedDetilInfo?.harga_satuan || 0);
+                                            const rowTotal = (parseInt(mitraItem.kuota_target, 10) || 0) * (selectedDetilInfo?.harga_satuan || 0);
 
                                             return (
                                                 <tr key={mitraItem.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/20">
@@ -640,11 +648,17 @@ export default function Create({ kegiatan, kegiatanList }) {
                                                     </td>
                                                     <td className="py-2.5 px-3">
                                                         <input
-                                                            type="number"
-                                                            min="1"
-                                                            step="1"
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
                                                             value={mitraItem.kuota_target}
                                                             onChange={(e) => handleKuotaChange(mitraItem.id, e.target.value)}
+                                                            onBlur={(e) => {
+                                                                if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                                                                    handleKuotaChange(mitraItem.id, '1');
+                                                                }
+                                                            }}
+                                                            placeholder="1"
                                                             className="w-full px-2.5 py-1 text-xs text-right font-mono font-bold bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
                                                         />
                                                     </td>
