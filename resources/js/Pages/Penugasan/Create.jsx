@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { 
-    ArrowLeft, 
-    UserPlus, 
-    Search, 
-    Trash2, 
-    Copy, 
-    Info, 
-    CheckCircle2, 
-    AlertTriangle, 
-    Layers, 
+import {
+    ArrowLeft,
+    UserPlus,
+    Search,
+    Trash2,
+    Copy,
+    Info,
+    CheckCircle2,
+    AlertTriangle,
+    Layers,
     Calendar,
     X,
     UserCheck,
     Users,
-    Calculator
+    Calculator,
+    ChevronDown
 } from 'lucide-react';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -23,13 +24,22 @@ import Modal from '@/Components/Modal';
 export default function Create({ kegiatan, kegiatanList }) {
     const listKegiatan = kegiatanList || kegiatan || [];
 
-    const { data, setData, post, transform, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         kegiatan_id: '',
         akun_id: '',
         detil_kegiatan_id: '',
-        bulan: String(new Date().getMonth() + 1),
-        tahun: String(new Date().getFullYear()),
+        tanggal_mulai: '',
+        tanggal_selesai: '',
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
+    });
+
+    transform((data) => {
+        const d = data.tanggal_mulai ? new Date(data.tanggal_mulai) : new Date();
+        return {
+            ...data,
+            bulan: String(d.getMonth() + 1),
+            tahun: String(d.getFullYear()),
+        };
     });
 
     // Dynamic dropdown states
@@ -45,6 +55,17 @@ export default function Create({ kegiatan, kegiatanList }) {
     ];
     const currentYear = new Date().getFullYear();
     const tahunOptions = [currentYear - 1, currentYear, currentYear + 1];
+
+    const activeDate = data.tanggal_mulai ? new Date(data.tanggal_mulai) : new Date();
+    const activeBulan = activeDate.getMonth() + 1;
+    const activeTahun = activeDate.getFullYear();
+    const minSelesaiStr = data.tanggal_mulai || `${activeTahun}-${String(activeBulan).padStart(2, '0')}-01`;
+    const maxDays = new Date(activeTahun, activeBulan, 0).getDate();
+    const maxSelesaiStr = `${activeTahun}-${String(activeBulan).padStart(2, '0')}-${maxDays}`;
+
+    // Modal Detil Rincian states
+    const [isDetilModalOpen, setIsDetilModalOpen] = useState(false);
+    const [searchDetilQuery, setSearchDetilQuery] = useState('');
 
     // Modal Picker Mitra states (Tanpa filter kecamatan)
     const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
@@ -106,18 +127,18 @@ export default function Create({ kegiatan, kegiatanList }) {
         axios.get(route('api.penugasan.prev-month'), {
             params: { detil_kegiatan_id: detilId, bulan: bulanSumber, tahun: tahunSumber }
         })
-        .then((res) => {
-            const list = res.data?.data || [];
-            setCopyData(list);
-            setCopyPeriodeName(
-                res.data?.prev_bulan_nama
-                    ? `${res.data.prev_bulan_nama} ${res.data.prev_tahun}`
-                    : `${bulanSumber}/${tahunSumber}`
-            );
-            setSelectedPrevMitraIds(list.map((i) => i.mitra_id));
-        })
-        .catch((err) => console.error('Error fetching copy source:', err))
-        .finally(() => setCopyLoading(false));
+            .then((res) => {
+                const list = res.data?.data || [];
+                setCopyData(list);
+                setCopyPeriodeName(
+                    res.data?.prev_bulan_nama
+                        ? `${res.data.prev_bulan_nama} ${res.data.prev_tahun}`
+                        : `${bulanSumber}/${tahunSumber}`
+                );
+                setSelectedPrevMitraIds(list.map((i) => i.mitra_id));
+            })
+            .catch((err) => console.error('Error fetching copy source:', err))
+            .finally(() => setCopyLoading(false));
     };
 
     // Refetch when bulan/tahun changes — initialize copy source to previous month
@@ -143,16 +164,16 @@ export default function Create({ kegiatan, kegiatanList }) {
         const timer = setTimeout(() => {
             setIsSearching(true);
             axios.get(route('api.penugasan.search-mitra'), {
-                params: { 
+                params: {
                     q: searchQuery,
                     status_aktif: filterStatus
                 }
             })
-            .then((res) => {
-                setSearchResults(res.data || []);
-            })
-            .catch((err) => console.error('Error searching mitra:', err))
-            .finally(() => setIsSearching(false));
+                .then((res) => {
+                    setSearchResults(res.data || []);
+                })
+                .catch((err) => console.error('Error searching mitra:', err))
+                .finally(() => setIsSearching(false));
         }, 400);
 
         return () => clearTimeout(timer);
@@ -163,14 +184,14 @@ export default function Create({ kegiatan, kegiatanList }) {
         setIsPickerModalOpen(true);
         setIsSearching(true);
         axios.get(route('api.penugasan.search-mitra'), {
-            params: { 
+            params: {
                 q: searchQuery,
                 status_aktif: filterStatus
             }
         })
-        .then((res) => setSearchResults(res.data || []))
-        .catch((err) => console.error('Error fetching initial mitras:', err))
-        .finally(() => setIsSearching(false));
+            .then((res) => setSearchResults(res.data || []))
+            .catch((err) => console.error('Error fetching initial mitras:', err))
+            .finally(() => setIsSearching(false));
     };
 
     // Add Mitra to selected list AND AUTO CLOSE MODAL
@@ -183,7 +204,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                     id: mitraObj.id,
                     sobat_id: mitraObj.sobat_id || '-',
                     nama_lengkap: mitraObj.nama_lengkap,
-                    kuota_target: 1
+                    kuota_target: 1,
                 }
             ];
             setData('mitras', newMitras);
@@ -205,6 +226,10 @@ export default function Create({ kegiatan, kegiatanList }) {
             return m;
         });
         setData('mitras', updated);
+    };
+
+    const handleTanggalChange = (id, field, value) => {
+        // Not used anymore in table
     };
 
     // Buka modal salin — fetch source saat itu juga
@@ -240,7 +265,9 @@ export default function Create({ kegiatan, kegiatanList }) {
                     id: item.mitra_id,
                     sobat_id: item.sobat_id || '-',
                     nama_lengkap: item.nama_lengkap,
-                    kuota_target: item.kuota_target || 1
+                    kuota_target: item.kuota_target || 1,
+                    tanggal_mulai: '', // Reset date to prevent invalid dates when copying from another month
+                    tanggal_selesai: ''
                 });
             }
         });
@@ -296,24 +323,23 @@ export default function Create({ kegiatan, kegiatanList }) {
     const renderSisaVolumeInfo = () => {
         if (!selectedDetilInfo) return null;
 
-        const targetDipa        = parseFloat(selectedDetilInfo.jumlah) || 0;
-        const sudahDiDB         = parseFloat(selectedDetilInfo.total_kuota_terpakai) || 0;
-        const kuotaFormIni      = data.mitras.reduce((sum, m) => sum + (parseFloat(m.kuota_target) || 0), 0);
-        const totalTerpakai     = sudahDiDB + kuotaFormIni;
-        const sisaSetelahInput  = targetDipa - totalTerpakai;
-        const satuanStr         = selectedDetilInfo.satuan || 'Volume';
-        const isOver            = sisaSetelahInput < 0;
+        const targetDipa = parseFloat(selectedDetilInfo.jumlah) || 0;
+        const sudahDiDB = parseFloat(selectedDetilInfo.total_kuota_terpakai) || 0;
+        const kuotaFormIni = data.mitras.reduce((sum, m) => sum + (parseFloat(m.kuota_target) || 0), 0);
+        const totalTerpakai = sudahDiDB + kuotaFormIni;
+        const sisaSetelahInput = targetDipa - totalTerpakai;
+        const satuanStr = selectedDetilInfo.satuan || 'Volume';
+        const isOver = sisaSetelahInput < 0;
 
         const formatNum = (num) => new Intl.NumberFormat('id-ID').format(Math.abs(num));
 
         return (
-            <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
-                isOver
+            <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${isOver
                     ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
                     : sisaSetelahInput === 0
                         ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
                         : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
-            }`}>
+                }`}>
                 {/* Header */}
                 <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
                     <Calculator size={15} className={isOver ? 'text-red-500' : sisaSetelahInput === 0 ? 'text-amber-500' : 'text-emerald-600'} />
@@ -341,13 +367,12 @@ export default function Create({ kegiatan, kegiatanList }) {
                     <span className="font-semibold">
                         {isOver ? '⚠ Melebihi Target DIPA' : 'Sisa setelah input ini:'}
                     </span>
-                    <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${
-                        isOver
+                    <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${isOver
                             ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
                             : sisaSetelahInput === 0
                                 ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
                                 : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
-                    }`}>
+                        }`}>
                         {isOver ? '-' : ''}{formatNum(sisaSetelahInput)} {satuanStr}
                     </span>
                 </div>
@@ -453,30 +478,28 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 {errors.kegiatan_id && <p className="text-xs text-red-500">{errors.kegiatan_id}</p>}
                             </div>
 
-                            {/* Dropdown 2: Detil */}
+                            {/* Input 2: Detil */}
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
                                     Pilih Detil Rincian <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={data.detil_kegiatan_id}
-                                    onChange={handleDetilChange}
-                                    disabled={!data.kegiatan_id || detilList.length === 0}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDetilModalOpen(true)}
+                                    disabled={!data.kegiatan_id}
+                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed text-left flex items-center justify-between transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                                 >
-                                    <option value="">
-                                        {!data.kegiatan_id 
-                                            ? '-- Pilih Kegiatan Terlebih Dahulu --' 
-                                            : detilList.length === 0 
-                                            ? 'Tidak ada Detil pada Kegiatan ini' 
-                                            : '-- Pilih Detil Rincian --'}
-                                    </option>
-                                    {detilList.map((d) => (
-                                        <option key={d.id} value={d.id}>
-                                            {d.nama_detil} [{d.jenis_sbml.toUpperCase()}] ({d.satuan})
-                                        </option>
-                                    ))}
-                                </select>
+                                    <span className="truncate">
+                                        {!data.kegiatan_id
+                                            ? '-- Pilih Kegiatan Terlebih Dahulu --'
+                                            : detilList.length === 0
+                                                ? 'Tidak ada Detil pada Kegiatan ini'
+                                                : selectedDetilInfo
+                                                    ? `${selectedDetilInfo.nama_detil} [${selectedDetilInfo.jenis_sbml?.toUpperCase()}] (${selectedDetilInfo.satuan})`
+                                                    : '-- Pilih Detil Rincian --'}
+                                    </span>
+                                    <ChevronDown size={16} className="text-gray-400 shrink-0" />
+                                </button>
                                 {errors.detil_kegiatan_id && <p className="text-xs text-red-500">{errors.detil_kegiatan_id}</p>}
                             </div>
                         </div>
@@ -532,34 +555,31 @@ export default function Create({ kegiatan, kegiatanList }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Bulan <span className="text-red-500">*</span>
+                                    Tanggal Mulai <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={data.bulan}
-                                    onChange={(e) => setData('bulan', e.target.value)}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
-                                >
-                                    {namaBulan.map((nama, idx) => (
-                                        <option key={idx + 1} value={String(idx + 1)}>{nama}</option>
-                                    ))}
-                                </select>
-                                {errors.bulan && <p className="text-xs text-red-500">{errors.bulan}</p>}
+                                <input
+                                    type="date"
+                                    value={data.tanggal_mulai}
+                                    onChange={(e) => setData('tanggal_mulai', e.target.value)}
+                                    className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border rounded-lg focus:ring-1 focus:outline-none ${errors.tanggal_mulai ? 'border-red-500 focus:ring-red-500 text-red-600' : 'border-gray-300 dark:border-gray-700 focus:ring-[#D9531E]'}`}
+                                />
+                                {errors.tanggal_mulai && <p className="text-xs text-red-500">{errors.tanggal_mulai}</p>}
                             </div>
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-                                    Tahun <span className="text-red-500">*</span>
+                                    Tanggal Selesai <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={data.tahun}
-                                    onChange={(e) => setData('tahun', e.target.value)}
-                                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
-                                >
-                                    {tahunOptions.map((y) => (
-                                        <option key={y} value={String(y)}>{y}</option>
-                                    ))}
-                                </select>
-                                {errors.tahun && <p className="text-xs text-red-500">{errors.tahun}</p>}
+                                <input
+                                    type="date"
+                                    min={minSelesaiStr}
+                                    max={maxSelesaiStr}
+                                    value={data.tanggal_selesai}
+                                    onChange={(e) => setData('tanggal_selesai', e.target.value)}
+                                    className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border rounded-lg focus:ring-1 focus:outline-none ${errors.tanggal_selesai ? 'border-red-500 focus:ring-red-500 text-red-600' : 'border-gray-300 dark:border-gray-700 focus:ring-[#D9531E]'}`}
+                                    title={data.tanggal_selesai && (data.tanggal_selesai < minSelesaiStr || data.tanggal_selesai > maxSelesaiStr) ? "Tanggal selesai harus berada di bulan yang sama dengan tanggal mulai" : ""}
+                                />
+                                {errors.tanggal_selesai && <p className="text-xs text-red-500">{errors.tanggal_selesai}</p>}
                             </div>
                         </div>
                     </div>
@@ -585,7 +605,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     title={!data.detil_kegiatan_id ? 'Pilih detil terlebih dahulu' : 'Import dari Excel'}
                                     className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#1D6F42] hover:bg-[#155733] rounded-xl shadow-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg>
                                     Import Excel
                                 </button>
 
@@ -618,11 +638,11 @@ export default function Create({ kegiatan, kegiatanList }) {
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-700 text-gray-500 uppercase text-[10px] tracking-wider">
-                                        <th className="py-2.5 px-3 font-bold w-28">Sobat ID</th>
-                                        <th className="py-2.5 px-3 font-bold w-48 max-w-[200px]">Nama Mitra</th>
-                                        <th className="py-2.5 px-3 font-bold w-20 text-center">Satuan</th>
-                                        <th className="py-2.5 px-3 font-bold w-28 text-right">Harga Satuan</th>
-                                        <th className="py-2.5 px-3 font-bold w-36 text-right">Kuota Target Bulan Ini</th>
+                                        <th className="py-2.5 px-3 font-bold w-24">Sobat ID</th>
+                                        <th className="py-2.5 px-3 font-bold">Nama Mitra</th>
+                                        <th className="py-2.5 px-3 font-bold w-32 text-center">Satuan</th>
+                                        <th className="py-2.5 px-3 font-bold w-32 text-right">Harga Satuan</th>
+                                        <th className="py-2.5 px-3 font-bold w-28 text-right">Kuota Target</th>
                                         <th className="py-2.5 px-3 font-bold w-32 text-right">Total</th>
                                         <th className="py-2.5 px-3 font-bold w-12 text-center">Aksi</th>
                                     </tr>
@@ -637,13 +657,13 @@ export default function Create({ kegiatan, kegiatanList }) {
                                                     <td className="py-2.5 px-3 font-mono font-bold text-gray-800 dark:text-gray-200">
                                                         {mitraItem.sobat_id || '-'}
                                                     </td>
-                                                    <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white max-w-[200px] truncate" title={mitraItem.nama_lengkap}>
+                                                    <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white truncate" title={mitraItem.nama_lengkap}>
                                                         {mitraItem.nama_lengkap}
                                                     </td>
                                                     <td className="py-2.5 px-3 text-center font-mono text-gray-600 dark:text-gray-300">
                                                         {selectedDetilInfo?.satuan || '-'}
                                                     </td>
-                                                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">
                                                         {formatRupiah(selectedDetilInfo?.harga_satuan || 0)}
                                                     </td>
                                                     <td className="py-2.5 px-3">
@@ -680,7 +700,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="7" className="py-8 text-center text-gray-400">
+                                            <td colSpan="9" className="py-8 text-center text-gray-400">
                                                 Belum ada mitra yang dipilih. Klik tombol <span className="font-bold text-[#D9531E]">"Pilih & Cari Mitra"</span> di atas untuk memilih mitra.
                                             </td>
                                         </tr>
@@ -706,7 +726,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                     {/* Actions Submit */}
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="text-xs text-gray-500">
-                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {namaBulan[parseInt(data.bulan) - 1]} {data.tahun}.
+                            * Seluruh mitra di atas akan didaftarkan ke penugasan detil kegiatan periode {namaBulan[activeBulan - 1]} {activeTahun}.
                         </div>
                         <div className="flex items-center gap-3">
                             <Link
@@ -738,7 +758,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 <Users size={18} className="text-[#D9531E]" />
                                 Cari & Pilih Mitra
                             </h3>
-                            <p className="text-xs text-gray-500">Cari berdasarkan Sobat ID atau Nama Lengkap</p>
+                            <p className="text-xs text-gray-500">Cari berdasarkan Sobat ID, Nama Lengkap, atau Alamat</p>
                         </div>
                         <button
                             type="button"
@@ -752,12 +772,12 @@ export default function Create({ kegiatan, kegiatanList }) {
                     {/* Search Input Box (1 Search Box Only, Tanpa Filter Kecamatan) */}
                     <div className="bg-gray-50 dark:bg-gray-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700">
                         <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                            Sobat ID / Nama Lengkap (Min. 2 Karakter)
+                            Pencarian Mitra (Min. 2 Karakter)
                         </label>
                         <div className="relative">
                             <input
                                 type="text"
-                                placeholder="Ketik Sobat ID (misal: 276426) atau Nama..."
+                                placeholder="Ketik Sobat ID, Nama, atau Alamat..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-8 pr-3 py-2 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
@@ -773,6 +793,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 <tr>
                                     <th className="py-2.5 px-3 font-bold w-28">Sobat ID</th>
                                     <th className="py-2.5 px-3 font-bold">Nama Lengkap</th>
+                                    <th className="py-2.5 px-3 font-bold hidden sm:table-cell">Alamat</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -786,14 +807,13 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     searchResults.map((m) => {
                                         const isChosen = data.mitras.some((selected) => selected.id === m.id);
                                         return (
-                                            <tr 
-                                                key={m.id} 
+                                            <tr
+                                                key={m.id}
                                                 onClick={() => !isChosen && handleSelectMitraFromPicker(m)}
-                                                className={`transition ${
-                                                    isChosen 
-                                                        ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed' 
+                                                className={`transition ${isChosen
+                                                        ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
                                                         : 'hover:bg-orange-50 dark:hover:bg-orange-950/40 cursor-pointer'
-                                                }`}
+                                                    }`}
                                             >
                                                 <td className="py-2.5 px-3 font-mono font-bold text-[#D9531E]">
                                                     {m.sobat_id || '-'}
@@ -914,7 +934,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     </th>
                                     <th className="py-2.5 px-3 font-bold">Sobat ID</th>
                                     <th className="py-2.5 px-3 font-bold">Nama Mitra</th>
-                                    <th className="py-2.5 px-3 font-bold text-right">Kuota ({namaBulan[parseInt(copySourceBulan)-1]})</th>
+                                    <th className="py-2.5 px-3 font-bold text-right">Kuota ({namaBulan[parseInt(copySourceBulan) - 1]})</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -927,11 +947,10 @@ export default function Create({ kegiatan, kegiatanList }) {
                                         return (
                                             <tr key={item.mitra_id}
                                                 onClick={() => !alreadyAdded && toggleSelectPrevMitra(item.mitra_id)}
-                                                className={`transition cursor-pointer ${
-                                                    alreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
-                                                    : isChecked ? 'bg-orange-50 dark:bg-orange-950/20'
-                                                    : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
-                                                }`}>
+                                                className={`transition cursor-pointer ${alreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
+                                                        : isChecked ? 'bg-orange-50 dark:bg-orange-950/20'
+                                                            : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
+                                                    }`}>
                                                 <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <input type="checkbox" className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
                                                         checked={isChecked} disabled={alreadyAdded}
@@ -971,6 +990,90 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 Salin {selectedPrevMitraIds.length} Mitra
                             </button>
                         </div>
+                    </div>
+                </div>
+            </Modal>
+            {/* MODAL PILIH DETIL RINCIAN */}
+            <Modal show={isDetilModalOpen} onClose={() => setIsDetilModalOpen(false)} maxWidth="2xl">
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Pilih Detil Rincian</h2>
+                        <button onClick={() => setIsDetilModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <div className="mb-4">
+                        <div className="relative">
+                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Cari berdasarkan nama, jenis SBML, atau satuan..."
+                                value={searchDetilQuery}
+                                onChange={(e) => setSearchDetilQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#D9531E] focus:outline-none"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        {!data.kegiatan_id ? (
+                            <div className="p-8 text-center text-gray-500 text-sm">
+                                Silakan pilih <strong>Kegiatan</strong> terlebih dahulu.
+                            </div>
+                        ) : detilList.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500 text-sm">
+                                Tidak ada detil rincian pada Kegiatan ini.
+                            </div>
+                        ) : detilList.filter(d => {
+                            const q = searchDetilQuery.toLowerCase();
+                            return (
+                                (d.nama_detil || '').toLowerCase().includes(q) ||
+                                (d.jenis_sbml || '').toLowerCase().includes(q) ||
+                                (d.satuan || '').toLowerCase().includes(q)
+                            );
+                        }).length > 0 ? (
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                {detilList.filter(d => {
+                                    const q = searchDetilQuery.toLowerCase();
+                                    return (
+                                        (d.nama_detil || '').toLowerCase().includes(q) ||
+                                        (d.jenis_sbml || '').toLowerCase().includes(q) ||
+                                        (d.satuan || '').toLowerCase().includes(q)
+                                    );
+                                }).map(d => (
+                                    <button
+                                        key={d.id}
+                                        type="button"
+                                        onClick={() => {
+                                            handleDetilChange({ target: { value: d.id } });
+                                            setIsDetilModalOpen(false);
+                                            setSearchDetilQuery('');
+                                        }}
+                                        className={`w-full text-left p-3 transition flex flex-col gap-1.5 ${String(data.detil_kegiatan_id) === String(d.id)
+                                                ? 'bg-[#D9531E]/10 border border-[#D9531E]/20 rounded-lg my-1'
+                                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        <div className="font-semibold text-gray-900 dark:text-white text-sm">
+                                            {d.nama_detil}
+                                        </div>
+                                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold text-white uppercase ${d.jenis_sbml === 'pendataan' ? 'bg-[#F26522]' : 'bg-[#3dbcc9]'}`}>
+                                                {d.jenis_sbml}
+                                            </span>
+                                            <span>•</span>
+                                            <span>Satuan: <span className="font-mono text-gray-700 dark:text-gray-300">{d.satuan}</span></span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-8 text-center text-gray-500 text-sm">
+                                Tidak ada detil rincian yang cocok.
+                            </div>
+                        )}
                     </div>
                 </div>
             </Modal>

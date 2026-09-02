@@ -135,11 +135,12 @@ class PenugasanController extends Controller implements HasMiddleware
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
                 $sub->where('sobat_id', 'like', "%{$q}%")
-                    ->orWhere('nama_lengkap', 'like', "%{$q}%");
+                    ->orWhere('nama_lengkap', 'like', "%{$q}%")
+                    ->orWhere('alamat', 'like', "%{$q}%");
             });
         }
 
-        $mitraList = $query->orderBy('nama_lengkap')->limit(20)->get(['id', 'sobat_id', 'nama_lengkap']);
+        $mitraList = $query->orderBy('nama_lengkap')->limit(20)->get(['id', 'sobat_id', 'nama_lengkap', 'alamat']);
         return response()->json($mitraList);
     }
 
@@ -207,6 +208,8 @@ class PenugasanController extends Controller implements HasMiddleware
             'mitras'                => 'required|array|min:1',
             'mitras.*.id'           => 'required|exists:mitras,id',
             'mitras.*.kuota_target' => 'required|numeric|min:1',
+            'tanggal_mulai'         => 'nullable|date',
+            'tanggal_selesai'       => 'nullable|date|after_or_equal:tanggal_mulai',
         ], [
             'kegiatan_id.required'           => 'Kegiatan wajib dipilih.',
             'detil_kegiatan_id.required'     => 'Detil rincian wajib dipilih.',
@@ -216,6 +219,9 @@ class PenugasanController extends Controller implements HasMiddleware
             'mitras.min'                     => 'Minimal 1 mitra harus dipilih.',
             'mitras.*.kuota_target.required' => 'Kuota per mitra wajib diisi.',
             'mitras.*.kuota_target.min'      => 'Kuota per mitra minimal 1.',
+            'tanggal_mulai.date'             => 'Format tanggal mulai tidak valid.',
+            'tanggal_selesai.date'           => 'Format tanggal selesai tidak valid.',
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai.',
         ]);
 
         // C.4 Validasi Periode Pengisian: Cek kunci sebelum store
@@ -250,6 +256,29 @@ class PenugasanController extends Controller implements HasMiddleware
                           . ", sisa: " . number_format($sisa, 0, ',', '.')
                           . ". Input Anda menambahkan: " . number_format($kuotaBaru, 0, ',', '.') . "."
             ])->withInput();
+        }
+
+        // C.5 Validasi Rentang Tanggal Mulai dan Selesai (Server-side)
+        $bulanNama = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        
+        $tglMulai = $request->tanggal_mulai ?? null;
+        $tglSelesai = $request->tanggal_selesai ?? null;
+
+        if ($tglMulai) {
+            $dtMulai = \Carbon\Carbon::parse($tglMulai);
+            if ($dtMulai->month !== $bulanNum || $dtMulai->year !== $tahunNum) {
+                return back()->withErrors(['tanggal_mulai' => "Tanggal mulai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
+            }
+        }
+        if ($tglSelesai) {
+            $dtSelesai = \Carbon\Carbon::parse($tglSelesai);
+            if ($dtSelesai->month !== $bulanNum || $dtSelesai->year !== $tahunNum) {
+                return back()->withErrors(['tanggal_selesai' => "Tanggal selesai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
+            }
         }
         // ────────────────────────────────────────────────────────────────────────
 
@@ -307,6 +336,8 @@ class PenugasanController extends Controller implements HasMiddleware
                         'kuota_target'          => $kuotaTarget,
                         'harga_satuan_snapshot' => $hargaSatuan,
                         'total_honor'           => $totalHonorBaru,
+                        'tanggal_mulai'         => $tglMulai,
+                        'tanggal_selesai'       => $tglSelesai,
                         'status'                => 'ditugaskan',
                     ]);
                 }
@@ -424,6 +455,28 @@ class PenugasanController extends Controller implements HasMiddleware
             }
         }
         // ────────────────────────────────────────────────────────────────────────
+
+        // C.5 Validasi Rentang Tanggal Mulai dan Selesai pada Update
+        $tglMulai = $validated['tanggal_mulai'] ?? null;
+        $tglSelesai = $validated['tanggal_selesai'] ?? null;
+        $bulanNama = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        if ($tglMulai) {
+            $dtMulai = \Carbon\Carbon::parse($tglMulai);
+            if ($dtMulai->month !== $bulanNum || $dtMulai->year !== $tahunNum) {
+                return back()->withErrors(['tanggal_mulai' => "Tanggal mulai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
+            }
+        }
+        if ($tglSelesai) {
+            $dtSelesai = \Carbon\Carbon::parse($tglSelesai);
+            if ($dtSelesai->month !== $bulanNum || $dtSelesai->year !== $tahunNum) {
+                return back()->withErrors(['tanggal_selesai' => "Tanggal selesai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
+            }
+        }
 
         // C.2 Method update(): Recalculate snapshot & total_honor
         $validated['harga_satuan_snapshot'] = $hargaSatuan;
@@ -734,6 +787,45 @@ class PenugasanController extends Controller implements HasMiddleware
                 continue;
             }
 
+            // 7. Validasi Tanggal (Opsional)
+            $tanggalMulaiRaw = $getVal(['Tanggal Mulai', 'tanggal_mulai', 'Mulai']);
+            $tanggalSelesaiRaw = $getVal(['Tanggal Selesai', 'tanggal_selesai', 'Selesai']);
+            $tglMulai = null;
+            $tglSelesai = null;
+            
+            if (!empty($tanggalMulaiRaw)) {
+                try {
+                    $dtMulai = \Carbon\Carbon::parse($tanggalMulaiRaw);
+                    if ($dtMulai->month !== $bulanInt || $dtMulai->year !== $tahunInt) {
+                        $errors[] = "Baris {$rowNum}: Tanggal mulai harus berada dalam rentang bulan dan tahun yang diinput.";
+                        continue;
+                    }
+                    $tglMulai = $dtMulai->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $errors[] = "Baris {$rowNum}: Format tanggal mulai tidak valid.";
+                    continue;
+                }
+            }
+
+            if (!empty($tanggalSelesaiRaw)) {
+                try {
+                    $dtSelesai = \Carbon\Carbon::parse($tanggalSelesaiRaw);
+                    if ($dtSelesai->month !== $bulanInt || $dtSelesai->year !== $tahunInt) {
+                        $errors[] = "Baris {$rowNum}: Tanggal selesai harus berada dalam rentang bulan dan tahun yang diinput.";
+                        continue;
+                    }
+                    $tglSelesai = $dtSelesai->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $errors[] = "Baris {$rowNum}: Format tanggal selesai tidak valid.";
+                    continue;
+                }
+            }
+            
+            if ($tglMulai && $tglSelesai && $tglMulai > $tglSelesai) {
+                $errors[] = "Baris {$rowNum}: Tanggal selesai tidak boleh lebih kecil dari tanggal mulai.";
+                continue;
+            }
+
             $validData[] = [
                 'kegiatan_id'       => $kegiatan->id,
                 'detil_kegiatan_id' => $detilKegiatan->id,
@@ -741,6 +833,8 @@ class PenugasanController extends Controller implements HasMiddleware
                 'bulan'             => $bulanInt,
                 'tahun'             => $tahunInt,
                 'kuota_target'      => $kuotaVal,
+                'tanggal_mulai'     => $tglMulai,
+                'tanggal_selesai'   => $tglSelesai,
                 'status'            => 'ditugaskan',
             ];
         }
