@@ -30,6 +30,8 @@ class UpdatePenugasanRequest extends FormRequest
             'tahun'             => 'sometimes|required|integer',
             'kuota_target'      => 'sometimes|required|numeric|min:1',
             'status'            => 'sometimes|required|string',
+            'tanggal_mulai'     => 'nullable|date',
+            'tanggal_selesai'   => 'nullable|date|after_or_equal:tanggal_mulai',
         ];
     }
 }
