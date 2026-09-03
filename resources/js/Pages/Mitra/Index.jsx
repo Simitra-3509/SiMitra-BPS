@@ -8,6 +8,8 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function Index({ auth, mitras, filters, kecamatanList, desaByKecamatan, deletedCount }) {
     const { flash, counts } = usePage().props;
+    const userRole = (auth?.user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'administrator';
     const { toast } = useAppToast();
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'semua');
@@ -281,34 +283,36 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                         <p className="text-sm text-gray-500 dark:text-gray-400">Database & direktori mitra statistik Kabupaten Jember</p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full md:w-auto">
-                        <Link
-                            href={route('mitra.recycle-bin')}
-                            className="relative bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md w-full sm:w-auto"
-                        >
-                            <Trash size={18} /> Recycle Bin
-                            {(counts?.recycleBinMitra || deletedCount) > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-gray-800">
-                                    {counts?.recycleBinMitra || deletedCount}
-                                </span>
-                            )}
-                        </Link>
+                    {isAdmin && (
+                        <div className="grid grid-cols-1 sm:flex items-center gap-3 w-full md:w-auto">
+                            <Link
+                                href={route('mitra.recycle-bin')}
+                                className="relative bg-[#FF7F00] hover:bg-[#E67300] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md w-full sm:w-auto"
+                            >
+                                <Trash size={18} /> Recycle Bin
+                                {(counts?.recycleBinMitra || deletedCount) > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-gray-800">
+                                        {counts?.recycleBinMitra || deletedCount}
+                                    </span>
+                                )}
+                            </Link>
 
-                        <button
-                            type="button"
-                            onClick={openImportModal}
-                            className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2 cursor-pointer shadow-sm"
-                        >
-                            <FileSpreadsheet size={16} /> Import Excel
-                        </button>
+                            <button
+                                type="button"
+                                onClick={openImportModal}
+                                className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-500 dark:border-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition flex items-center gap-2 cursor-pointer shadow-sm"
+                            >
+                                <FileSpreadsheet size={16} /> Import Excel
+                            </button>
 
-                        <button
-                            onClick={openCreateModal}
-                            className="bg-simitra-orange hover:bg-orange-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
-                        >
-                            <Plus size={16} /> Tambah Mitra
-                        </button>
-                    </div>
+                            <button
+                                onClick={openCreateModal}
+                                className="bg-simitra-orange hover:bg-orange-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                            >
+                                <Plus size={16} /> Tambah Mitra
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Filter & Search Bar */}
@@ -400,14 +404,16 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                         <table className="w-full text-left text-sm min-w-[850px] whitespace-nowrap">
                             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 <tr>
-                                    <th className="p-4 w-10 text-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={mitras.data.length > 0 && selectedIds.length === mitras.data.length}
-                                            onChange={toggleSelectAll}
-                                            className="rounded border-gray-600 text-simitra-orange focus:ring-simitra-orange"
-                                        />
-                                    </th>
+                                    {isAdmin && (
+                                        <th className="p-4 w-10 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={mitras.data.length > 0 && selectedIds.length === mitras.data.length}
+                                                onChange={toggleSelectAll}
+                                                className="rounded border-gray-600 text-simitra-orange focus:ring-simitra-orange"
+                                            />
+                                        </th>
+                                    )}
                                     <th className="p-4">SOBAT ID</th>
                                     <th className="p-4">NAMA</th>
                                     <th className="p-4">KECAMATAN</th>
@@ -420,14 +426,16 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                 {mitras.data.length > 0 ? (
                                     mitras.data.map((mitra) => (
                                         <tr key={mitra.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-                                            <td className="p-4 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedIds.includes(mitra.id)}
-                                                    onChange={() => toggleSelect(mitra.id)}
-                                                    className="rounded border-gray-300 text-simitra-orange focus:ring-simitra-orange"
-                                                />
-                                            </td>
+                                            {isAdmin && (
+                                                <td className="p-4 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(mitra.id)}
+                                                        onChange={() => toggleSelect(mitra.id)}
+                                                        className="rounded border-gray-300 text-simitra-orange focus:ring-simitra-orange"
+                                                    />
+                                                </td>
+                                            )}
                                             <td className="p-4 font-mono text-rose-500">
                                                 {mitra.sobat_id || '-'}
                                             </td>
@@ -457,27 +465,31 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                                     >
                                                         <Eye size={15} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => openEditModal(mitra)}
-                                                        className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
-                                                        title="Edit Mitra"
-                                                    >
-                                                        <Edit2 size={15} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(mitra.id)}
-                                                        className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
-                                                        title="Pindahkan ke Recycle Bin"
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
+                                                    {isAdmin && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => openEditModal(mitra)}
+                                                                className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
+                                                                title="Edit Mitra"
+                                                            >
+                                                                <Edit2 size={15} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(mitra.id)}
+                                                                className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
+                                                                title="Pindahkan ke Recycle Bin"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="p-8 text-center text-gray-400">
+                                        <td colSpan={isAdmin ? 7 : 6} className="p-8 text-center text-gray-400">
                                             Tidak ada data Mitra ditemukan.
                                         </td>
                                     </tr>
@@ -885,7 +897,7 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
             )}
 
             {/* Floating Action Bar untuk Bulk Delete */}
-            {selectedIds.length > 0 && (
+            {isAdmin && selectedIds.length > 0 && (
                 <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#1B2335] text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-5">
                     <div className="flex items-center gap-3 border-r border-gray-700 pr-6">
                         <span className="w-6 h-6 bg-[#F26522] text-white rounded-full flex items-center justify-center text-xs font-bold">

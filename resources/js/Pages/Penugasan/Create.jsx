@@ -513,10 +513,10 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
 
         return (
             <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${isOver
-                    ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
-                    : sisaSetelahInput === 0
-                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
-                        : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+                ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
+                : sisaSetelahInput === 0
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
                 }`}>
                 {/* Header */}
                 <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
@@ -546,10 +546,10 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                         {isOver ? '⚠ Melebihi Target DIPA' : 'Sisa setelah input ini:'}
                     </span>
                     <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${isOver
-                            ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
-                            : sisaSetelahInput === 0
-                                ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
-                                : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
+                        ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
+                        : sisaSetelahInput === 0
+                            ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
+                            : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
                         }`}>
                         {isOver ? '-' : ''}{formatNum(sisaSetelahInput)} {satuanStr}
                     </span>
@@ -1020,8 +1020,8 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                                 key={m.id}
                                                 onClick={() => handleToggleMitraFromPicker(m)}
                                                 className={`transition cursor-pointer ${isChosen
-                                                        ? 'bg-orange-50/80 dark:bg-orange-950/30'
-                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                                                    ? 'bg-orange-50/80 dark:bg-orange-950/30'
+                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
                                                     }`}
                                             >
                                                 <td className="py-2.5 px-3 font-mono font-bold text-[#D9531E] whitespace-nowrap">
@@ -1169,8 +1169,8 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                             <tr key={item.mitra_id}
                                                 onClick={() => !alreadyAdded && toggleSelectPrevMitra(item.mitra_id)}
                                                 className={`transition cursor-pointer ${alreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
-                                                        : isChecked ? 'bg-orange-50 dark:bg-orange-950/20'
-                                                            : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
+                                                    : isChecked ? 'bg-orange-50 dark:bg-orange-950/20'
+                                                        : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
                                                     }`}>
                                                 <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <input type="checkbox" className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
@@ -1273,8 +1273,8 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                             setSearchDetilQuery('');
                                         }}
                                         className={`w-full text-left p-3 transition flex flex-col gap-1.5 ${String(data.detil_kegiatan_id) === String(d.id)
-                                                ? 'bg-[#D9531E]/10 border border-[#D9531E]/20 rounded-lg my-1'
-                                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            ? 'bg-[#D9531E]/10 border border-[#D9531E]/20 rounded-lg my-1'
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                                             }`}
                                     >
                                         <div className="font-semibold text-gray-900 dark:text-white text-sm">
@@ -1355,8 +1355,8 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                             onDragOver={handleDrag}
                             onDrop={handleDrop}
                             className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${dragActive
-                                    ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
-                                    : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
+                                ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                                : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
                                 }`}
                         >
                             <input

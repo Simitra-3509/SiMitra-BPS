@@ -107,6 +107,16 @@ const Topbar = forwardRef(function Topbar({ user, header, isCollapsed, toggleSid
                                 </div>
                             </div>
 
+                            {/* Profil Saya */}
+                            <Link
+                                href={route('profile.edit')}
+                                onClick={() => setDropdownOpen(false)}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white border-b border-gray-100 dark:border-gray-700/50 transition-colors cursor-pointer"
+                            >
+                                <User size={15} className="text-gray-500 dark:text-gray-400" />
+                                Profil Saya
+                            </Link>
+
                             {/* Logout */}
                             <Link
                                 href={route('logout')}

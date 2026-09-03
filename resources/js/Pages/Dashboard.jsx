@@ -78,59 +78,68 @@ export default function Dashboard({ stats, sbml, chartData }) {
                 <div className="h-3 bg-blue-600 rounded-full w-full opacity-90" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.2) 10px, rgba(255,255,255,.2) 20px)' }}></div>
 
                 {/* Stat Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Total Mitra Aktif</div>
-                        <div className="text-3xl font-bold text-simitra-orange">{stats.totalMitra}</div>
-                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                    {/* Card 1: Total Mitra Ditugaskan */}
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer flex flex-col justify-between">
+                        <div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Mitra Ditugaskan</div>
+                            <div className="text-3xl font-bold text-simitra-orange">{stats.totalMitra}</div>
+                            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Mitra sedang ada penugasan</p>
+                        </div>
+                        <div className="absolute right-4 top-5 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300 pointer-events-none">
                             <Users size={40} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Kegiatan Aktif</div>
-                        <div className="text-3xl font-bold text-simitra-orange">{stats.kegiatanAktif}</div>
-                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
+
+                    {/* Card 2: Kegiatan Aktif */}
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer flex flex-col justify-between">
+                        <div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Kegiatan Aktif</div>
+                            <div className="text-3xl font-bold text-simitra-orange">{stats.kegiatanAktif}</div>
+                            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Sedang dilaksanakan / ditugaskan</p>
+                        </div>
+                        <div className="absolute right-4 top-5 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300 pointer-events-none">
                             <Calendar size={40} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Honor Bulan Ini</div>
-                        <div className="text-3xl font-bold text-simitra-orange">{formatRp(stats.honorBulanIni)}</div>
-                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
+
+                    {/* Card 3: Honor Mitra Bulan Ini (Rata-rata, Terkecil, Terbesar) */}
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer flex flex-col justify-between">
+                        <div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Statistik Honor Bulan Ini</div>
+                            <div className="text-xl font-extrabold text-simitra-orange">{formatRp(stats.rataRataHonor)}</div>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Rata-Rata Honor Bulan Ini</div>
+
+                            <div className="pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2 text-xs">
+                                <div>
+                                    <span className="text-[10px] text-gray-400 block">Terkecil</span>
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatRp(stats.honorTerkecil)}</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[10px] text-gray-400 block">Terbesar</span>
+                                    <span className="font-bold text-blue-600 dark:text-blue-400">{formatRp(stats.honorTerbesar)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="absolute right-4 top-5 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300 pointer-events-none">
                             <Banknote size={40} />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Jumlah Input Honor</div>
-                        <div className="text-3xl font-bold text-simitra-orange">{stats.jumlahInputHonor}</div>
-                        <div className="absolute right-4 top-6 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300">
-                            <FileSpreadsheet size={40} />
+
+                    {/* Card 4: Rata-Rata Honor Setahun */}
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-l-4 border-l-[#F26522] border border-y-gray-100 border-r-gray-100 dark:border-y-gray-700 dark:border-r-gray-700 relative overflow-hidden group cursor-pointer flex flex-col justify-between">
+                        <div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Rata-Rata Honor Setahun</div>
+                            <div className="text-xl font-extrabold text-simitra-orange">{formatRp(stats.rataRataHonorSetahun)}</div>
+                            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Rata-rata per mitra (Tahun {new Date().getFullYear()})</p>
+                        </div>
+                        <div className="absolute right-4 top-5 opacity-10 group-hover:opacity-25 group-hover:scale-110 text-gray-800 dark:text-white transition-all duration-300 pointer-events-none">
+                            <TrendingUp size={40} />
                         </div>
                     </div>
                 </div>
 
-                {/* SBML Info Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 dark:border-gray-700 overflow-hidden group">
-                        <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2 text-sm">
-                            <TrendingUp size={16} /> Batas SBML Pendataan
-                        </div>
-                        <div className="p-6">
-                            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatRp(sbml.pendataan)}</div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Batas maksimal honor per mitra per bulan untuk Pendataan.</p>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 dark:border-gray-700 overflow-hidden group">
-                        <div className="bg-simitra-orange text-white px-4 py-2 font-medium flex items-center gap-2 text-sm">
-                            <TrendingUp size={16} /> Batas SBML Pengolahan
-                        </div>
-                        <div className="p-6">
-                            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatRp(sbml.pengolahan)}</div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Batas maksimal honor per mitra per bulan untuk Pengolahan.</p>
-                        </div>
-                    </div>
-                </div>
+
 
                 {/* Charts */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
