@@ -16,7 +16,8 @@ class MitraController extends Controller
     {
         $search = $request->input('search');
         $status = $request->input('status', 'semua');
-        $bank = $request->input('bank', 'semua');
+        $kecamatan = $request->input('kecamatan', 'semua');
+        $desa = $request->input('desa', 'semua');
         $perPageInput = $request->input('per_page', 20);
 
         $query = Mitra::query()
@@ -33,8 +34,11 @@ class MitraController extends Controller
                     $query->where('status_aktif', false);
                 }
             })
-            ->when($bank !== 'semua', function ($query) use ($bank) {
-                $query->where('nama_bank', $bank);
+            ->when($kecamatan !== 'semua', function ($query) use ($kecamatan) {
+                $query->where('kecamatan', 'like', "%{$kecamatan}%");
+            })
+            ->when($desa !== 'semua', function ($query) use ($desa) {
+                $query->where('alamat', 'like', "%{$desa}%");
             })
             ->latest();
 
@@ -44,17 +48,32 @@ class MitraController extends Controller
         $mitras = $query->paginate($perPage)->withQueryString();
 
         $deletedCount = Mitra::onlyTrashed()->count();
-        $banksList = Mitra::whereNotNull('nama_bank')->distinct()->pluck('nama_bank');
+        
+        $desaByKecamatan = Mitra::whereNotNull('kecamatan')
+            ->whereNotNull('alamat')
+            ->select('kecamatan', 'alamat')
+            ->distinct()
+            ->get()
+            ->groupBy('kecamatan')
+            ->map(function ($items) {
+                return $items->pluck('alamat')->map(function ($alamat) {
+                    return trim(str_ireplace('Desa ', '', $alamat));
+                })->filter()->unique()->sort()->values();
+            });
+
+        $kecamatanList = $desaByKecamatan->keys()->sort()->values();
 
         return Inertia::render('Mitra/Index', [
             'mitras' => $mitras,
             'filters' => [
                 'search' => $search,
                 'status' => $status,
-                'bank' => $bank,
+                'kecamatan' => $kecamatan,
+                'desa' => $desa,
                 'per_page' => $perPageInput,
             ],
-            'banksList' => $banksList,
+            'kecamatanList' => $kecamatanList,
+            'desaByKecamatan' => $desaByKecamatan,
             'deletedCount' => $deletedCount,
         ]);
     }
@@ -114,6 +133,21 @@ class MitraController extends Controller
     }
 
     /**
+     * Bulk soft delete multiple Mitras.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:mitras,id',
+        ]);
+
+        Mitra::whereIn('id', $request->ids)->delete();
+
+        return redirect()->back()->with('message', count($request->ids) . ' data Mitra berhasil dipindahkan ke Recycle Bin.');
+    }
+
+    /**
      * Display a listing of soft deleted Mitras.
      */
     public function recycleBin(Request $request)
@@ -165,54 +199,143 @@ class MitraController extends Controller
     }
 
     /**
-     * Import / Upsert Mitra from Excel JSON rows data.
+     * Import / Upsert Mitra from uploaded Excel file (.xlsx).
+     * File is parsed server-side using PhpSpreadsheet for reliability.
      */
     public function import(Request $request)
     {
-        $rows = $request->input('rows');
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ], [
+            'file.required' => 'File Excel wajib diunggah.',
+            'file.mimes' => 'File harus berformat .xlsx atau .xls.',
+            'file.max' => 'Ukuran file maksimal 10MB.',
+        ]);
 
-        if (!$rows || !is_array($rows) || count($rows) === 0) {
+        try {
+            $file = $request->file('file');
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $allRows = $sheet->toArray(null, true, true, true);
+        } catch (\Exception $e) {
             return redirect()->back()->withErrors([
-                'import' => 'File Excel kosong atau tidak berisi data yang dapat dibaca.'
+                'import' => 'Gagal membaca file Excel: ' . $e->getMessage()
             ]);
         }
 
+        if (count($allRows) < 2) {
+            return redirect()->back()->withErrors([
+                'import' => 'File Excel kosong atau hanya berisi header tanpa data.'
+            ]);
+        }
+
+        // Cari baris header secara dinamis (baris pertama yang mengandung kata 'sobat' atau 'nama')
+        $headerRow = null;
+        $headerRowNum = 1;
+        $colMap = [];
+        
+        foreach ($allRows as $index => $row) {
+            $foundSobat = false;
+            $foundNama = false;
+            
+            foreach ($row as $colLetter => $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string)$val)));
+                    if (str_contains($clean, 'sobat') || str_contains($clean, 'nik')) $foundSobat = true;
+                    if (str_contains($clean, 'nama')) $foundNama = true;
+                }
+            }
+            
+            if ($foundSobat && $foundNama) {
+                $headerRow = $row;
+                $headerRowNum = $index;
+                break;
+            }
+        }
+
+        if (!$headerRow) {
+            return redirect()->back()->withErrors([
+                'import' => 'Format header tidak ditemukan. Pastikan file Excel Anda memiliki baris header dengan kolom "Sobat ID" dan "Nama Lengkap".'
+            ]);
+        }
+
+        // Hapus baris header dan baris-baris di atasnya dari data yang akan diimpor
+        foreach (range(1, $headerRowNum) as $i) {
+            unset($allRows[$i]);
+        }
+
+        // Bangun mapping kolom: nomor kolom -> nama header (dinormalisasi)
+        foreach ($headerRow as $colLetter => $headerVal) {
+            if ($headerVal !== null && trim((string)$headerVal) !== '') {
+                $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string)$headerVal)));
+                $colMap[$colLetter] = $clean;
+            }
+        }
+
+        $cleanLoc = function ($val) {
+            if (!$val) return '';
+            return trim(preg_replace('/^\(\d+\)\s*/', '', (string)$val));
+        };
+
         $errors = [];
         $validData = [];
+        $rowNum = 1;
 
-        foreach ($rows as $index => $row) {
-            $rowNum = $index + 2; // Row 1 is header
+        foreach ($allRows as $row) {
+            $rowNum++;
 
-            $getVal = function ($keys) use ($row) {
+            // Bangun associative array dari kolom
+            $assoc = [];
+            foreach ($colMap as $colLetter => $headerName) {
+                $assoc[$headerName] = isset($row[$colLetter]) ? trim((string)$row[$colLetter]) : '';
+            }
+
+            $getVal = function ($keys) use ($assoc) {
                 foreach ((array)$keys as $k) {
-                    if (array_key_exists($k, $row) && $row[$k] !== null && $row[$k] !== '') {
-                        return trim((string)$row[$k]);
+                    $cleanK = strtolower(trim(preg_replace('/\s+/', ' ', (string)$k)));
+                    if (isset($assoc[$cleanK]) && $assoc[$cleanK] !== '') {
+                        return $assoc[$cleanK];
                     }
                 }
                 return '';
             };
 
-            $sobatId = $getVal(['Sobat ID', 'sobat_id', 'Sobat_Id', 'sobatid']);
-            $namaLengkap = $getVal(['Nama Lengkap', 'nama_lengkap', 'Nama', 'nama']);
-            $namaBank = $getVal(['Nama Bank', 'nama_bank', 'Nama_Bank', 'bank']);
-            $noRekening = $getVal(['No Rekening', 'no_rekening', 'No_Rekening', 'rekening']);
-            $namaPemilikRekening = $getVal(['Nama Pemilik Rekening', 'nama_pemilik_rekening', 'Pemilik Rekening']);
-            $alamat = $getVal(['Alamat', 'alamat']);
-            $kecamatan = $getVal(['Kecamatan', 'kecamatan']);
-            $catatan = $getVal(['Catatan', 'catatan']);
+            $nik = $getVal(['nik']);
+            $sobatId = $getVal(['sobat id', 'sobat_id', 'sobatid']);
+            if (empty($sobatId) && !empty($nik)) {
+                $sobatId = $nik;
+            }
 
-            // 1. Validasi Sobat ID (wajib)
+            $namaLengkap = $getVal(['nama lengkap', 'nama_lengkap', 'nama']);
+
+            // Skip baris yang benar-benar kosong
+            if (empty($sobatId) && empty($namaLengkap)) {
+                continue;
+            }
+
+            $namaBank = $getVal(['nama bank', 'nama_bank', 'bank']);
+            $noRekening = $getVal(['no rekening', 'no_rekening', 'rekening']);
+            $namaPemilikRekening = $getVal(['nama pemilik rekening', 'nama_pemilik_rekening', 'pemilik rekening', 'nama_pemilik']);
+            if (empty($namaPemilikRekening)) {
+                $namaPemilikRekening = $namaLengkap;
+            }
+
+            $alamatRaw = $getVal(['alamat']);
+            $desaRaw = $cleanLoc($getVal(['desa', 'kelurahan', 'alamat desa/kel', 'alamat desa', 'alamat_desa']));
+            $alamat = $alamatRaw ?: ($desaRaw ? "Desa {$desaRaw}" : null);
+
+            $kecamatan = $cleanLoc($getVal(['kecamatan', 'alamat kecamatan', 'alamat_kecamatan']));
+            $catatan = $getVal(['catatan', 'keahlian']);
+
             if (empty($sobatId)) {
                 $errors[] = "Baris {$rowNum}: Sobat ID wajib diisi.";
             }
-
-            // 2. Validasi Nama Lengkap (wajib)
             if (empty($namaLengkap)) {
                 $errors[] = "Baris {$rowNum}: Nama Lengkap wajib diisi.";
             }
 
             $validData[] = [
-                'sobat_id' => $sobatId ?: null,
+                'sobat_id' => (string)$sobatId,
                 'nama_lengkap' => $namaLengkap,
                 'nama_bank' => $namaBank ?: null,
                 'no_rekening' => $noRekening ?: null,
@@ -224,23 +347,98 @@ class MitraController extends Controller
             ];
         }
 
-        // All-or-Nothing Transaction: jika ada error validasi di 1 baris pun, batalkan seluruhnya
-        if (count($errors) > 0) {
+        if (count($validData) === 0) {
+            $errMessage = 'File Excel tidak berisi data yang valid untuk diimpor. Pastikan format kolom sesuai dengan template.';
+            if (count($errors) > 0) {
+                $errMessage = 'Terjadi kesalahan pada data (contoh: baris kosong atau Sobat ID tidak ditemukan).';
+            }
             return redirect()->back()->withErrors([
-                'import_list' => $errors
+                'import' => $errMessage,
+                'import_list' => array_slice($errors, 0, 50)
             ]);
         }
 
-        DB::transaction(function () use ($validData) {
-            foreach ($validData as $data) {
-                Mitra::updateOrCreate(
-                    ['sobat_id' => $data['sobat_id']],
-                    $data
+        // Deduplicate by sobat_id
+        $uniqueData = collect($validData)->keyBy('sobat_id')->values()->all();
+
+        if (count($uniqueData) === 0) {
+            return redirect()->back()->withErrors([
+                'import' => 'Tidak ada data valid ditemukan. Pastikan kolom "Sobat ID" dan "Nama Lengkap" terisi.'
+            ]);
+        }
+
+        $now = now()->toDateTimeString();
+        $upsertData = array_map(function ($item) use ($now) {
+            return array_merge($item, [
+                'created_at' => $now,
+                'updated_at' => $now,
+                'deleted_at' => null,
+            ]);
+        }, $uniqueData);
+
+        DB::transaction(function () use ($upsertData) {
+            foreach (array_chunk($upsertData, 500) as $chunk) {
+                Mitra::upsert(
+                    $chunk,
+                    ['sobat_id'],
+                    ['nama_lengkap', 'nama_bank', 'no_rekening', 'nama_pemilik_rekening', 'alamat', 'kecamatan', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
                 );
             }
         });
 
-        $totalCount = count($validData);
+        $totalCount = count($uniqueData);
         return redirect()->back()->with('message', "Berhasil meng-import / meng-update {$totalCount} data Mitra.");
+    }
+
+    /**
+     * Restore multiple mitras from recycle bin.
+     */
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:mitras,id'
+        ]);
+
+        Mitra::onlyTrashed()->whereIn('id', $request->ids)->restore();
+
+        return redirect()->back()->with('message', count($request->ids) . ' Mitra berhasil dipulihkan.');
+    }
+
+    /**
+     * Force delete multiple mitras from recycle bin.
+     */
+    public function bulkForceDelete(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:mitras,id'
+        ]);
+
+        Mitra::onlyTrashed()->whereIn('id', $request->ids)->forceDelete();
+
+        return redirect()->back()->with('message', count($request->ids) . ' Mitra telah dihapus secara permanen.');
+    }
+
+    /**
+     * Empty all mitras from recycle bin.
+     */
+    public function emptyRecycleBin()
+    {
+        $count = Mitra::onlyTrashed()->count();
+        Mitra::onlyTrashed()->forceDelete();
+
+        return redirect()->back()->with('message', "{$count} Mitra di Recycle Bin telah dihapus secara permanen.");
+    }
+
+    /**
+     * Restore all mitras from recycle bin.
+     */
+    public function restoreAll()
+    {
+        $count = Mitra::onlyTrashed()->count();
+        Mitra::onlyTrashed()->restore();
+
+        return redirect()->back()->with('message', "{$count} Mitra di Recycle Bin telah dipulihkan.");
     }
 }

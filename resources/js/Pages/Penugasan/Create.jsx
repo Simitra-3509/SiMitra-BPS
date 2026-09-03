@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { 
-    ArrowLeft, 
-    UserPlus, 
-    Search, 
-    Trash2, 
-    Copy, 
-    Info, 
-    CheckCircle2, 
-    AlertTriangle, 
-    Layers, 
+import {
+    ArrowLeft,
+    UserPlus,
+    Search,
+    Trash2,
+    Copy,
+    Info,
+    CheckCircle2,
+    AlertTriangle,
+    Layers,
     Calendar,
     X,
     UserCheck,
     Users,
     Calculator,
-    ChevronDown
+    ChevronDown,
+    FileSpreadsheet,
+    Upload,
+    Download,
+    FileText
 } from 'lucide-react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 
-export default function Create({ kegiatan, kegiatanList }) {
+export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     const listKegiatan = kegiatanList || kegiatan || [];
 
     const { data, setData, post, processing, errors, transform } = useForm({
@@ -31,15 +36,6 @@ export default function Create({ kegiatan, kegiatanList }) {
         tanggal_mulai: '',
         tanggal_selesai: '',
         mitras: [], // array of { id, sobat_id, nama_lengkap, kuota_target }
-    });
-
-    transform((data) => {
-        const d = data.tanggal_mulai ? new Date(data.tanggal_mulai) : new Date();
-        return {
-            ...data,
-            bulan: String(d.getMonth() + 1),
-            tahun: String(d.getFullYear()),
-        };
     });
 
     // Dynamic dropdown states
@@ -67,9 +63,10 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [isDetilModalOpen, setIsDetilModalOpen] = useState(false);
     const [searchDetilQuery, setSearchDetilQuery] = useState('');
 
-    // Modal Picker Mitra states (Tanpa filter kecamatan)
+    // Modal Picker Mitra states
     const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [filterKecamatan, setFilterKecamatan] = useState('semua');
     const [filterStatus, setFilterStatus] = useState('1'); // default 1 (aktif)
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -83,8 +80,182 @@ export default function Create({ kegiatan, kegiatanList }) {
     const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
     const [selectedPrevMitraIds, setSelectedPrevMitraIds] = useState([]);
 
-    // Import Excel — placeholder state
+    // Import Excel states
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importErrors, setImportErrors] = useState(null);
+    const [processingImport, setProcessingImport] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            setImportFile(e.dataTransfer.files[0]);
+            setImportErrors(null);
+        }
+    };
+
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setImportFile(e.target.files[0]);
+            setImportErrors(null);
+        }
+    };
+
+    const closeImportModal = () => {
+        setIsImportModalOpen(false);
+        setImportFile(null);
+        setImportErrors(null);
+        setProcessingImport(false);
+    };
+
+    const handleDownloadCreateTemplate = () => {
+        const templateData = [
+            { 'Sobat ID': '350922100054', 'Nama Mitra': 'Abdus Somad', 'Kuota Target': 1 },
+            { 'Sobat ID': '350922091088', 'Nama Mitra': 'Abdus Sova', 'Kuota Target': 1 },
+        ];
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Template Import Penugasan');
+        XLSX.writeFile(wb, 'Template_Import_Mitra_Penugasan.xlsx');
+    };
+
+    const handleImportSubmit = (e) => {
+        e.preventDefault();
+        if (!importFile) return;
+
+        setProcessingImport(true);
+        setImportErrors(null);
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+                if (!jsonData || jsonData.length === 0) {
+                    setImportErrors('File Excel kosong atau format tidak terbaca.');
+                    setProcessingImport(false);
+                    return;
+                }
+
+                const parsedRows = [];
+                const sobatIdList = [];
+
+                jsonData.forEach((row) => {
+                    let sobatId = '';
+                    let namaMitra = '';
+                    let kuotaTarget = 1;
+
+                    Object.keys(row).forEach((colName) => {
+                        const key = colName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const val = String(row[colName]).trim();
+
+                        if (key.includes('sobat') || key === 'id' || key === 'sobatid' || key === 'kodesobat') {
+                            sobatId = val;
+                        } else if (key.includes('nama') || key === 'namamitra' || key === 'mitra') {
+                            namaMitra = val;
+                        } else if (key.includes('kuota') || key.includes('target')) {
+                            const parsedK = parseFloat(val);
+                            if (!isNaN(parsedK) && parsedK > 0) {
+                                kuotaTarget = parsedK;
+                            }
+                        }
+                    });
+
+                    if (!sobatId) {
+                        const values = Object.values(row).map(v => String(v).trim()).filter(Boolean);
+                        if (values.length > 0) {
+                            sobatId = values[0];
+                        }
+                    }
+
+                    if (sobatId) {
+                        sobatIdList.push(sobatId);
+                        parsedRows.push({ sobatId, namaMitra, kuotaTarget });
+                    }
+                });
+
+                if (sobatIdList.length === 0) {
+                    setImportErrors('Tidak ditemukan kolom Sobat ID pada file Excel yang diunggah. Pastikan terdapat kolom bertajuk "Sobat ID" atau "sobat_id".');
+                    setProcessingImport(false);
+                    return;
+                }
+
+                axios.post(route('api.penugasan.bulk-lookup-mitra'), { sobat_ids: sobatIdList })
+                    .then((res) => {
+                        const foundMitras = res.data.mitras || [];
+                        const notFoundIds = res.data.not_found_sobat_ids || [];
+
+                        if (foundMitras.length === 0) {
+                            setImportErrors(`Tidak ada Sobat ID yang cocok dengan database Mitra aktif (${sobatIdList.length} data tidak ditemukan).`);
+                            setProcessingImport(false);
+                            return;
+                        }
+
+                        const hargaSatuan = parseFloat(selectedDetilInfo?.harga_satuan) || 0;
+                        const existingMitraIds = data.mitras.map(m => m.id);
+                        let addedCount = 0;
+
+                        const newMitrasList = [...data.mitras];
+
+                        foundMitras.forEach((m) => {
+                            if (!existingMitraIds.includes(m.id)) {
+                                const matchingRow = parsedRows.find(pr => String(pr.sobatId) === String(m.sobat_id));
+                                const target = matchingRow?.kuotaTarget || 1;
+
+                                newMitrasList.push({
+                                    id: m.id,
+                                    sobat_id: m.sobat_id,
+                                    nama_lengkap: m.nama_lengkap,
+                                    kecamatan: m.kecamatan,
+                                    desa: m.desa || m.alamat || '',
+                                    satuan: selectedDetilInfo?.satuan || '',
+                                    harga_satuan: hargaSatuan,
+                                    kuota_target: target,
+                                    total_honor: target * hargaSatuan,
+                                });
+                                addedCount++;
+                            }
+                        });
+
+                        setData('mitras', newMitrasList);
+                        setProcessingImport(false);
+                        closeImportModal();
+
+                        if (notFoundIds.length > 0) {
+                            alert(`Berhasil menambahkan ${addedCount} mitra terpilih.\n\nPerhatian: ${notFoundIds.length} Sobat ID tidak ditemukan di database:\n${notFoundIds.join(', ')}`);
+                        }
+                    })
+                    .catch((err) => {
+                        console.error('Error lookup mitras:', err);
+                        setImportErrors(err.response?.data?.message || 'Gagal memproses pencarian mitra dari database.');
+                        setProcessingImport(false);
+                    });
+
+            } catch (err) {
+                console.error('Error parsing Excel:', err);
+                setImportErrors('Gagal membaca file Excel. Pastikan file tidak rusak.');
+                setProcessingImport(false);
+            }
+        };
+        reader.readAsBinaryString(importFile);
+    };
 
     // 1. Handling Pilih Kegiatan -> Fetch Detil langsung
     const handleKegiatanChange = (e) => {
@@ -98,26 +269,23 @@ export default function Create({ kegiatan, kegiatanList }) {
         setSelectedDetilInfo(null);
         setCopyData([]);
 
-        if (selectedId) {
-            axios.get(route('api.penugasan.detil', selectedId))
-                .then((res) => setDetilList(res.data || []))
-                .catch((err) => console.error('Error fetching detil:', err));
-        }
+        if (!selectedId) return;
+
+        axios
+            .get(route('api.penugasan.detil', selectedId))
+            .then((res) => {
+                setDetilList(res.data || []);
+            })
+            .catch((err) => console.error('Error fetching detil:', err));
     };
 
-    // 3. Handling Pilih Detil -> Set Detil Info & Check Prev Month
+    // 2. Handling Pilih Detil
     const handleDetilChange = (e) => {
         const selectedDetilId = e.target.value;
         setData('detil_kegiatan_id', selectedDetilId);
 
-        const foundDetil = detilList.find((d) => String(d.id) === String(selectedDetilId));
-        setSelectedDetilInfo(foundDetil || null);
-
-        if (selectedDetilId && foundDetil) {
-            // No auto-fetch on detil change; user will open copy modal manually
-        } else {
-            setCopyData([]);
-        }
+        const info = detilList.find((d) => String(d.id) === String(selectedDetilId));
+        setSelectedDetilInfo(info || null);
     };
 
     // 4. Fetch copy source — bisa dari bulan manapun
@@ -127,36 +295,42 @@ export default function Create({ kegiatan, kegiatanList }) {
         axios.get(route('api.penugasan.prev-month'), {
             params: { detil_kegiatan_id: detilId, bulan: bulanSumber, tahun: tahunSumber }
         })
-        .then((res) => {
-            const list = res.data?.data || [];
-            setCopyData(list);
-            setCopyPeriodeName(
-                res.data?.prev_bulan_nama
-                    ? `${res.data.prev_bulan_nama} ${res.data.prev_tahun}`
-                    : `${bulanSumber}/${tahunSumber}`
-            );
-            setSelectedPrevMitraIds(list.map((i) => i.mitra_id));
-        })
-        .catch((err) => console.error('Error fetching copy source:', err))
-        .finally(() => setCopyLoading(false));
+            .then((res) => {
+                const list = res.data?.data || [];
+                setCopyData(list);
+                setCopyPeriodeName(
+                    res.data?.prev_bulan_nama
+                        ? `${res.data.prev_bulan_nama} ${res.data.prev_tahun}`
+                        : `${bulanSumber}/${tahunSumber}`
+                );
+                setSelectedPrevMitraIds(list.map((i) => i.mitra_id));
+            })
+            .catch((err) => console.error('Error fetching copy source:', err))
+            .finally(() => setCopyLoading(false));
     };
 
-    // Refetch when bulan/tahun changes — initialize copy source to previous month
+    // 5. Set default copy source to previous month
     useEffect(() => {
-        const bln = parseInt(data.bulan);
-        const thn = parseInt(data.tahun);
-        let prevB = bln - 1, prevT = thn;
-        if (prevB < 1) { prevB = 12; prevT -= 1; }
+        const currentB = parseInt(data.bulan);
+        const currentT = parseInt(data.tahun);
+        let prevB = currentB - 1;
+        let prevT = currentT;
+
+        if (prevB < 1) {
+            prevB = 12;
+            prevT = currentT - 1;
+        }
+
         setCopySourceBulan(String(prevB));
         setCopySourceTahun(String(prevT));
         setCopyData([]);
     }, [data.bulan, data.tahun]);
 
-    // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, TANPA kecamatan)
+    // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, dengan filter kecamatan)
     useEffect(() => {
         if (!isPickerModalOpen) return;
 
-        if (searchQuery.trim().length < 2) {
+        if (searchQuery.trim().length < 2 && filterKecamatan === 'semua') {
             setSearchResults([]);
             return;
         }
@@ -164,40 +338,45 @@ export default function Create({ kegiatan, kegiatanList }) {
         const timer = setTimeout(() => {
             setIsSearching(true);
             axios.get(route('api.penugasan.search-mitra'), {
-                params: { 
+                params: {
                     q: searchQuery,
+                    kecamatan: filterKecamatan,
                     status_aktif: filterStatus
                 }
             })
-            .then((res) => {
-                setSearchResults(res.data || []);
-            })
-            .catch((err) => console.error('Error searching mitra:', err))
-            .finally(() => setIsSearching(false));
+                .then((res) => {
+                    setSearchResults(res.data || []);
+                })
+                .catch((err) => console.error('Error searching mitra:', err))
+                .finally(() => setIsSearching(false));
         }, 400);
 
         return () => clearTimeout(timer);
-    }, [searchQuery, filterStatus, isPickerModalOpen]);
+    }, [searchQuery, filterKecamatan, filterStatus, isPickerModalOpen]);
 
     // Fetch initial mitras when picker modal opens
     const handleOpenPickerModal = () => {
         setIsPickerModalOpen(true);
         setIsSearching(true);
         axios.get(route('api.penugasan.search-mitra'), {
-            params: { 
+            params: {
                 q: searchQuery,
+                kecamatan: filterKecamatan,
                 status_aktif: filterStatus
             }
         })
-        .then((res) => setSearchResults(res.data || []))
-        .catch((err) => console.error('Error fetching initial mitras:', err))
-        .finally(() => setIsSearching(false));
+            .then((res) => setSearchResults(res.data || []))
+            .catch((err) => console.error('Error fetching initial mitras:', err))
+            .finally(() => setIsSearching(false));
     };
 
-    // Add Mitra to selected list AND AUTO CLOSE MODAL
-    const handleSelectMitraFromPicker = (mitraObj) => {
+    // Toggle Mitra in selected list WITHOUT auto closing modal (Multi-select)
+    const handleToggleMitraFromPicker = (mitraObj) => {
         const exists = data.mitras.some((m) => m.id === mitraObj.id);
-        if (!exists) {
+        if (exists) {
+            const updated = data.mitras.filter((m) => m.id !== mitraObj.id);
+            setData('mitras', updated);
+        } else {
             const newMitras = [
                 ...data.mitras,
                 {
@@ -209,7 +388,6 @@ export default function Create({ kegiatan, kegiatanList }) {
             ];
             setData('mitras', newMitras);
         }
-        setIsPickerModalOpen(false);
     };
 
     const handleRemoveMitra = (mitraId) => {
@@ -218,10 +396,10 @@ export default function Create({ kegiatan, kegiatanList }) {
     };
 
     const handleKuotaChange = (mitraId, val) => {
-        const kuotaVal = Math.max(1, parseFloat(val) || 1);
+        const sanitized = val === '' ? '' : val.replace(/[^0-9]/g, '');
         const updated = data.mitras.map((m) => {
             if (m.id === mitraId) {
-                return { ...m, kuota_target: kuotaVal };
+                return { ...m, kuota_target: sanitized };
             }
             return m;
         });
@@ -323,24 +501,23 @@ export default function Create({ kegiatan, kegiatanList }) {
     const renderSisaVolumeInfo = () => {
         if (!selectedDetilInfo) return null;
 
-        const targetDipa        = parseFloat(selectedDetilInfo.jumlah) || 0;
-        const sudahDiDB         = parseFloat(selectedDetilInfo.total_kuota_terpakai) || 0;
-        const kuotaFormIni      = data.mitras.reduce((sum, m) => sum + (parseFloat(m.kuota_target) || 0), 0);
-        const totalTerpakai     = sudahDiDB + kuotaFormIni;
-        const sisaSetelahInput  = targetDipa - totalTerpakai;
-        const satuanStr         = selectedDetilInfo.satuan || 'Volume';
-        const isOver            = sisaSetelahInput < 0;
+        const targetDipa = parseFloat(selectedDetilInfo.jumlah) || 0;
+        const sudahDiDB = parseFloat(selectedDetilInfo.total_kuota_terpakai) || 0;
+        const kuotaFormIni = data.mitras.reduce((sum, m) => sum + (parseFloat(m.kuota_target) || 0), 0);
+        const totalTerpakai = sudahDiDB + kuotaFormIni;
+        const sisaSetelahInput = targetDipa - totalTerpakai;
+        const satuanStr = selectedDetilInfo.satuan || 'Volume';
+        const isOver = sisaSetelahInput < 0;
 
         const formatNum = (num) => new Intl.NumberFormat('id-ID').format(Math.abs(num));
 
         return (
-            <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
-                isOver
-                    ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
-                    : sisaSetelahInput === 0
-                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
-                        : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
-            }`}>
+            <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${isOver
+                ? 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 text-red-900 dark:text-red-200'
+                : sisaSetelahInput === 0
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+                }`}>
                 {/* Header */}
                 <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
                     <Calculator size={15} className={isOver ? 'text-red-500' : sisaSetelahInput === 0 ? 'text-amber-500' : 'text-emerald-600'} />
@@ -368,13 +545,12 @@ export default function Create({ kegiatan, kegiatanList }) {
                     <span className="font-semibold">
                         {isOver ? '⚠ Melebihi Target DIPA' : 'Sisa setelah input ini:'}
                     </span>
-                    <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${
-                        isOver
-                            ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
-                            : sisaSetelahInput === 0
-                                ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
-                                : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
-                    }`}>
+                    <span className={`px-2.5 py-1 rounded-lg font-mono text-xs font-black ${isOver
+                        ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200'
+                        : sisaSetelahInput === 0
+                            ? 'bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200'
+                            : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200'
+                        }`}>
                         {isOver ? '-' : ''}{formatNum(sisaSetelahInput)} {satuanStr}
                     </span>
                 </div>
@@ -385,7 +561,7 @@ export default function Create({ kegiatan, kegiatanList }) {
     // Total harga keseluruhan baris mitra di form utama
     const hargaSatuan = selectedDetilInfo?.harga_satuan || 0;
     const totalKeseluruhan = data.mitras.reduce((sum, m) => {
-        return sum + ((m.kuota_target || 1) * hargaSatuan);
+        return sum + ((parseInt(m.kuota_target, 10) || 0) * hargaSatuan);
     }, 0);
 
     const handleSubmit = (e) => {
@@ -395,6 +571,27 @@ export default function Create({ kegiatan, kegiatanList }) {
             alert('Minimal 1 mitra harus dipilih.');
             return;
         }
+
+        let bVal = new Date().getMonth() + 1;
+        let tVal = new Date().getFullYear();
+
+        if (data.tanggal_mulai && data.tanggal_mulai.includes('-')) {
+            const parts = data.tanggal_mulai.split('-');
+            if (parts.length === 3) {
+                tVal = parseInt(parts[0], 10);
+                bVal = parseInt(parts[1], 10);
+            }
+        }
+
+        transform((currentData) => ({
+            ...currentData,
+            bulan: String(bVal),
+            tahun: String(tVal),
+            mitras: currentData.mitras.map((m) => ({
+                ...m,
+                kuota_target: Math.max(1, parseInt(m.kuota_target, 10) || 1)
+            }))
+        }));
 
         post(route('penugasan.store'));
     };
@@ -484,13 +681,13 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed text-left flex items-center justify-between transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                                 >
                                     <span className="truncate">
-                                        {!data.kegiatan_id 
-                                            ? '-- Pilih Kegiatan Terlebih Dahulu --' 
-                                            : detilList.length === 0 
-                                            ? 'Tidak ada Detil pada Kegiatan ini' 
-                                            : selectedDetilInfo
-                                            ? `${selectedDetilInfo.nama_detil} [${selectedDetilInfo.jenis_sbml?.toUpperCase()}] (${selectedDetilInfo.satuan})`
-                                            : '-- Pilih Detil Rincian --'}
+                                        {!data.kegiatan_id
+                                            ? '-- Pilih Kegiatan Terlebih Dahulu --'
+                                            : detilList.length === 0
+                                                ? 'Tidak ada Detil pada Kegiatan ini'
+                                                : selectedDetilInfo
+                                                    ? `${selectedDetilInfo.nama_detil} [${selectedDetilInfo.jenis_sbml?.toUpperCase()}] (${selectedDetilInfo.satuan})`
+                                                    : '-- Pilih Detil Rincian --'}
                                     </span>
                                     <ChevronDown size={16} className="text-gray-400 shrink-0" />
                                 </button>
@@ -537,9 +734,9 @@ export default function Create({ kegiatan, kegiatanList }) {
                         )}
                     </div>
 
-                    {/* SECTION 2: Periode Bulan & Tahun */}
+                    {/* SECTION 2: Periode Penugasan */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 space-y-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-3">
+                        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
                             <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <Calendar size={18} className="text-[#D9531E]" />
                                 2. Periode Penugasan
@@ -555,7 +752,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     type="date"
                                     value={data.tanggal_mulai}
                                     onChange={(e) => setData('tanggal_mulai', e.target.value)}
-                                    className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border rounded-lg focus:ring-1 focus:outline-none ${errors.tanggal_mulai ? 'border-red-500 focus:ring-red-500 text-red-600' : 'border-gray-300 dark:border-gray-700 focus:ring-[#D9531E]'}`}
+                                    className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border rounded-lg focus:ring-1 focus:outline-none dark:[color-scheme:dark] ${errors.tanggal_mulai ? 'border-red-500 focus:ring-red-500 text-red-600' : 'border-gray-300 dark:border-gray-700 focus:ring-[#D9531E]'}`}
                                 />
                                 {errors.tanggal_mulai && <p className="text-xs text-red-500">{errors.tanggal_mulai}</p>}
                             </div>
@@ -570,7 +767,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     max={maxSelesaiStr}
                                     value={data.tanggal_selesai}
                                     onChange={(e) => setData('tanggal_selesai', e.target.value)}
-                                    className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border rounded-lg focus:ring-1 focus:outline-none ${errors.tanggal_selesai ? 'border-red-500 focus:ring-red-500 text-red-600' : 'border-gray-300 dark:border-gray-700 focus:ring-[#D9531E]'}`}
+                                    className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white border rounded-lg focus:ring-1 focus:outline-none dark:[color-scheme:dark] ${errors.tanggal_selesai ? 'border-red-500 focus:ring-red-500 text-red-600' : 'border-gray-300 dark:border-gray-700 focus:ring-[#D9531E]'}`}
                                     title={data.tanggal_selesai && (data.tanggal_selesai < minSelesaiStr || data.tanggal_selesai > maxSelesaiStr) ? "Tanggal selesai harus berada di bulan yang sama dengan tanggal mulai" : ""}
                                 />
                                 {errors.tanggal_selesai && <p className="text-xs text-red-500">{errors.tanggal_selesai}</p>}
@@ -599,7 +796,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     title={!data.detil_kegiatan_id ? 'Pilih detil terlebih dahulu' : 'Import dari Excel'}
                                     className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#1D6F42] hover:bg-[#155733] rounded-xl shadow-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg>
                                     Import Excel
                                 </button>
 
@@ -644,7 +841,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
                                     {data.mitras.length > 0 ? (
                                         data.mitras.map((mitraItem) => {
-                                            const rowTotal = (mitraItem.kuota_target || 1) * (selectedDetilInfo?.harga_satuan || 0);
+                                            const rowTotal = (parseInt(mitraItem.kuota_target, 10) || 0) * (selectedDetilInfo?.harga_satuan || 0);
 
                                             return (
                                                 <tr key={mitraItem.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/20">
@@ -662,11 +859,17 @@ export default function Create({ kegiatan, kegiatanList }) {
                                                     </td>
                                                     <td className="py-2.5 px-3">
                                                         <input
-                                                            type="number"
-                                                            min="1"
-                                                            step="1"
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
                                                             value={mitraItem.kuota_target}
                                                             onChange={(e) => handleKuotaChange(mitraItem.id, e.target.value)}
+                                                            onBlur={(e) => {
+                                                                if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                                                                    handleKuotaChange(mitraItem.id, '1');
+                                                                }
+                                                            }}
+                                                            placeholder="1"
                                                             className="w-full px-2.5 py-1 text-xs text-right font-mono font-bold bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
                                                         />
                                                     </td>
@@ -736,8 +939,8 @@ export default function Create({ kegiatan, kegiatanList }) {
                 </form>
             </div>
 
-            {/* SECTION A: MODAL PICKER MITRA (1 Search Box Sobat ID / Nama, Tanpa Filter Kecamatan) */}
-            <Modal show={isPickerModalOpen} onClose={() => setIsPickerModalOpen(false)} maxWidth="lg">
+            {/* SECTION A: MODAL PICKER MITRA (Dengan Filter Kecamatan & Kolom Kecamatan) */}
+            <Modal show={isPickerModalOpen} onClose={() => setIsPickerModalOpen(false)} maxWidth="2xl">
                 <div className="p-5 space-y-4">
                     {/* Modal Header */}
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
@@ -746,7 +949,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                 <Users size={18} className="text-[#D9531E]" />
                                 Cari & Pilih Mitra
                             </h3>
-                            <p className="text-xs text-gray-500">Cari berdasarkan Sobat ID, Nama Lengkap, atau Alamat</p>
+                            <p className="text-xs text-gray-500">Cari berdasarkan Sobat ID, Nama Lengkap, Alamat, atau Kecamatan</p>
                         </div>
                         <button
                             type="button"
@@ -757,37 +960,55 @@ export default function Create({ kegiatan, kegiatanList }) {
                         </button>
                     </div>
 
-                    {/* Search Input Box (1 Search Box Only, Tanpa Filter Kecamatan) */}
-                    <div className="bg-gray-50 dark:bg-gray-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                            Pencarian Mitra (Min. 2 Karakter)
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Ketik Sobat ID, Nama, atau Alamat..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-8 pr-3 py-2 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
-                            />
-                            <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+                    {/* Search Input & Filter Kecamatan Box */}
+                    <div className="bg-gray-50 dark:bg-gray-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                Pencarian Mitra (Min. 2 Karakter)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Ketik Sobat ID, Nama, atau Alamat..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-2 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none"
+                                />
+                                <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                Filter Kecamatan
+                            </label>
+                            <select
+                                value={filterKecamatan}
+                                onChange={(e) => setFilterKecamatan(e.target.value)}
+                                className="w-full px-3 py-2 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-[#D9531E] focus:outline-none capitalize"
+                            >
+                                <option value="semua">Semua Kecamatan</option>
+                                {kecamatanList && kecamatanList.map((k, idx) => (
+                                    <option key={idx} value={k} className="capitalize">{k.toLowerCase()}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
-                    {/* Results Table (2 Kolom Utama: Sobat ID & Nama Lengkap) */}
+                    {/* Results Table (Sobat ID, Nama Lengkap, Kecamatan, Alamat) */}
                     <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl max-h-64 overflow-y-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead className="bg-gray-50 dark:bg-gray-900/60 sticky top-0 border-b border-gray-200 dark:border-gray-700 text-gray-500 uppercase text-[10px] tracking-wider z-10">
                                 <tr>
                                     <th className="py-2.5 px-3 font-bold w-28">Sobat ID</th>
                                     <th className="py-2.5 px-3 font-bold">Nama Lengkap</th>
-                                    <th className="py-2.5 px-3 font-bold hidden sm:table-cell">Alamat</th>
+                                    <th className="py-2.5 px-3 font-bold w-32">Kecamatan</th>
+                                    <th className="py-2.5 px-3 font-bold">Alamat</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
                                 {isSearching ? (
                                     <tr>
-                                        <td colSpan="2" className="py-6 text-center text-xs text-gray-400 font-semibold animate-pulse">
+                                        <td colSpan="4" className="py-6 text-center text-xs text-gray-400 font-semibold animate-pulse">
                                             Mencari data mitra...
                                         </td>
                                     </tr>
@@ -795,34 +1016,41 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     searchResults.map((m) => {
                                         const isChosen = data.mitras.some((selected) => selected.id === m.id);
                                         return (
-                                            <tr 
-                                                key={m.id} 
-                                                onClick={() => !isChosen && handleSelectMitraFromPicker(m)}
-                                                className={`transition ${
-                                                    isChosen 
-                                                        ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed' 
-                                                        : 'hover:bg-orange-50 dark:hover:bg-orange-950/40 cursor-pointer'
-                                                }`}
+                                            <tr
+                                                key={m.id}
+                                                onClick={() => handleToggleMitraFromPicker(m)}
+                                                className={`transition cursor-pointer ${isChosen
+                                                    ? 'bg-orange-50/80 dark:bg-orange-950/30'
+                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                                                    }`}
                                             >
-                                                <td className="py-2.5 px-3 font-mono font-bold text-[#D9531E]">
+                                                <td className="py-2.5 px-3 font-mono font-bold text-[#D9531E] whitespace-nowrap">
                                                     {m.sobat_id || '-'}
                                                 </td>
-                                                <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white flex items-center justify-between">
-                                                    <span>{m.nama_lengkap}</span>
-                                                    {isChosen && (
-                                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
-                                                            <UserCheck size={12} /> Terpilih
-                                                        </span>
-                                                    )}
+                                                <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span>{m.nama_lengkap}</span>
+                                                        {isChosen && (
+                                                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded shrink-0 border border-emerald-300 dark:border-emerald-700">
+                                                                <UserCheck size={12} /> Terpilih
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 capitalize whitespace-nowrap">
+                                                    {m.kecamatan ? m.kecamatan.toLowerCase() : '-'}
+                                                </td>
+                                                <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400 capitalize truncate max-w-[160px]" title={m.alamat}>
+                                                    {m.alamat ? m.alamat.toLowerCase() : '-'}
                                                 </td>
                                             </tr>
                                         );
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan="2" className="py-6 text-center text-xs text-gray-400">
-                                            {searchQuery.trim().length < 2
-                                                ? 'Ketik minimal 2 karakter (Sobat ID / Nama) untuk mencari.'
+                                        <td colSpan="4" className="py-6 text-center text-xs text-gray-400">
+                                            {searchQuery.trim().length < 2 && filterKecamatan === 'semua'
+                                                ? 'Ketik minimal 2 karakter atau pilih Kecamatan untuk mencari.'
                                                 : 'Tidak ditemukan data mitra yang sesuai.'}
                                         </td>
                                     </tr>
@@ -832,13 +1060,17 @@ export default function Create({ kegiatan, kegiatanList }) {
                     </div>
 
                     {/* Modal Footer */}
-                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                            Terpilih saat ini: <span className="font-bold text-[#D9531E]">{data.mitras.length} Mitra</span>
+                        </div>
                         <button
                             type="button"
                             onClick={() => setIsPickerModalOpen(false)}
-                            className="px-4 py-1.5 text-xs font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                            className="px-5 py-2 text-xs font-bold text-white bg-[#D9531E] hover:bg-orange-600 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
                         >
-                            Tutup
+                            <CheckCircle2 size={15} />
+                            <span>Selesai (OK)</span>
                         </button>
                     </div>
                 </div>
@@ -923,7 +1155,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                                     </th>
                                     <th className="py-2.5 px-3 font-bold">Sobat ID</th>
                                     <th className="py-2.5 px-3 font-bold">Nama Mitra</th>
-                                    <th className="py-2.5 px-3 font-bold text-right">Kuota ({namaBulan[parseInt(copySourceBulan)-1]})</th>
+                                    <th className="py-2.5 px-3 font-bold text-right">Kuota ({namaBulan[parseInt(copySourceBulan) - 1]})</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -936,11 +1168,10 @@ export default function Create({ kegiatan, kegiatanList }) {
                                         return (
                                             <tr key={item.mitra_id}
                                                 onClick={() => !alreadyAdded && toggleSelectPrevMitra(item.mitra_id)}
-                                                className={`transition cursor-pointer ${
-                                                    alreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
+                                                className={`transition cursor-pointer ${alreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
                                                     : isChecked ? 'bg-orange-50 dark:bg-orange-950/20'
-                                                    : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
-                                                }`}>
+                                                        : 'hover:bg-gray-50/60 dark:hover:bg-gray-900/20'
+                                                    }`}>
                                                 <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <input type="checkbox" className="rounded border-gray-300 text-[#D9531E] focus:ring-[#D9531E]"
                                                         checked={isChecked} disabled={alreadyAdded}
@@ -992,7 +1223,7 @@ export default function Create({ kegiatan, kegiatanList }) {
                             <X size={20} />
                         </button>
                     </div>
-                    
+
                     <div className="mb-4">
                         <div className="relative">
                             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1041,11 +1272,10 @@ export default function Create({ kegiatan, kegiatanList }) {
                                             setIsDetilModalOpen(false);
                                             setSearchDetilQuery('');
                                         }}
-                                        className={`w-full text-left p-3 transition flex flex-col gap-1.5 ${
-                                            String(data.detil_kegiatan_id) === String(d.id)
-                                                ? 'bg-[#D9531E]/10 border border-[#D9531E]/20 rounded-lg my-1'
-                                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                                        }`}
+                                        className={`w-full text-left p-3 transition flex flex-col gap-1.5 ${String(data.detil_kegiatan_id) === String(d.id)
+                                            ? 'bg-[#D9531E]/10 border border-[#D9531E]/20 rounded-lg my-1'
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            }`}
                                     >
                                         <div className="font-semibold text-gray-900 dark:text-white text-sm">
                                             {d.nama_detil}
@@ -1066,6 +1296,110 @@ export default function Create({ kegiatan, kegiatanList }) {
                             </div>
                         )}
                     </div>
+                </div>
+            </Modal>
+
+            {/* Modal Import Excel Penugasan Mitra */}
+            <Modal show={isImportModalOpen} onClose={closeImportModal} maxWidth="lg">
+                <div className="p-0 overflow-hidden rounded-2xl">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 bg-emerald-50/50 dark:bg-gray-800">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl dark:bg-emerald-950/60 dark:text-emerald-400">
+                                <FileSpreadsheet size={22} />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900 dark:text-white">Import Daftar Mitra (.xlsx)</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Unggah file Excel berisi data Sobat ID dan Nama Mitra</p>
+                            </div>
+                        </div>
+                        <button onClick={closeImportModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleImportSubmit} className="p-6 space-y-4">
+                        {/* Error Message */}
+                        {importErrors && (
+                            <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-xl text-xs flex items-center gap-2">
+                                <AlertTriangle size={16} className="shrink-0 text-red-500" />
+                                <span>{importErrors}</span>
+                            </div>
+                        )}
+
+                        {/* Info Box Format */}
+                        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-4 rounded-xl text-xs space-y-2 text-blue-900 dark:text-blue-200">
+                            <p className="font-bold flex items-center gap-1.5">
+                                <FileText size={15} className="text-blue-600 dark:text-blue-400" />
+                                Ketentuan Format File Excel:
+                            </p>
+                            <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300 leading-relaxed">
+                                <li>Wajib memiliki kolom bertajuk <span className="font-mono font-bold">Sobat ID</span> (atau <span className="font-mono font-bold">sobat_id</span>).</li>
+                                <li>Opsional: Kolom <span className="font-mono font-bold">Nama Mitra</span> dan <span className="font-mono font-bold">Kuota Target</span>.</li>
+                                <li>Mitra yang Sobat ID-nya ditemukan di database akan otomatis masuk ke tabel penugasan.</li>
+                            </ul>
+
+                            <button
+                                type="button"
+                                onClick={handleDownloadCreateTemplate}
+                                className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 shadow-xs cursor-pointer transition"
+                            >
+                                <Download size={13} /> Download Format Template Excel (.xlsx)
+                            </button>
+                        </div>
+
+                        {/* Dropzone */}
+                        <div
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                            className={`relative border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${dragActive
+                                ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                                : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 hover:border-emerald-500 hover:bg-gray-50'
+                                }`}
+                        >
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls, .csv"
+                                onChange={handleFileChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                                <Upload className="text-emerald-600 dark:text-emerald-400" size={30} />
+                                {importFile ? (
+                                    <div className="space-y-0.5">
+                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block">{importFile.name}</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">{(importFile.size / 1024).toFixed(1)} KB</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Pilih File Excel (.xlsx)</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">Drag & drop atau klik untuk memilih file</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-700">
+                            <button
+                                type="button"
+                                onClick={closeImportModal}
+                                className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={!importFile || processingImport}
+                                className="px-5 py-2 text-xs font-bold text-white bg-[#1D6F42] hover:bg-[#155733] rounded-xl shadow-sm transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <Upload size={14} />
+                                <span>{processingImport ? 'Memproses Import...' : 'Proses Import'}</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </Modal>
         </>

@@ -27,10 +27,53 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ==========================================
     Route::get('/dashboard', function () {
         $userRole = strtolower(auth()->user()->role ?? '');
-        $totalMitra = Mitra::where('status_aktif', true)->count();
-        $kegiatanAktif = Kegiatan::where('status_aktif', true)->count();
+
+        // 1. Total Mitra yang sedang ada penugasan
+        $totalMitra = Penugasan::whereNotNull('mitra_id')
+            ->distinct('mitra_id')
+            ->count('mitra_id');
+
+        // 2. Kegiatan aktif yang sedang dilaksanakan ataupun sedang ditugaskan
+        $kegiatanAktif = Kegiatan::where('status_aktif', true)
+            ->where(function ($query) {
+                $query->has('penugasans')
+                    ->orWhere(function ($q) {
+                        $q->whereNotNull('tanggal_mulai')
+                          ->whereDate('tanggal_mulai', '<=', now())
+                          ->whereDate('tanggal_selesai', '>=', now());
+                    });
+            })
+            ->count();
+
+        // 3. Honor Mitra Bulan Ini (Rata-rata, Terkecil, Terbesar)
+        $currentMonth = (int) date('m');
+        $currentYear = (int) date('Y');
+
+        $mitraHonorBulanIniSums = DB::table('penugasans')
+            ->whereNull('deleted_at')
+            ->where('bulan', $currentMonth)
+            ->where('tahun', $currentYear)
+            ->selectRaw('SUM(total_honor) as total_honor')
+            ->groupBy('mitra_id')
+            ->pluck('total_honor');
+
+        $rataRataHonor = $mitraHonorBulanIniSums->count() > 0 ? (float) $mitraHonorBulanIniSums->avg() : 0;
+        $honorTerkecil = $mitraHonorBulanIniSums->count() > 0 ? (float) $mitraHonorBulanIniSums->min() : 0;
+        $honorTerbesar = $mitraHonorBulanIniSums->count() > 0 ? (float) $mitraHonorBulanIniSums->max() : 0;
+
         $honorBulanIni = (float) Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->sum('total_honor');
         $jumlahPenugasanBulanIni = Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->count();
+
+        // 4. Rata-rata honor mitra dalam setahun (tahun berjalan)
+        $currentYear = (int) date('Y');
+        $mitraHonorSetahunSums = DB::table('penugasans')
+            ->whereNull('deleted_at')
+            ->where('tahun', $currentYear)
+            ->selectRaw('SUM(total_honor) as total_honor')
+            ->groupBy('mitra_id')
+            ->pluck('total_honor');
+
+        $rataRataHonorSetahun = $mitraHonorSetahunSums->count() > 0 ? (float) $mitraHonorSetahunSums->avg() : 0;
 
         $sbmlPendataan = SbmlLimit::where('jenis_kegiatan', 'pendataan')->first()?->batas_maksimal ?? 0;
         $sbmlPengolahan = SbmlLimit::where('jenis_kegiatan', 'pengolahan')->first()?->batas_maksimal ?? 0;
@@ -58,6 +101,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'totalMitra' => $totalMitra,
                 'kegiatanAktif' => $kegiatanAktif,
                 'honorBulanIni' => $honorBulanIni,
+                'rataRataHonor' => $rataRataHonor,
+                'honorTerkecil' => $honorTerkecil,
+                'honorTerbesar' => $honorTerbesar,
+                'rataRataHonorSetahun' => $rataRataHonorSetahun,
                 'jumlahInputHonor' => $jumlahPenugasanBulanIni,
             ],
             'sbml' => [
@@ -103,26 +150,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // ==========================================
-    // 3. MASTER MITRA & RECYCLE BIN MITRA (OPERATOR & ADMIN)
+    // 3. MASTER MITRA & RECYCLE BIN MITRA
     // ==========================================
-    Route::middleware('role:operator,admin,administrator')->group(function () {
-        Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+    // Lihat & Cari Mitra (Semua Role Terautentikasi)
+    Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+
+    // Modifikasi Data Mitra & Recycle Bin (HANYA ADMIN)
+    Route::middleware('role:admin,administrator')->group(function () {
         Route::post('/mitra', [MitraController::class, 'store'])->name('mitra.store');
         Route::put('/mitra/{mitra}', [MitraController::class, 'update'])->name('mitra.update');
         Route::delete('/mitra/{mitra}', [MitraController::class, 'destroy'])->name('mitra.destroy');
         Route::post('/mitra/import', [MitraController::class, 'import'])->name('mitra.import');
+        Route::post('/mitra/bulk-destroy', [MitraController::class, 'bulkDestroy'])->name('mitra.bulk-destroy');
 
-        // Recycle Bin Mitra (OPERATOR & ADMIN)
+        // Recycle Bin Mitra (HANYA ADMIN)
         Route::get('/recycle-bin/mitra', [MitraController::class, 'recycleBin'])->name('mitra.recycle-bin');
+        Route::post('/recycle-bin/mitra/bulk-restore', [MitraController::class, 'bulkRestore'])->name('mitra.bulk-restore');
+        Route::delete('/recycle-bin/mitra/bulk-force-delete', [MitraController::class, 'bulkForceDelete'])->name('mitra.bulk-force-delete');
+        Route::delete('/recycle-bin/mitra/empty', [MitraController::class, 'emptyRecycleBin'])->name('mitra.empty-recycle-bin');
+        Route::post('/recycle-bin/mitra/restore-all', [MitraController::class, 'restoreAll'])->name('mitra.restore-all');
         Route::post('/recycle-bin/mitra/{id}/restore', [MitraController::class, 'restore'])->name('mitra.restore');
         Route::delete('/recycle-bin/mitra/{id}/force-delete', [MitraController::class, 'forceDelete'])->name('mitra.force-delete');
     });
 
 
     // ==========================================
-    // 4. MASTER KEGIATAN & RECYCLE BIN KEGIATAN (OPERATOR, PPK, ADMIN)
+    // 4. MASTER KEGIATAN & RECYCLE BIN KEGIATAN (PPK & ADMIN)
     // ==========================================
-    Route::middleware('role:operator,ppk,admin,administrator')->group(function () {
+    Route::middleware('role:ppk,admin,administrator')->group(function () {
         Route::get('kegiatan', [KegiatanController::class, 'index'])->name('kegiatan.index');
         Route::get('kegiatan/create', [KegiatanController::class, 'create'])->name('kegiatan.create');
         Route::post('kegiatan', [KegiatanController::class, 'store'])->name('kegiatan.store');
@@ -159,6 +214,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('penugasan/bulk-delete', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulkDelete');
         Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
+        Route::post('api/penugasan/bulk-lookup-mitra', [PenugasanController::class, 'bulkLookupMitra'])->name('api.penugasan.bulk-lookup-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
 
         // Recycle Bin Penugasan (OPERATOR, PPK, ADMIN)

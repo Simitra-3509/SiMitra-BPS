@@ -35,12 +35,26 @@ class PenugasanController extends Controller implements HasMiddleware
     {
         $query = Penugasan::with(['kegiatan', 'detilKegiatan', 'mitra']);
 
+        if ($request->filled('jenis_sbml')) {
+            $query->whereHas('detilKegiatan', function ($q) use ($request) {
+                $q->where('jenis_sbml', $request->jenis_sbml);
+            });
+        }
+
         if ($request->filled('kegiatan_id')) {
             $query->where('kegiatan_id', $request->kegiatan_id);
         }
 
         if ($request->filled('detil_kegiatan_id')) {
             $query->where('detil_kegiatan_id', $request->detil_kegiatan_id);
+        }
+
+        if ($request->filled('bulan')) {
+            $query->where('bulan', $request->bulan);
+        }
+
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
         }
 
         if ($request->filled('tanggal_mulai')) {
@@ -52,9 +66,15 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('search')) {
-            $query->whereHas('mitra', function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
-                  ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
+            $query->where(function($sub) use ($request) {
+                $sub->whereHas('mitra', function ($q) use ($request) {
+                    $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
+                      ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
+                })->orWhereHas('kegiatan', function ($q) use ($request) {
+                    $q->where('nama_kegiatan', 'like', '%' . $request->search . '%');
+                })->orWhereHas('detilKegiatan', function ($q) use ($request) {
+                    $q->where('nama_detil', 'like', '%' . $request->search . '%');
+                });
             });
         }
 
@@ -101,10 +121,17 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
+        $kecamatanList = Mitra::whereNotNull('kecamatan')
+            ->where('kecamatan', '!=', '')
+            ->select('kecamatan')
+            ->distinct()
+            ->orderBy('kecamatan')
+            ->pluck('kecamatan');
 
         return Inertia::render('Penugasan/Create', [
             'kegiatan'     => $kegiatan,
             'kegiatanList' => $kegiatan,
+            'kecamatanList' => $kecamatanList,
         ]);
     }
 
@@ -125,23 +152,55 @@ class PenugasanController extends Controller implements HasMiddleware
     }
 
     /**
-     * API: Search Mitra (by Sobat ID / Nama Lengkap)
+     * API: Search Mitra (by Sobat ID / Nama Lengkap / Kecamatan)
      */
     public function searchMitra(Request $request)
     {
         $q = trim($request->get('q', ''));
+        $kecamatan = trim($request->get('kecamatan', ''));
         $query = Mitra::where('status_aktif', true);
 
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
                 $sub->where('sobat_id', 'like', "%{$q}%")
                     ->orWhere('nama_lengkap', 'like', "%{$q}%")
-                    ->orWhere('alamat', 'like', "%{$q}%");
+                    ->orWhere('alamat', 'like', "%{$q}%")
+                    ->orWhere('kecamatan', 'like', "%{$q}%");
             });
         }
 
-        $mitraList = $query->orderBy('nama_lengkap')->limit(20)->get(['id', 'sobat_id', 'nama_lengkap', 'alamat']);
+        if ($kecamatan !== '' && $kecamatan !== 'semua') {
+            $query->where('kecamatan', 'like', "%{$kecamatan}%");
+        }
+
+        $mitraList = $query->orderBy('nama_lengkap')->limit(50)->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
         return response()->json($mitraList);
+    }
+
+    /**
+     * API: Bulk Lookup Mitra by Sobat IDs
+     */
+    public function bulkLookupMitra(Request $request)
+    {
+        $request->validate([
+            'sobat_ids' => 'required|array|min:1',
+            'sobat_ids.*' => 'required|string',
+        ]);
+
+        $rawSobatIds = array_map('trim', $request->sobat_ids);
+        $sobatIds = array_unique(array_filter($rawSobatIds));
+
+        $mitras = Mitra::where('status_aktif', true)
+            ->whereIn('sobat_id', $sobatIds)
+            ->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
+
+        $foundSobatIds = $mitras->pluck('sobat_id')->toArray();
+        $notFoundSobatIds = array_values(array_diff($sobatIds, $foundSobatIds));
+
+        return response()->json([
+            'mitras' => $mitras,
+            'not_found_sobat_ids' => $notFoundSobatIds,
+        ]);
     }
 
     /**
@@ -198,7 +257,17 @@ class PenugasanController extends Controller implements HasMiddleware
         if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
             abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
         }
-
+        if ($request->filled('tanggal_mulai')) {
+            try {
+                $dt = \Carbon\Carbon::parse($request->tanggal_mulai);
+                if (!$request->filled('bulan')) {
+                    $request->merge(['bulan' => $dt->month]);
+                }
+                if (!$request->filled('tahun')) {
+                    $request->merge(['tahun' => $dt->year]);
+                }
+            } catch (\Exception $e) {}
+        }
 
         $request->validate([
             'kegiatan_id'           => 'required|exists:kegiatans,id',
@@ -258,32 +327,11 @@ class PenugasanController extends Controller implements HasMiddleware
             ])->withInput();
         }
 
-        // C.5 Validasi Rentang Tanggal Mulai dan Selesai (Server-side)
-        $bulanNama = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-        ];
-        
         $tglMulai = $request->tanggal_mulai ?? null;
         $tglSelesai = $request->tanggal_selesai ?? null;
 
-        if ($tglMulai) {
-            $dtMulai = \Carbon\Carbon::parse($tglMulai);
-            if ($dtMulai->month !== $bulanNum || $dtMulai->year !== $tahunNum) {
-                return back()->withErrors(['tanggal_mulai' => "Tanggal mulai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
-            }
-        }
-        if ($tglSelesai) {
-            $dtSelesai = \Carbon\Carbon::parse($tglSelesai);
-            if ($dtSelesai->month !== $bulanNum || $dtSelesai->year !== $tahunNum) {
-                return back()->withErrors(['tanggal_selesai' => "Tanggal selesai harus berada dalam rentang bulan {$bulanNama[$bulanNum]} {$tahunNum}."])->withInput();
-            }
-        }
-        // ────────────────────────────────────────────────────────────────────────
-
         try {
-            DB::transaction(function () use ($request, $detil, $hargaSatuan, $jenisSbml) {
+            DB::transaction(function () use ($request, $detil, $hargaSatuan, $jenisSbml, $tglMulai, $tglSelesai) {
                 foreach ($request->mitras as $mitraItem) {
                     $mitraId = $mitraItem['id'];
                     $kuotaTarget = (float)($mitraItem['kuota_target'] ?? 1);
@@ -615,35 +663,117 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function import(Request $request)
     {
-        $rows = $request->input('rows');
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ], [
+            'file.required' => 'File Excel wajib diunggah.',
+            'file.mimes' => 'File harus berformat .xlsx atau .xls.',
+            'file.max' => 'Ukuran file maksimal 10MB.',
+        ]);
 
-        if (!$rows || !is_array($rows) || count($rows) === 0) {
+        try {
+            $file = $request->file('file');
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $allRows = $sheet->toArray(null, true, true, true);
+        } catch (\Exception $e) {
             return redirect()->back()->withErrors([
-                'import' => 'File Excel kosong atau tidak berisi data yang dapat dibaca.'
+                'import' => 'Gagal membaca file Excel: ' . $e->getMessage()
             ]);
+        }
+
+        if (count($allRows) < 2) {
+            return redirect()->back()->withErrors([
+                'import' => 'File Excel kosong atau hanya berisi header tanpa data.'
+            ]);
+        }
+
+        // Cari baris header secara dinamis
+        $headerRow = null;
+        $headerRowNum = 1;
+        $colMap = [];
+        
+        foreach ($allRows as $index => $row) {
+            $foundKro = false;
+            $foundDetil = false;
+            $foundSobat = false;
+            
+            foreach ($row as $colLetter => $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $clean = strtolower(trim((string)$val));
+                    if (str_contains($clean, 'kro') || str_contains($clean, 'kode')) $foundKro = true;
+                    if (str_contains($clean, 'detil')) $foundDetil = true;
+                    if (str_contains($clean, 'sobat') || str_contains($clean, 'id')) $foundSobat = true;
+                }
+            }
+            
+            if ($foundKro && $foundDetil && $foundSobat) {
+                $headerRow = $row;
+                $headerRowNum = $index;
+                break;
+            }
+        }
+
+        if (!$headerRow) {
+             return redirect()->back()->withErrors([
+                 'import' => 'Format header tidak ditemukan. Pastikan ada baris dengan kolom "Kode KRO", "Nama Detil", dan "Sobat ID".'
+             ]);
+        }
+
+        // Hapus baris header dan baris di atasnya
+        foreach (range(1, $headerRowNum) as $i) {
+            unset($allRows[$i]);
+        }
+
+        $headers = array_map(function ($val) {
+            return trim(strtolower((string)$val));
+        }, $headerRow);
+
+        $colMap = [];
+        foreach ($headers as $colLetter => $headerName) {
+            if (empty($headerName)) continue;
+            if (str_contains($headerName, 'kode') || str_contains($headerName, 'kro')) {
+                $colMap['kode_kro'] = $colLetter;
+            } elseif (str_contains($headerName, 'nama detil') || str_contains($headerName, 'detil')) {
+                $colMap['nama_detil'] = $colLetter;
+            } elseif (str_contains($headerName, 'sobat') || str_contains($headerName, 'id')) {
+                $colMap['sobat_id'] = $colLetter;
+            } elseif ($headerName === 'bulan') {
+                $colMap['bulan'] = $colLetter;
+            } elseif ($headerName === 'tahun') {
+                $colMap['tahun'] = $colLetter;
+            } elseif (str_contains($headerName, 'kuota') || str_contains($headerName, 'target')) {
+                $colMap['kuota_target'] = $colLetter;
+            }
+        }
+
+        if (!isset($colMap['kode_kro']) || !isset($colMap['nama_detil']) || !isset($colMap['sobat_id'])) {
+             return redirect()->back()->withErrors([
+                 'import' => 'Format header tidak sesuai. Pastikan ada kolom "Kode KRO", "Nama Detil", dan "Sobat ID".'
+             ]);
         }
 
         $errors = [];
         $validData = [];
 
-        foreach ($rows as $index => $row) {
-            $rowNum = $index + 2; // Baris 1 header
-
-            $getVal = function ($keys) use ($row) {
-                foreach ((array)$keys as $k) {
-                    if (array_key_exists($k, $row) && $row[$k] !== null && $row[$k] !== '') {
-                        return trim((string)$row[$k]);
-                    }
+        for ($rowNum = 2; $rowNum <= count($allRows); $rowNum++) {
+            $row = $allRows[$rowNum];
+            
+            $isEmpty = true;
+            foreach ($row as $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $isEmpty = false;
+                    break;
                 }
-                return '';
-            };
+            }
+            if ($isEmpty) continue;
 
-            $kodeKro = $getVal(['Kode KRO', 'kode_kro', 'Kode_Kro', 'kode_kegiatan', 'KRO']);
-            $namaDetil = $getVal(['Nama Detil', 'nama_detil', 'Nama_Detil', 'detil_kegiatan', 'detil']);
-            $sobatId = $getVal(['Sobat ID', 'sobat_id', 'Sobat_Id', 'sobatid']);
-            $bulanRaw = $getVal(['Bulan', 'bulan']);
-            $tahunRaw = $getVal(['Tahun', 'tahun']);
-            $kuotaRaw = $getVal(['Kuota Target', 'kuota_target', 'Kuota_Target', 'kuota', 'target']);
+            $kodeKro   = trim((string)($row[$colMap['kode_kro'] ?? ''] ?? ''));
+            $namaDetil = trim((string)($row[$colMap['nama_detil'] ?? ''] ?? ''));
+            $sobatId   = trim((string)($row[$colMap['sobat_id'] ?? ''] ?? ''));
+            $bulanRaw  = trim((string)($row[$colMap['bulan'] ?? ''] ?? ''));
+            $tahunRaw  = trim((string)($row[$colMap['tahun'] ?? ''] ?? ''));
+            $kuotaRaw  = trim((string)($row[$colMap['kuota_target'] ?? ''] ?? ''));
 
             // 1. Validasi & Cari Kegiatan by Kode KRO
             if (empty($kodeKro)) {
@@ -757,10 +887,14 @@ class PenugasanController extends Controller implements HasMiddleware
             ];
         }
 
-        // Jika ada 1 error pun, batalkan seluruhnya
-        if (count($errors) > 0) {
+        if (count($validData) === 0) {
+            $errMessage = 'File Excel tidak berisi data penugasan yang valid. Pastikan format baris sesuai dengan template.';
+            if (count($errors) > 0) {
+                $errMessage = 'Terjadi kesalahan pada data (contoh: Kode KRO, Sobat ID tidak ditemukan).';
+            }
             return redirect()->back()->withErrors([
-                'import_list' => $errors
+                'import' => $errMessage,
+                'import_list' => array_slice($errors, 0, 50)
             ]);
         }
 
