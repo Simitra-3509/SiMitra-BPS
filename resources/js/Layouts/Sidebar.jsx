@@ -277,14 +277,6 @@ const Sidebar = forwardRef(function Sidebar({
                                 </div>
                             )}
 
-<<<<<<< HEAD
-                            <NavItem
-                                href={route('kegiatan.index')}
-                                icon={CalendarCheck}
-                                label="Kegiatan"
-                                active={route().current('kegiatan.*')}
-                            />
-=======
                             {(isAdmin || isPPK) && (
                                 <NavItem
                                     href={route('kegiatan.index')}
@@ -293,7 +285,6 @@ const Sidebar = forwardRef(function Sidebar({
                                     active={route().current('kegiatan.index')}
                                 />
                             )}
->>>>>>> 18a10fb42242b2929bdeaf0e2108ce9ced2ee29a
 
                             <NavItem
                                 href={route('penugasan.index')}
