@@ -29,6 +29,10 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
     // Grouping penugasan items by Kegiatan + Detil + Bulan + Tahun
     const groupedPenugasan = React.useMemo(() => {
         if (!penugasan?.data || penugasan.data.length === 0) return [];
+        // Jika data dari backend sudah dalam format kelompok (memiliki properti .items)
+        if (penugasan.data[0]?.items) {
+            return penugasan.data;
+        }
 
         const groups = {};
         penugasan.data.forEach((item) => {
@@ -229,10 +233,11 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
     };
 
     const toggleSelectAll = () => {
-        if (selectedIds.length === (penugasan?.data?.length || 0)) {
+        const allIds = (groupedPenugasan || []).flatMap(g => (g.items || []).map(i => i.id));
+        if (selectedIds.length === allIds.length && allIds.length > 0) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(penugasan?.data?.map(item => item.id) || []);
+            setSelectedIds(allIds);
         }
     };
 
@@ -588,7 +593,11 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                     <th className="p-4 w-10 text-center">
                                         <input
                                             type="checkbox"
-                                            checked={selectedIds.length === penugasan.data?.length && penugasan.data?.length > 0}
+                                            checked={
+                                                groupedPenugasan?.length > 0 &&
+                                                groupedPenugasan.flatMap(g => (g.items || []).map(i => i.id)).length > 0 &&
+                                                groupedPenugasan.flatMap(g => (g.items || []).map(i => i.id)).every(id => selectedIds.includes(id))
+                                            }
                                             onChange={toggleSelectAll}
                                             className="rounded text-orange-600 focus:ring-orange-500"
                                         />
@@ -779,7 +788,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
                                         </td>
                                         <td className="p-4 text-right font-mono text-emerald-600 dark:text-emerald-400">
                                             Rp {new Intl.NumberFormat('id-ID').format(
-                                                penugasan.data.reduce((sum, item) => sum + (parseFloat(item.total_honor) || 0), 0)
+                                                (groupedPenugasan || []).reduce((sum, item) => sum + (parseFloat(item.total_honor || item.totalHonor) || 0), 0)
                                             )}
                                         </td>
                                         <td colSpan="1"></td>

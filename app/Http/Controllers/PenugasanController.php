@@ -33,40 +33,43 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Penugasan::with(['kegiatan', 'detilKegiatan', 'mitra']);
+        // 1. Query kelompok penugasan (Kegiatan + Detil + Bulan + Tahun)
+        $groupQuery = Penugasan::query()
+            ->select('kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun', DB::raw('MAX(id) as max_id'))
+            ->whereNull('deleted_at');
 
         if ($request->filled('jenis_sbml')) {
-            $query->whereHas('detilKegiatan', function ($q) use ($request) {
+            $groupQuery->whereHas('detilKegiatan', function ($q) use ($request) {
                 $q->where('jenis_sbml', $request->jenis_sbml);
             });
         }
 
         if ($request->filled('kegiatan_id')) {
-            $query->where('kegiatan_id', $request->kegiatan_id);
+            $groupQuery->where('kegiatan_id', $request->kegiatan_id);
         }
 
         if ($request->filled('detil_kegiatan_id')) {
-            $query->where('detil_kegiatan_id', $request->detil_kegiatan_id);
+            $groupQuery->where('detil_kegiatan_id', $request->detil_kegiatan_id);
         }
 
         if ($request->filled('bulan')) {
-            $query->where('bulan', $request->bulan);
+            $groupQuery->where('bulan', $request->bulan);
         }
 
         if ($request->filled('tahun')) {
-            $query->where('tahun', $request->tahun);
+            $groupQuery->where('tahun', $request->tahun);
         }
 
         if ($request->filled('tanggal_mulai')) {
-            $query->where('tanggal_mulai', '>=', $request->tanggal_mulai);
+            $groupQuery->where('tanggal_mulai', '>=', $request->tanggal_mulai);
         }
 
         if ($request->filled('tanggal_selesai')) {
-            $query->where('tanggal_selesai', '<=', $request->tanggal_selesai);
+            $groupQuery->where('tanggal_selesai', '<=', $request->tanggal_selesai);
         }
 
         if ($request->filled('search')) {
-            $query->where(function($sub) use ($request) {
+            $groupQuery->where(function($sub) use ($request) {
                 $sub->whereHas('mitra', function ($q) use ($request) {
                     $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
                       ->orWhere('sobat_id', 'like', '%' . $request->search . '%');
@@ -78,7 +81,44 @@ class PenugasanController extends Controller implements HasMiddleware
             });
         }
 
-        $penugasan = $query->latest()->paginate(15)->withQueryString();
+        $groupQuery->groupBy('kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun')
+            ->orderByDesc('max_id');
+
+        $paginatedGroups = $groupQuery->paginate(5)->withQueryString();
+
+        // 2. Map grouped collection dan load item penugasan serta relasinya
+        $groupedData = $paginatedGroups->getCollection()->map(function ($g) {
+            $items = Penugasan::with(['kegiatan', 'detilKegiatan', 'mitra'])
+                ->where('kegiatan_id', $g->kegiatan_id)
+                ->where('detil_kegiatan_id', $g->detil_kegiatan_id)
+                ->where('bulan', $g->bulan)
+                ->where('tahun', $g->tahun)
+                ->get();
+
+            $first = $items->first();
+            $sumHonor = (float) $items->sum('total_honor');
+            $sumKuota = (float) $items->sum('kuota_target');
+
+            return [
+                'id'                 => $first?->id,
+                'key'                => "{$g->kegiatan_id}_{$g->detil_kegiatan_id}_{$g->bulan}_{$g->tahun}",
+                'kegiatan_id'        => $g->kegiatan_id,
+                'detil_kegiatan_id'  => $g->detil_kegiatan_id,
+                'bulan'              => $g->bulan,
+                'tahun'              => $g->tahun,
+                'kegiatan'           => $first?->kegiatan,
+                'detil_kegiatan'     => $first?->detilKegiatan,
+                'detilKegiatan'      => $first?->detilKegiatan,
+                'totalKuota'         => $sumKuota,
+                'kuota_target'       => $sumKuota,
+                'totalHonor'         => $sumHonor,
+                'total_honor'        => $sumHonor,
+                'items'              => $items,
+            ];
+        });
+
+        $paginatedGroups->setCollection($groupedData);
+        $penugasan = $paginatedGroups;
         $semuaKegiatan = Kegiatan::orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
 
         $tahunList = Penugasan::distinct()->whereNotNull('tahun')->pluck('tahun')->map(fn($t) => (int)$t)->sort()->values()->toArray();

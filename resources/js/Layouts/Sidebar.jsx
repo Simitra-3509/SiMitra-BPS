@@ -238,7 +238,7 @@ const Sidebar = forwardRef(function Sidebar({
                     )}
 
                     {/* SECTION: ADMINISTRATOR & DATA MASTER */}
-                    {(isAdmin || isOperator || isPPK) && (
+                    {(isAdmin || isOperator) && (
                         <>
                             {isCollapsed ? (
                                 <div className="my-3 border-t border-gray-800/80 mx-2" />

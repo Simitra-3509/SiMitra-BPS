@@ -272,7 +272,7 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout header="Master Mitra BPS">
             <Head title="Master Mitra BPS" />
 
             <div className="space-y-6">

@@ -14,6 +14,10 @@ class MitraController extends Controller
      */
     public function index(Request $request)
     {
+        if (strtolower(auth()->user()->role ?? '') === 'ppk') {
+            abort(403, 'Akses ditolak: Role PPK tidak memiliki akses ke Master Mitra.');
+        }
+
         $search = $request->input('search');
         $status = $request->input('status', 'semua');
         $kecamatan = $request->input('kecamatan', 'semua');
