@@ -16,7 +16,6 @@ import {
     FileText,
     TrendingUp,
     User,
-    LogOut,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
@@ -37,10 +36,20 @@ const Sidebar = forwardRef(function Sidebar({
     const isPPK = userRole === 'ppk';
 
     const canSeeRecycleUser = isAdmin;
-    const canSeeRecycleMitra = isAdmin || isOperator;
-    const canSeeRecycleKegiatan = isAdmin || isOperator || isPPK;
+    const canSeeRecycleMitra = isAdmin;
+    const canSeeRecycleKegiatan = isAdmin || isPPK;
     const canSeeRecyclePenugasan = isAdmin || isOperator || isPPK;
     const hasAnyRecycleAccess = canSeeRecycleUser || canSeeRecycleMitra || canSeeRecycleKegiatan || canSeeRecyclePenugasan;
+
+    const accessibleRecycleBins = [
+        canSeeRecycleUser && { routeName: 'users.recycle-bin', label: 'Recycle Bin User', icon: User, count: counts?.recycleBinUser || 0 },
+        canSeeRecycleMitra && { routeName: 'mitra.recycle-bin', label: 'Recycle Bin Mitra', icon: Contact, count: counts?.recycleBinMitra || 0 },
+        canSeeRecycleKegiatan && { routeName: 'kegiatan.recycle-bin', label: 'Recycle Bin Kegiatan', icon: CalendarDays, count: counts?.recycleBinKegiatan || 0 },
+        canSeeRecyclePenugasan && { routeName: 'penugasan.recycle-bin', label: 'Recycle Bin Penugasan', icon: UserCheck, count: counts?.recycleBinPenugasan || 0 },
+    ].filter(Boolean);
+
+    const isSingleRecycleBin = accessibleRecycleBins.length === 1;
+    const singleRecycleBin = isSingleRecycleBin ? accessibleRecycleBins[0] : null;
 
     const isAnyRecycleBinActive = Boolean(
         (canSeeRecycleUser && typeof route === 'function' && route().has('users.recycle-bin') && route().current('users.recycle-bin')) ||
@@ -229,7 +238,7 @@ const Sidebar = forwardRef(function Sidebar({
                     )}
 
                     {/* SECTION: ADMINISTRATOR & DATA MASTER */}
-                    {(isAdmin || isOperator) && (
+                    {(isAdmin || isOperator || isPPK) && (
                         <>
                             {isCollapsed ? (
                                 <div className="my-3 border-t border-gray-800/80 mx-2" />
@@ -268,12 +277,23 @@ const Sidebar = forwardRef(function Sidebar({
                                 </div>
                             )}
 
+<<<<<<< HEAD
                             <NavItem
                                 href={route('kegiatan.index')}
                                 icon={CalendarCheck}
                                 label="Kegiatan"
                                 active={route().current('kegiatan.*')}
                             />
+=======
+                            {(isAdmin || isPPK) && (
+                                <NavItem
+                                    href={route('kegiatan.index')}
+                                    icon={CalendarCheck}
+                                    label="Kegiatan"
+                                    active={route().current('kegiatan.index')}
+                                />
+                            )}
+>>>>>>> 18a10fb42242b2929bdeaf0e2108ce9ced2ee29a
 
                             <NavItem
                                 href={route('penugasan.index')}
@@ -314,7 +334,24 @@ const Sidebar = forwardRef(function Sidebar({
                     {/* SECTION: RECYCLE BINS */}
                     {hasAnyRecycleAccess && (
                         <>
-                            {isCollapsed ? (
+                            {isSingleRecycleBin ? (
+                                <>
+                                    {isCollapsed ? (
+                                        <div className="my-3 border-t border-gray-800/80 mx-2" />
+                                    ) : (
+                                        <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                            RECYCLE BINS
+                                        </div>
+                                    )}
+                                    <NavItem
+                                        href={route(singleRecycleBin.routeName)}
+                                        icon={Trash2}
+                                        label={singleRecycleBin.label}
+                                        active={route().current(singleRecycleBin.routeName)}
+                                        badge={singleRecycleBin.count > 0 ? singleRecycleBin.count : null}
+                                    />
+                                </>
+                            ) : isCollapsed ? (
                                 <div className="relative group flex justify-center my-1" ref={flyoutRef}>
                                     <button
                                         type="button"
@@ -535,30 +572,7 @@ const Sidebar = forwardRef(function Sidebar({
                         </>
                     )}
 
-                    {/* SECTION: AKUN */}
-                    {isCollapsed ? (
-                        <div className="my-3 border-t border-gray-800/80 mx-2" />
-                    ) : (
-                        <div className="pt-4 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                            AKUN
-                        </div>
-                    )}
 
-                    <NavItem
-                        href={route('profile.edit')}
-                        icon={User}
-                        label="Profil Saya"
-                        active={route().current('profile.edit')}
-                    />
-
-                    <NavItem
-                        href={route('logout')}
-                        icon={LogOut}
-                        label="Logout"
-                        active={false}
-                        method="post"
-                        as="button"
-                    />
 
                 </nav>
             </div>

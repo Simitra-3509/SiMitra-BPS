@@ -13,6 +13,11 @@ class Penugasan extends Model
     
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+    ];
+
     public function mitra()
     {
         return $this->belongsTo(Mitra::class);

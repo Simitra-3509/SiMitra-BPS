@@ -44,8 +44,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
     const [dragActive, setDragActive] = useState(false);
 
     const { data: importData, setData: setImportData, post: postImport, processing: processingImport, errors: importErrors, reset: resetImport } = useForm({
-        file: null,
-        rows: []
+        file: null
     });
 
     const openImportModal = () => {
@@ -117,40 +116,9 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         return null;
     };
 
-    // Normalisasi semua kolom tanggal dalam setiap baris hasil parsing Excel
-    const normalizeDateFields = (rows) => {
-        const dateKeys = ['Tanggal Mulai', 'Tanggal Selesai', 'tanggal mulai', 'tanggal selesai',
-                          'tanggal_mulai', 'tanggal_selesai', 'tgl_mulai', 'tgl_selesai'];
-        return rows.map(row => {
-            const normalized = { ...row };
-            dateKeys.forEach(key => {
-                if (key in normalized) {
-                    normalized[key] = toDateString(normalized[key]);
-                }
-            });
-            return normalized;
-        });
-    };
-
     const processFile = (file) => {
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const data = new Uint8Array(evt.target.result);
-                // cellDates:true agar serial number Excel otomatis jadi JS Date
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                const normalizedRows = normalizeDateFields(jsonData);
-                setImportData({ file, rows: normalizedRows });
-            } catch (err) {
-                console.error("Gagal membaca file excel:", err);
-                setImportData({ file, rows: [] });
-            }
-        };
-        reader.readAsArrayBuffer(file);
+        setImportData('file', file);
     };
 
     const handleFileChange = (e) => {
@@ -184,6 +152,7 @@ function Index({ auth, kegiatan, kegiatanCount, filters }) {
         e.preventDefault();
         if (!importData.file) return;
         postImport(route('kegiatan.import'), {
+            forceFormData: true,
             onSuccess: () => closeImportModal()
         });
     };
