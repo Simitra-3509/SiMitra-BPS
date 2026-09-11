@@ -16,9 +16,6 @@ class Mitra extends Model
         'sobat_id',
         'alamat',
         'kecamatan',
-        'no_rekening',
-        'nama_bank',
-        'nama_pemilik_rekening',
         'catatan',
         'status_aktif',
     ];

@@ -99,9 +99,6 @@ class MitraController extends Controller
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id',
-            'no_rekening' => 'nullable|string',
-            'nama_bank' => 'nullable|string',
-            'nama_pemilik_rekening' => 'nullable|string',
             'alamat' => 'nullable|string',
             'kecamatan' => 'nullable|string',
             'catatan' => 'nullable|string',
@@ -121,9 +118,6 @@ class MitraController extends Controller
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id,' . $mitra->id,
-            'no_rekening' => 'nullable|string',
-            'nama_bank' => 'nullable|string',
-            'nama_pemilik_rekening' => 'nullable|string',
             'alamat' => 'nullable|string',
             'kecamatan' => 'nullable|string',
             'catatan' => 'nullable|string',
@@ -344,13 +338,6 @@ class MitraController extends Controller
                 continue;
             }
 
-            $namaBank = $getVal(['nama bank', 'nama_bank', 'bank']);
-            $noRekening = $getVal(['no rekening', 'no_rekening', 'rekening']);
-            $namaPemilikRekening = $getVal(['nama pemilik rekening', 'nama_pemilik_rekening', 'pemilik rekening', 'nama_pemilik']);
-            if (empty($namaPemilikRekening)) {
-                $namaPemilikRekening = $namaLengkap;
-            }
-
             $alamatRaw = $getVal(['alamat']);
             $desaRaw = $cleanLoc($getVal(['desa', 'kelurahan', 'alamat desa/kel', 'alamat desa', 'alamat_desa']));
             $alamat = $alamatRaw ?: ($desaRaw ? "Desa {$desaRaw}" : null);
@@ -368,9 +355,6 @@ class MitraController extends Controller
             $validData[] = [
                 'sobat_id' => (string)$sobatId,
                 'nama_lengkap' => $namaLengkap,
-                'nama_bank' => $namaBank ?: null,
-                'no_rekening' => $noRekening ?: null,
-                'nama_pemilik_rekening' => $namaPemilikRekening ?: null,
                 'alamat' => $alamat ?: null,
                 'kecamatan' => $kecamatan ?: null,
                 'catatan' => $catatan ?: null,
@@ -412,7 +396,7 @@ class MitraController extends Controller
                 Mitra::upsert(
                     $chunk,
                     ['sobat_id'],
-                    ['nama_lengkap', 'nama_bank', 'no_rekening', 'nama_pemilik_rekening', 'alamat', 'kecamatan', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
+                    ['nama_lengkap', 'alamat', 'kecamatan', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
                 );
             }
         });

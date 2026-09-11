@@ -119,13 +119,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $sampleMitras = [
-            ['nama' => 'Ahmad Suryadi', 'sobat' => '723511', 'rek' => '39161904675', 'bank' => 'Mandiri', 'hp' => '081283072330', 'status' => false],
-            ['nama' => 'Budi Santoso', 'sobat' => '276426', 'rek' => '27077174981', 'bank' => 'BNI', 'hp' => '081229509063', 'status' => true],
-            ['nama' => 'Candra Pratama', 'sobat' => '175784', 'rek' => '19865031799', 'bank' => 'Danamon', 'hp' => '081256375965', 'status' => true],
-            ['nama' => 'Dedi Hidayat', 'sobat' => '451209', 'rek' => '66084594857', 'bank' => 'BRI', 'hp' => '081390196166', 'status' => true],
-            ['nama' => 'Eka Putri', 'sobat' => '882103', 'rek' => '54128903112', 'bank' => 'BCA', 'hp' => '085211904581', 'status' => true],
-            ['nama' => 'Fajar Nugraha', 'sobat' => '310495', 'rek' => '89104523177', 'bank' => 'Mandiri', 'hp' => '087812903412', 'status' => true],
-            ['nama' => 'Gita Gutawa', 'sobat' => '619284', 'rek' => '41209581290', 'bank' => 'BNI', 'hp' => '081290451289', 'status' => false],
+            ['nama' => 'Ahmad Suryadi', 'sobat' => '723511', 'hp' => '081283072330', 'status' => false],
+            ['nama' => 'Budi Santoso', 'sobat' => '276426', 'hp' => '081229509063', 'status' => true],
+            ['nama' => 'Candra Pratama', 'sobat' => '175784', 'hp' => '081256375965', 'status' => true],
+            ['nama' => 'Dedi Hidayat', 'sobat' => '451209', 'hp' => '081390196166', 'status' => true],
+            ['nama' => 'Eka Putri', 'sobat' => '882103', 'hp' => '085211904581', 'status' => true],
+            ['nama' => 'Fajar Nugraha', 'sobat' => '310495', 'hp' => '087812903412', 'status' => true],
+            ['nama' => 'Gita Gutawa', 'sobat' => '619284', 'hp' => '081290451289', 'status' => false],
         ];
 
         for ($i = 1; $i <= 27; $i++) {
@@ -133,9 +133,6 @@ class DatabaseSeeder extends Seeder
             $mitra = Mitra::create([
                 'nama_lengkap' => $i <= count($sampleMitras) ? $sample['nama'] : $sample['nama'] . ' (' . $i . ')',
                 'sobat_id' => $sample['sobat'] . $i,
-                'no_rekening' => $sample['rek'],
-                'nama_bank' => $sample['bank'],
-                'nama_pemilik_rekening' => $sample['nama'],
                 'alamat' => 'Kabupaten Jember',
                 'status_aktif' => $sample['status'],
             ]);
