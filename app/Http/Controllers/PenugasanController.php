@@ -257,17 +257,7 @@ class PenugasanController extends Controller implements HasMiddleware
         if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
             abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
         }
-        if ($request->filled('tanggal_mulai')) {
-            try {
-                $dt = \Carbon\Carbon::parse($request->tanggal_mulai);
-                if (!$request->filled('bulan')) {
-                    $request->merge(['bulan' => $dt->month]);
-                }
-                if (!$request->filled('tahun')) {
-                    $request->merge(['tahun' => $dt->year]);
-                }
-            } catch (\Exception $e) {}
-        }
+        // Batas entry divalidasi nanti setelah request->validate
 
         $request->validate([
             'kegiatan_id'           => 'required|exists:kegiatans,id',
@@ -301,6 +291,35 @@ class PenugasanController extends Controller implements HasMiddleware
         $periode = PeriodePengisian::where('bulan', $bulanNum)->where('tahun', $tahunNum)->first();
         if ($periode && $periode->status === 'terkunci' && $userRole !== 'ppk') {
             return back()->withErrors(['periode' => "Periode {$bulanNum}/{$tahunNum} sudah dikunci. Hubungi PPK untuk membuka kunci."])->withInput();
+        }
+
+        // C.5 Validasi "Batas Entry"
+        $currentMonth = (int)date('n');
+        $currentYear = (int)date('Y');
+        
+        $targetMonth = $currentMonth + 1;
+        $targetYear = $currentYear;
+        if ($targetMonth > 12) {
+            $targetMonth = 1;
+            $targetYear += 1;
+        }
+
+        if ($bulanNum !== $targetMonth || $tahunNum !== $targetYear) {
+            return back()->withErrors(['bulan' => 'Penugasan hanya dapat dibuat untuk bulan berikutnya.'])->withInput();
+        }
+        
+        // C.6 Validasi kesesuaian tanggal dengan bulan terpilih
+        if ($request->filled('tanggal_mulai')) {
+            $dtMulai = \Carbon\Carbon::parse($request->tanggal_mulai);
+            if ($dtMulai->month !== $bulanNum || $dtMulai->year !== $tahunNum) {
+                return back()->withErrors(['tanggal_mulai' => "Tanggal mulai dan tanggal selesai harus berada pada bulan yang dipilih."])->withInput();
+            }
+        }
+        if ($request->filled('tanggal_selesai')) {
+            $dtSelesai = \Carbon\Carbon::parse($request->tanggal_selesai);
+            if ($dtSelesai->month !== $bulanNum || $dtSelesai->year !== $tahunNum) {
+                return back()->withErrors(['tanggal_selesai' => "Tanggal mulai dan tanggal selesai harus berada pada bulan yang dipilih."])->withInput();
+            }
         }
 
         $detil = DetilKegiatan::findOrFail($request->detil_kegiatan_id);
