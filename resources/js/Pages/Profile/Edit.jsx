@@ -11,6 +11,7 @@ import { useState } from 'react';
 export default function Edit({ status }) {
     const { auth } = usePage().props;
     const user = auth.user;
+    const isPPK = (user?.role || '').toLowerCase() === 'ppk';
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -34,7 +35,7 @@ export default function Edit({ status }) {
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout header="Profil Saya">
             <Head title="Profil Saya" />
 
             {/* Page Header */}
@@ -312,13 +313,15 @@ export default function Edit({ status }) {
                                 <ShieldCheck size={18} className="text-gray-400 group-hover:text-[#d9531e]" />
                                 Security Center
                             </a>
-                            <Link
-                                href={route('mitra.index')}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-[#d9531e] hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-[#d9531e] transition-all group"
-                            >
-                                <Contact size={18} className="text-gray-400 group-hover:text-[#d9531e]" />
-                                Master Mitra
-                            </Link>
+                            {!isPPK && (
+                                <Link
+                                    href={route('mitra.index')}
+                                    className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-[#d9531e] hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-[#d9531e] transition-all group"
+                                >
+                                    <Contact size={18} className="text-gray-400 group-hover:text-[#d9531e]" />
+                                    Master Mitra
+                                </Link>
+                            )}
                         </div>
                         <div className="px-4 pb-4">
                             <Link
