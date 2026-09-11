@@ -417,6 +417,14 @@ class PenugasanController extends Controller implements HasMiddleware
                         }
                     }
 
+                    // Bersihkan data sampah sebelumnya jika ada (agar tidak bentrok dengan UNIQUE constraint MySQL)
+                    Penugasan::onlyTrashed()
+                        ->where('detil_kegiatan_id', $request->detil_kegiatan_id)
+                        ->where('mitra_id', $mitraId)
+                        ->where('bulan', $request->bulan)
+                        ->where('tahun', $request->tahun)
+                        ->forceDelete();
+
                     // Method store(): Buat record penugasan
                     Penugasan::create([
                         'kegiatan_id'           => $request->kegiatan_id,
@@ -641,7 +649,21 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function restore($id)
     {
-        $penugasan = Penugasan::onlyTrashed()->findOrFail($id);
+        $penugasan = Penugasan::onlyTrashed()->with('mitra')->findOrFail($id);
+
+        $activeExists = Penugasan::where('detil_kegiatan_id', $penugasan->detil_kegiatan_id)
+            ->where('mitra_id', $penugasan->mitra_id)
+            ->where('bulan', $penugasan->bulan)
+            ->where('tahun', $penugasan->tahun)
+            ->exists();
+
+        if ($activeExists) {
+            $namaMitra = $penugasan->mitra->nama_lengkap ?? 'Mitra';
+            return redirect()->back()->withErrors([
+                'restore' => "Penugasan untuk {$namaMitra} periode {$penugasan->bulan}/{$penugasan->tahun} tidak dapat dipulihkan karena sudah ada data penugasan aktif yang sama."
+            ]);
+        }
+
         $penugasan->restore();
 
         return redirect()->back()->with('success', 'Penugasan mitra berhasil dipulihkan dari Recycle Bin.');
@@ -668,7 +690,29 @@ class PenugasanController extends Controller implements HasMiddleware
             'ids.*' => 'integer|exists:penugasans,id'
         ]);
 
-        Penugasan::onlyTrashed()->whereIn('id', $request->ids)->restore();
+        $trashed = Penugasan::onlyTrashed()->with('mitra')->whereIn('id', $request->ids)->get();
+        $restoredCount = 0;
+        $skipped = [];
+
+        foreach ($trashed as $p) {
+            $activeExists = Penugasan::where('detil_kegiatan_id', $p->detil_kegiatan_id)
+                ->where('mitra_id', $p->mitra_id)
+                ->where('bulan', $p->bulan)
+                ->where('tahun', $p->tahun)
+                ->exists();
+
+            if ($activeExists) {
+                $skipped[] = $p->mitra->nama_lengkap ?? "ID: {$p->mitra_id}";
+            } else {
+                $p->restore();
+                $restoredCount++;
+            }
+        }
+
+        if (count($skipped) > 0) {
+            $skippedNames = implode(', ', array_unique($skipped));
+            return redirect()->back()->with('warning', "{$restoredCount} penugasan berhasil dipulihkan. Penugasan untuk ({$skippedNames}) dilewati karena sudah ada data aktif yang sama.");
+        }
 
         return redirect()->back()->with('success', count($request->ids) . ' penugasan mitra berhasil dipulihkan.');
     }
@@ -951,14 +995,16 @@ class PenugasanController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($validData) {
             foreach ($validData as $data) {
-                Penugasan::updateOrCreate(
+                // Gunakan withTrashed() agar jika ada data lama di Recycle Bin, data tersebut diaktifkan kembali
+                // dan tidak menabrak UNIQUE constraint MySQL
+                Penugasan::withTrashed()->updateOrCreate(
                     [
                         'detil_kegiatan_id' => $data['detil_kegiatan_id'],
                         'mitra_id'          => $data['mitra_id'],
                         'bulan'             => $data['bulan'],
                         'tahun'             => $data['tahun'],
                     ],
-                    $data
+                    array_merge($data, ['deleted_at' => null])
                 );
             }
         });

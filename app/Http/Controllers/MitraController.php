@@ -87,6 +87,15 @@ class MitraController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->filled('sobat_id')) {
+            $trashed = Mitra::onlyTrashed()->where('sobat_id', trim($request->sobat_id))->first();
+            if ($trashed) {
+                return redirect()->back()->withErrors([
+                    'sobat_id' => "Mitra dengan Sobat ID '{$request->sobat_id}' ({$trashed->nama_lengkap}) sudah ada di Recycle Bin. Silakan pulihkan data tersebut dari menu Recycle Bin."
+                ])->withInput();
+            }
+        }
+
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id',
@@ -186,9 +195,19 @@ class MitraController extends Controller
     public function restore($id)
     {
         $mitra = Mitra::onlyTrashed()->findOrFail($id);
+
+        if (!empty($mitra->sobat_id)) {
+            $activeExists = Mitra::where('sobat_id', $mitra->sobat_id)->exists();
+            if ($activeExists) {
+                return redirect()->back()->withErrors([
+                    'restore' => "Gagal memulihkan mitra. Sobat ID '{$mitra->sobat_id}' saat ini sudah digunakan oleh mitra aktif lain."
+                ]);
+            }
+        }
+
         $mitra->restore();
 
-        return redirect()->back()->with('message', 'Mitra berhasil dipulihkan.');
+        return redirect()->back()->with('message', "Mitra {$mitra->nama_lengkap} berhasil dipulihkan.");
     }
 
     /**
@@ -197,9 +216,17 @@ class MitraController extends Controller
     public function forceDelete($id)
     {
         $mitra = Mitra::onlyTrashed()->findOrFail($id);
+
+        $hasPenugasan = \App\Models\Penugasan::withTrashed()->where('mitra_id', $mitra->id)->exists();
+        if ($hasPenugasan) {
+            return redirect()->back()->withErrors([
+                'forceDelete' => "Mitra {$mitra->nama_lengkap} tidak dapat dihapus permanen karena masih memiliki riwayat data penugasan kegiatan."
+            ]);
+        }
+
         $mitra->forceDelete();
 
-        return redirect()->back()->with('message', 'Mitra dihapus secara permanen.');
+        return redirect()->back()->with('message', "Mitra {$mitra->nama_lengkap} dihapus secara permanen.");
     }
 
     /**
