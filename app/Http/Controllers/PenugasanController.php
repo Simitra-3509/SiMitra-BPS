@@ -56,8 +56,14 @@ class PenugasanController extends Controller implements HasMiddleware
             $groupQuery->where('bulan', $request->bulan);
         }
 
-        if ($request->filled('tahun')) {
-            $groupQuery->where('tahun', $request->tahun);
+        // Filter Tahun: default ke tahun berjalan saat pertama kali membuka halaman
+        $tahunFilter = $request->input('tahun');
+        if (!$request->has('tahun')) {
+            $tahunFilter = (string) date('Y');
+        }
+
+        if (!empty($tahunFilter) && $tahunFilter !== 'semua') {
+            $groupQuery->where('tahun', $tahunFilter);
         }
 
         if ($request->filled('tanggal_mulai')) {
@@ -128,7 +134,7 @@ class PenugasanController extends Controller implements HasMiddleware
         }
 
         $targetBulan = (int) ($request->input('bulan') ?: date('n'));
-        $targetTahun = (int) ($request->input('tahun') ?: date('Y'));
+        $targetTahun = (int) ($tahunFilter ?: date('Y'));
 
         $periodeAktif = PeriodePengisian::where('bulan', $targetBulan)
             ->where('tahun', $targetTahun)
@@ -142,12 +148,15 @@ class PenugasanController extends Controller implements HasMiddleware
             'dikunci_at' => $periodeAktif?->dikunci_at ? \Carbon\Carbon::parse($periodeAktif->dikunci_at)->format('d M Y H:i') : null,
         ];
 
+        $filters = $request->only(['kegiatan_id', 'detil_kegiatan_id', 'bulan', 'search', 'jenis_sbml', 'status_honor']);
+        $filters['tahun'] = $tahunFilter;
+
         return Inertia::render('Penugasan/Index', [
             'penugasan'     => $penugasan,
             'semuaKegiatan' => $semuaKegiatan,
             'tahunList'     => $tahunList,
             'statusPeriode' => $statusPeriode,
-            'filters'       => $request->only(['kegiatan_id', 'detil_kegiatan_id', 'bulan', 'tahun', 'search', 'jenis_sbml', 'status_honor']),
+            'filters'       => $filters,
         ]);
     }
 
@@ -599,9 +608,22 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function destroy(Penugasan $penugasan)
     {
-        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
+        $userRole = strtolower(auth()->user()->role ?? '');
+        if (!in_array($userRole, ['operator', 'admin', 'administrator'])) {
             abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
         }
+
+        // Cek apakah periode penugasan sudah dikunci oleh PPK
+        $bulanNum = (int)$penugasan->bulan;
+        $tahunNum = (int)$penugasan->tahun;
+        $periode = PeriodePengisian::where('bulan', $bulanNum)->where('tahun', $tahunNum)->first();
+
+        if ($periode && $periode->status === 'terkunci' && $userRole !== 'ppk') {
+            return back()->withErrors([
+                'periode' => "Periode {$bulanNum}/{$tahunNum} sudah dikunci oleh PPK. Data penugasan pada periode ini tidak dapat dihapus."
+            ]);
+        }
+
         $penugasan->delete();
 
         return back()->with('success', '1 penugasan mitra berhasil dipindahkan ke Recycle Bin.');
@@ -612,10 +634,34 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function bulkDestroy(Request $request)
     {
+        $userRole = strtolower(auth()->user()->role ?? '');
+        if (!in_array($userRole, ['operator', 'admin', 'administrator'])) {
+            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        }
+
         $request->validate([
             'ids'   => 'required|array|min:1',
             'ids.*' => 'integer|exists:penugasans,id',
         ]);
+
+        $penugasans = Penugasan::whereIn('id', $request->ids)->get();
+
+        if ($userRole !== 'ppk') {
+            $lockedPeriods = [];
+            foreach ($penugasans as $p) {
+                $periode = PeriodePengisian::where('bulan', (int)$p->bulan)->where('tahun', (int)$p->tahun)->first();
+                if ($periode && $periode->status === 'terkunci') {
+                    $lockedPeriods[] = "{$p->bulan}/{$p->tahun}";
+                }
+            }
+
+            if (!empty($lockedPeriods)) {
+                $lockedList = implode(', ', array_unique($lockedPeriods));
+                return back()->withErrors([
+                    'periode' => "Sebagian data penugasan berada pada periode yang sudah dikunci oleh PPK ({$lockedList}). Penghapusan dibatalkan."
+                ]);
+            }
+        }
 
         Penugasan::whereIn('id', $request->ids)->delete();
 
@@ -649,7 +695,17 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function restore($id)
     {
+        $userRole = strtolower(auth()->user()->role ?? '');
         $penugasan = Penugasan::onlyTrashed()->with('mitra')->findOrFail($id);
+
+        $bulanNum = (int)$penugasan->bulan;
+        $tahunNum = (int)$penugasan->tahun;
+        $periode = PeriodePengisian::where('bulan', $bulanNum)->where('tahun', $tahunNum)->first();
+        if ($periode && $periode->status === 'terkunci' && $userRole !== 'ppk') {
+            return redirect()->back()->withErrors([
+                'restore' => "Periode {$bulanNum}/{$tahunNum} sudah dikunci oleh PPK. Penugasan tidak dapat dipulihkan."
+            ]);
+        }
 
         $activeExists = Penugasan::where('detil_kegiatan_id', $penugasan->detil_kegiatan_id)
             ->where('mitra_id', $penugasan->mitra_id)
