@@ -84,3 +84,17 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
+/* Animated Loading Stripes for Progress Bar */
+@keyframes move-stripes {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 40px 0;
+    }
+}
+
+.animate-loading-stripes {
+    animation: move-stripes 0.8s linear infinite;
+}
+

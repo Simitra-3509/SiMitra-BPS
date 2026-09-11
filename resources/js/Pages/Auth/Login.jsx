@@ -4,7 +4,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { User, Lock, Eye, EyeOff, LogIn, Shield, BarChart3, Activity, Users2 } from 'lucide-react';
 import AmbientLineChart from '@/Components/AmbientLineChart';
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, totalMitra }) {
     const [showPassword, setShowPassword] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -399,7 +399,7 @@ export default function Login({ status, canResetPassword }) {
                                     <Users2 size={16} color="#f97316" />
                                 </div>
                                 <div className="stat-label">Mitra</div>
-                                <div className="stat-val">177+</div>
+                                <div className="stat-val">{totalMitra !== undefined ? `${totalMitra}+` : '0+'}</div>
                             </div>
                             <div className="stat-card">
                                 <div className="stat-icon">
