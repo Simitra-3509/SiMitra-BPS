@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useAppToast } from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router, usePage, Link } from '@inertiajs/react';
-import { Plus, Search, Edit2, Trash2, X, Trash, Eye, User, Phone, MapPin, CreditCard, GraduationCap, Briefcase, Calendar, ShieldCheck, Mail, FileSpreadsheet, Download, Upload, FileText, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Trash, Eye, User, Phone, MapPin, GraduationCap, Briefcase, Calendar, ShieldCheck, Mail, FileSpreadsheet, Download, Upload, FileText, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 
@@ -149,9 +149,6 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         sobat_id: '',
         nama_lengkap: '',
-        nama_bank: '',
-        no_rekening: '',
-        nama_pemilik_rekening: '',
         alamat: '',
         kecamatan: '',
         catatan: '',
@@ -191,9 +188,6 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
         setData({
             sobat_id: mitra.sobat_id || '',
             nama_lengkap: mitra.nama_lengkap,
-            nama_bank: mitra.nama_bank || '',
-            no_rekening: mitra.no_rekening || '',
-            nama_pemilik_rekening: mitra.nama_pemilik_rekening || '',
             alamat: mitra.alamat || '',
             kecamatan: mitra.kecamatan || '',
             catatan: mitra.catatan || '',
@@ -551,37 +545,6 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                 {errors.nama_lengkap && <span className="text-xs text-red-500 mt-1 block">{errors.nama_lengkap}</span>}
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Bank</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Mandiri, BNI, BRI, dll"
-                                        value={data.nama_bank}
-                                        onChange={(e) => setData('nama_bank', e.target.value)}
-                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">No. Rekening</label>
-                                    <input
-                                        type="text"
-                                        value={data.no_rekening}
-                                        onChange={(e) => setData('no_rekening', e.target.value)}
-                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Pemilik Rekening</label>
-                                    <input
-                                        type="text"
-                                        value={data.nama_pemilik_rekening}
-                                        onChange={(e) => setData('nama_pemilik_rekening', e.target.value)}
-                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    />
-                                </div>
-                            </div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kecamatan</label>
@@ -719,32 +682,7 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
 
 
 
-                            {/* Grid Section: Pembayaran / Bank */}
-                            <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
-                                    <CreditCard size={15} /> Rekening Pembayaran
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Nama Bank</span>
-                                        <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">
-                                            {detailMitra.nama_bank || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Nomor Rekening</span>
-                                        <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                            {detailMitra.no_rekening || '-'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Pemilik Rekening</span>
-                                        <span className="text-sm font-bold text-gray-900 dark:text-white capitalize">
-                                            {detailMitra.nama_pemilik_rekening || '-'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             {/* Section: Catatan */}
                             {detailMitra.catatan && (

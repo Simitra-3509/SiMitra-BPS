@@ -129,14 +129,6 @@ export default function Show({ mitra, penugasans, bulan, tahun, ringkasan }) {
                                         {mitra.status_aktif ? 'Aktif' : 'Tidak Aktif'}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500 dark:text-gray-400">No. Rekening</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-200">{mitra.no_rekening || '-'}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500 dark:text-gray-400">Bank</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-200">{mitra.nama_bank || '-'}</span>
-                                </div>
                             </div>
                         </div>
 

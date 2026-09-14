@@ -54,6 +54,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     const [akunList, setAkunList] = useState([]);
     const [detilList, setDetilList] = useState([]);
     const [selectedDetilInfo, setSelectedDetilInfo] = useState(null);
+    const [mitraSbmlMap, setMitraSbmlMap] = useState({});
 
     const selectedKegiatan = listKegiatan.find((k) => String(k.id) === String(data.kegiatan_id));
 
@@ -344,6 +345,30 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
         setCopyData([]);
     }, [data.bulan, data.tahun]);
 
+    // Fetch SBML usage for selected mitras in real-time
+    useEffect(() => {
+        if (!selectedDetilInfo?.jenis_sbml || data.mitras.length === 0) {
+            setMitraSbmlMap({});
+            return;
+        }
+
+        const mitraIds = data.mitras.map((m) => m.id);
+        axios.get(route('api.penugasan.check-sbml'), {
+            params: {
+                bulan: activeBulan,
+                tahun: activeTahun,
+                jenis_sbml: selectedDetilInfo.jenis_sbml,
+                mitra_ids: mitraIds
+            }
+        })
+        .then((res) => {
+            setMitraSbmlMap(res.data || {});
+        })
+        .catch((err) => {
+            console.error('Error fetching SBML check:', err);
+        });
+    }, [data.mitras.map((m) => m.id).join(','), selectedDetilInfo?.jenis_sbml, activeBulan, activeTahun]);
+
     // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, dengan filter kecamatan)
     useEffect(() => {
         if (!isPickerModalOpen) return;
@@ -581,6 +606,14 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     const totalKeseluruhan = data.mitras.reduce((sum, m) => {
         return sum + ((parseInt(m.kuota_target, 10) || 0) * hargaSatuan);
     }, 0);
+
+    const hasAnyExceededSbml = data.mitras.some((mitraItem) => {
+        const rowTotal = (parseInt(mitraItem.kuota_target, 10) || 0) * (selectedDetilInfo?.harga_satuan || 0);
+        const sbmlInfo = mitraSbmlMap[mitraItem.id];
+        const currentTerpakai = sbmlInfo ? (sbmlInfo.terpakai || 0) : 0;
+        const batas = sbmlInfo ? (sbmlInfo.batas_maksimal || 0) : 0;
+        return batas > 0 && (currentTerpakai + rowTotal) > batas;
+    });
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -1023,14 +1056,42 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                     {data.mitras.length > 0 ? (
                                         data.mitras.map((mitraItem) => {
                                             const rowTotal = (parseInt(mitraItem.kuota_target, 10) || 0) * (selectedDetilInfo?.harga_satuan || 0);
+                                            const sbmlInfo = mitraSbmlMap[mitraItem.id];
+                                            const currentTerpakai = sbmlInfo ? (sbmlInfo.terpakai || 0) : 0;
+                                            const batas = sbmlInfo ? (sbmlInfo.batas_maksimal || 0) : 0;
+                                            const projectedTotal = currentTerpakai + rowTotal;
+                                            const isExceeded = batas > 0 && projectedTotal > batas;
+                                            const isWarning = batas > 0 && !isExceeded && (projectedTotal / batas) >= 0.8;
 
                                             return (
-                                                <tr key={mitraItem.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/20">
+                                                <tr key={mitraItem.id} className={`hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition ${isExceeded ? 'bg-red-50/50 dark:bg-red-950/20' : ''}`}>
                                                     <td className="py-2.5 px-3 font-mono font-bold text-gray-800 dark:text-gray-200">
                                                         {mitraItem.sobat_id || '-'}
                                                     </td>
-                                                    <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white truncate" title={mitraItem.nama_lengkap}>
-                                                        {mitraItem.nama_lengkap}
+                                                    <td className="py-2.5 px-3">
+                                                        <div className="font-bold text-gray-900 dark:text-white truncate" title={mitraItem.nama_lengkap}>
+                                                            {mitraItem.nama_lengkap}
+                                                        </div>
+                                                        {selectedDetilInfo?.jenis_sbml && (
+                                                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                                {isExceeded ? (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800" title={`Sudah terpakai Rp ${formatRupiah(currentTerpakai)}, ditambah Rp ${formatRupiah(rowTotal)} = Rp ${formatRupiah(projectedTotal)} (Melebihi batas Rp ${formatRupiah(batas)})`}>
+                                                                        <AlertTriangle size={10} className="text-red-600 dark:text-red-400" />
+                                                                        Melebihi SBML: +{formatRupiah(projectedTotal - batas)}
+                                                                    </span>
+                                                                ) : isWarning ? (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800" title={`Sisa SBML: Rp ${formatRupiah(batas - projectedTotal)}`}>
+                                                                        <Info size={10} className="text-amber-600 dark:text-amber-400" />
+                                                                        Mendekati Batas ({Math.round((projectedTotal / batas) * 100)}%)
+                                                                    </span>
+                                                                ) : batas > 0 ? (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                                                                        <CheckCircle2 size={10} className="text-emerald-600 dark:text-emerald-400" />
+                                                                        Sisa SBML: {formatRupiah(Math.max(0, batas - projectedTotal))}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="py-2.5 px-3 text-center font-mono text-gray-600 dark:text-gray-300">
                                                         {selectedDetilInfo?.satuan || '-'}
@@ -1095,6 +1156,17 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                         </div>
                     </div>
 
+                    {/* Alert Banner for Exceeded SBML */}
+                    {hasAnyExceededSbml && (
+                        <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/70 rounded-xl flex items-start gap-3 text-red-700 dark:text-red-300 shadow-sm animate-pulse">
+                            <AlertTriangle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                            <div className="text-xs">
+                                <p className="font-bold mb-0.5">Peringatan Batas SBML Terlampaui!</p>
+                                <p>Satu atau lebih mitra yang dipilih memiliki penugasan yang melebihi batas maksimal Standar Biaya Masukan Lainnya (SBML) untuk periode ini (ditandai dengan label merah di atas). Mohon sesuaikan kuota target sebelum menyimpan penugasan.</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Actions Submit */}
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="text-xs text-gray-500">
@@ -1109,7 +1181,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                             </Link>
                             <button
                                 type="submit"
-                                disabled={processing || data.mitras.length === 0}
+                                disabled={processing || data.mitras.length === 0 || hasAnyExceededSbml}
                                 className="px-6 py-2.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-orange-600 rounded-xl transition shadow-md disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                             >
                                 <CheckCircle2 size={16} />
