@@ -28,7 +28,7 @@ class MitraController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nama_lengkap', 'like', "%{$search}%")
-                      ->orWhere('sobat_id', 'like', "%{$search}%");
+                        ->orWhere('sobat_id', 'like', "%{$search}%");
                 });
             })
             ->when($status !== 'semua', function ($query) use ($status) {
@@ -52,7 +52,7 @@ class MitraController extends Controller
         $mitras = $query->paginate($perPage)->withQueryString();
 
         $deletedCount = Mitra::onlyTrashed()->count();
-        
+
         $desaByKecamatan = Mitra::whereNotNull('kecamatan')
             ->whereNotNull('alamat')
             ->select('kecamatan', 'alamat')
@@ -145,7 +145,7 @@ class MitraController extends Controller
     public function bulkDestroy(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:mitras,id',
         ]);
 
@@ -165,7 +165,7 @@ class MitraController extends Controller
         $query = Mitra::onlyTrashed()
             ->when($search, function ($query, $search) {
                 $query->where('nama_lengkap', 'like', "%{$search}%")
-                      ->orWhere('sobat_id', 'like', "%{$search}%");
+                    ->orWhere('sobat_id', 'like', "%{$search}%");
             })
             ->latest('deleted_at');
 
@@ -258,19 +258,21 @@ class MitraController extends Controller
         $headerRow = null;
         $headerRowNum = 1;
         $colMap = [];
-        
+
         foreach ($allRows as $index => $row) {
             $foundSobat = false;
             $foundNama = false;
-            
+
             foreach ($row as $colLetter => $val) {
-                if ($val !== null && trim((string)$val) !== '') {
-                    $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string)$val)));
-                    if (str_contains($clean, 'sobat') || str_contains($clean, 'nik')) $foundSobat = true;
-                    if (str_contains($clean, 'nama')) $foundNama = true;
+                if ($val !== null && trim((string) $val) !== '') {
+                    $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string) $val)));
+                    if (str_contains($clean, 'sobat') || str_contains($clean, 'nik'))
+                        $foundSobat = true;
+                    if (str_contains($clean, 'nama'))
+                        $foundNama = true;
                 }
             }
-            
+
             if ($foundSobat && $foundNama) {
                 $headerRow = $row;
                 $headerRowNum = $index;
@@ -291,15 +293,16 @@ class MitraController extends Controller
 
         // Bangun mapping kolom: nomor kolom -> nama header (dinormalisasi)
         foreach ($headerRow as $colLetter => $headerVal) {
-            if ($headerVal !== null && trim((string)$headerVal) !== '') {
-                $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string)$headerVal)));
+            if ($headerVal !== null && trim((string) $headerVal) !== '') {
+                $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string) $headerVal)));
                 $colMap[$colLetter] = $clean;
             }
         }
 
         $cleanLoc = function ($val) {
-            if (!$val) return '';
-            return trim(preg_replace('/^\(\d+\)\s*/', '', (string)$val));
+            if (!$val)
+                return '';
+            return trim(preg_replace('/^\(\d+\)\s*/', '', (string) $val));
         };
 
         $errors = [];
@@ -312,12 +315,12 @@ class MitraController extends Controller
             // Bangun associative array dari kolom
             $assoc = [];
             foreach ($colMap as $colLetter => $headerName) {
-                $assoc[$headerName] = isset($row[$colLetter]) ? trim((string)$row[$colLetter]) : '';
+                $assoc[$headerName] = isset($row[$colLetter]) ? trim((string) $row[$colLetter]) : '';
             }
 
             $getVal = function ($keys) use ($assoc) {
-                foreach ((array)$keys as $k) {
-                    $cleanK = strtolower(trim(preg_replace('/\s+/', ' ', (string)$k)));
+                foreach ((array) $keys as $k) {
+                    $cleanK = strtolower(trim(preg_replace('/\s+/', ' ', (string) $k)));
                     if (isset($assoc[$cleanK]) && $assoc[$cleanK] !== '') {
                         return $assoc[$cleanK];
                     }
@@ -353,7 +356,7 @@ class MitraController extends Controller
             }
 
             $validData[] = [
-                'sobat_id' => (string)$sobatId,
+                'sobat_id' => (string) $sobatId,
                 'nama_lengkap' => $namaLengkap,
                 'alamat' => $alamat ?: null,
                 'kecamatan' => $kecamatan ?: null,
@@ -411,7 +414,7 @@ class MitraController extends Controller
     public function bulkRestore(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:mitras,id'
         ]);
 
@@ -426,7 +429,7 @@ class MitraController extends Controller
     public function bulkForceDelete(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:mitras,id'
         ]);
 

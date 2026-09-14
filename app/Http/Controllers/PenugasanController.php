@@ -253,6 +253,69 @@ class PenugasanController extends Controller implements HasMiddleware
     }
 
     /**
+     * API: Check SBML Quota for one or more Mitras in a given period and SBML type
+     */
+    public function checkMitraSbml(Request $request)
+    {
+        $bulan = (int) $request->get('bulan', date('m'));
+        $tahun = (int) $request->get('tahun', date('Y'));
+        $jenisSbml = strtolower(trim($request->get('jenis_sbml', 'pendataan')));
+        $mitraIds = $request->get('mitra_ids', []);
+
+        if (is_string($mitraIds)) {
+            $mitraIds = explode(',', $mitraIds);
+        }
+        $mitraIds = array_filter(array_map('intval', (array) $mitraIds));
+
+        if (empty($mitraIds)) {
+            return response()->json([]);
+        }
+
+        $sbmlLimit = SbmlLimit::where('jenis_kegiatan', $jenisSbml)
+            ->where('tahun', $tahun)
+            ->first();
+
+        $batasMaksimal = $sbmlLimit ? (float) $sbmlLimit->batas_maksimal : ($jenisSbml === 'pengolahan' ? 2854000 : 3085000);
+
+        $penugasanSums = Penugasan::whereIn('mitra_id', $mitraIds)
+            ->where('bulan', $bulan)
+            ->where('tahun', $tahun)
+            ->where('status', '!=', 'Batal')
+            ->whereHas('detilKegiatan', function ($q) use ($jenisSbml) {
+                $q->where('jenis_sbml', $jenisSbml);
+            })
+            ->groupBy('mitra_id')
+            ->selectRaw('mitra_id, SUM(total_honor) as total_terpakai')
+            ->pluck('total_terpakai', 'mitra_id')
+            ->toArray();
+
+        $result = [];
+        foreach ($mitraIds as $mId) {
+            $terpakai = (float) ($penugasanSums[$mId] ?? 0);
+            $sisa = max(0, $batasMaksimal - $terpakai);
+            $pct = $batasMaksimal > 0 ? round(($terpakai / $batasMaksimal) * 100, 1) : 0;
+            
+            $status = 'Aman';
+            if ($pct >= 100) {
+                $status = 'Kritis';
+            } elseif ($pct >= 80) {
+                $status = 'Peringatan';
+            }
+
+            $result[$mId] = [
+                'mitra_id' => $mId,
+                'batas_maksimal' => $batasMaksimal,
+                'terpakai' => $terpakai,
+                'sisa_kuota' => $sisa,
+                'persentase' => $pct,
+                'status' => $status,
+            ];
+        }
+
+        return response()->json($result);
+    }
+
+    /**
      * Helper: Parse Date String to Get Previous Month Range
      * We don't have this function anymore.
      */
