@@ -38,7 +38,102 @@ const currentMonth = new Date().getMonth() + 1;
 // Daftar tahun yang tersedia (5 tahun ke belakang)
 const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
+// ─── Greeting Pool ────────────────────────────────────────────────────────────
+
+// helper lowercase null-safe
+const strtolower = (s) => (s ?? '').toLowerCase();
+
+// Versi Operator — menyebutkan "penugasan" secara eksplisit
+const GREETINGS_OPERATOR = {
+    pagi: [
+        'Selamat pagi, {nama}. Semoga hari ini berjalan lancar.',
+        'Selamat pagi, {nama}. Sistem siap membantu pekerjaan Anda hari ini.',
+        'Selamat pagi, {nama}. Pastikan penugasan bulan ini sudah lengkap.',
+        'Selamat pagi, {nama}. Mari tinjau kembali data penugasan Anda.',
+    ],
+    siang: [
+        'Selamat siang, {nama}. Jangan lupa istirahat sejenak.',
+        'Selamat siang, {nama}. Ada pekerjaan yang menunggu, yuk diselesaikan.',
+        'Selamat siang, {nama}. Cek kembali penugasan yang belum terisi bulan ini.',
+        'Selamat siang, {nama}. Sistem siap membantu kapan pun Anda butuhkan.',
+    ],
+    sore: [
+        'Selamat sore, {nama}. Masih ada waktu untuk menyelesaikan tugas hari ini.',
+        'Selamat sore, {nama}. Periksa kembali data yang sudah diinput hari ini.',
+        'Selamat sore, {nama}. Satu langkah lagi menuju akhir hari yang produktif.',
+        'Selamat sore, {nama}. Pastikan tidak ada yang terlewat sebelum tutup hari.',
+    ],
+    malam: [
+        'Selamat malam, {nama}. Terima kasih atas dedikasi Anda hari ini.',
+        'Selamat malam, {nama}. Masih bekerja? Pastikan data sudah tersimpan dengan baik.',
+        'Selamat malam, {nama}. Periksa kembali sebelum mengakhiri sesi ini.',
+        'Selamat malam, {nama}. Jangan lupa logout setelah selesai bekerja.',
+    ],
+    diniHari: [
+        'Selamat pagi, {nama}. Masih terjaga? Jaga kesehatan, tugas bisa diselesaikan nanti.',
+        'Selamat pagi, {nama}. Pastikan hanya pekerjaan mendesak yang ditangani sekarang.',
+        'Selamat pagi, {nama}. Sistem tetap siap melayani kapan pun Anda butuhkan.',
+    ],
+};
+
+// Versi PPK & Admin — bahasa lebih netral
+const GREETINGS_DEFAULT = {
+    pagi: [
+        'Selamat pagi, {nama}. Semoga hari ini berjalan lancar.',
+        'Selamat pagi, {nama}. Sistem siap membantu pekerjaan Anda hari ini.',
+        'Selamat pagi, {nama}. Ada beberapa hal yang perlu ditinjau hari ini.',
+        'Selamat pagi, {nama}. Mari mulai dari mana kita tinggalkan.',
+    ],
+    siang: [
+        'Selamat siang, {nama}. Jangan lupa istirahat sejenak.',
+        'Selamat siang, {nama}. Ada pekerjaan yang menunggu, yuk diselesaikan.',
+        'Selamat siang, {nama}. Tinjau kembali data yang memerlukan perhatian Anda.',
+        'Selamat siang, {nama}. Sistem siap membantu kapan pun Anda butuhkan.',
+    ],
+    sore: [
+        'Selamat sore, {nama}. Masih ada waktu untuk menyelesaikan tugas hari ini.',
+        'Selamat sore, {nama}. Tinjau kembali sebelum mengakhiri aktivitas hari ini.',
+        'Selamat sore, {nama}. Satu langkah lagi menuju akhir hari yang produktif.',
+        'Selamat sore, {nama}. Pastikan tidak ada yang terlewat sebelum tutup hari.',
+    ],
+    malam: [
+        'Selamat malam, {nama}. Terima kasih atas dedikasi Anda hari ini.',
+        'Selamat malam, {nama}. Masih bekerja? Pastikan semua sudah tertangani dengan baik.',
+        'Selamat malam, {nama}. Tinjau kembali sebelum mengakhiri sesi ini.',
+        'Selamat malam, {nama}. Jangan lupa logout setelah selesai bekerja.',
+    ],
+    diniHari: [
+        'Selamat pagi, {nama}. Masih terjaga? Jaga kesehatan, pekerjaan bisa dilanjut nanti.',
+        'Selamat pagi, {nama}. Pastikan hanya hal mendesak yang ditangani sekarang.',
+        'Selamat pagi, {nama}. Sistem tetap siap melayani kapan pun Anda butuhkan.',
+    ],
+};
+
+/**
+ * Mengembalikan ucapan greeting berdasarkan jam saat ini dan role user.
+ * Pagi     : 05.00 – 09.59
+ * Siang    : 10.00 – 13.59
+ * Sore     : 14.00 – 18.59
+ * Malam    : 19.00 – 23.59
+ * Dini Hari: 00.00 – 04.59
+ */
+function getGreeting(userName, role) {
+    const hour = new Date().getHours();
+    let period;
+    if      (hour >= 5  && hour < 10) period = 'pagi';
+    else if (hour >= 10 && hour < 14) period = 'siang';
+    else if (hour >= 14 && hour < 19) period = 'sore';
+    else if (hour >= 19 && hour < 24) period = 'malam';
+    else                              period = 'diniHari';
+
+    const pool     = strtolower(role) === 'operator' ? GREETINGS_OPERATOR : GREETINGS_DEFAULT;
+    const messages = pool[period];
+    const picked   = messages[Math.floor(Math.random() * messages.length)];
+    return picked.replace('{nama}', userName ?? 'Pengguna');
+}
+
 // ─── Helper format Rupiah ─────────────────────────────────────────────────────
+
 const formatRp = (number) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
@@ -207,7 +302,7 @@ function YearDropdown({ value, onChange }) {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function Dashboard({ stats: initStats, sbml: initSbml, chartData: initChartData, mitraList: initMitraList }) {
-    usePage().props.auth.user;
+    const user = usePage().props.auth.user;
 
     // dark mode
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -355,7 +450,7 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Selamat datang di SIMITRA Lite - Sistem Informasi Mitra Terpadu
+                            {getGreeting(user?.name, user?.role)}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
