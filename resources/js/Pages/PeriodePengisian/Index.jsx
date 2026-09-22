@@ -36,8 +36,13 @@ export default function Index({ periodes, tahun, tahunList }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={
-                <div className="flex items-center justify-between">
+            header="Periode Pengisian Penugasan"
+        >
+            <Head title="Periode Pengisian Penugasan" />
+
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* Page Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Lock className="text-[#D9531E]" size={24} />
@@ -65,11 +70,6 @@ export default function Index({ periodes, tahun, tahunList }) {
                         </select>
                     </div>
                 </div>
-            }
-        >
-            <Head title="Periode Pengisian Penugasan" />
-
-            <div className="max-w-7xl mx-auto space-y-6">
                 {!isPpk && (
                     <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 p-4 rounded-2xl flex items-start gap-3">
                         <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" size={20} />

@@ -14,6 +14,10 @@ class MitraController extends Controller
      */
     public function index(Request $request)
     {
+        if (strtolower(auth()->user()->role ?? '') === 'ppk') {
+            abort(403, 'Akses ditolak: Role PPK tidak memiliki akses ke Master Mitra.');
+        }
+
         $search = $request->input('search');
         $status = $request->input('status', 'semua');
         $kecamatan = $request->input('kecamatan', 'semua');
@@ -24,7 +28,7 @@ class MitraController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nama_lengkap', 'like', "%{$search}%")
-                      ->orWhere('sobat_id', 'like', "%{$search}%");
+                        ->orWhere('sobat_id', 'like', "%{$search}%");
                 });
             })
             ->when($status !== 'semua', function ($query) use ($status) {
@@ -48,7 +52,7 @@ class MitraController extends Controller
         $mitras = $query->paginate($perPage)->withQueryString();
 
         $deletedCount = Mitra::onlyTrashed()->count();
-        
+
         $desaByKecamatan = Mitra::whereNotNull('kecamatan')
             ->whereNotNull('alamat')
             ->select('kecamatan', 'alamat')
@@ -83,12 +87,18 @@ class MitraController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->filled('sobat_id')) {
+            $trashed = Mitra::onlyTrashed()->where('sobat_id', trim($request->sobat_id))->first();
+            if ($trashed) {
+                return redirect()->back()->withErrors([
+                    'sobat_id' => "Mitra dengan Sobat ID '{$request->sobat_id}' ({$trashed->nama_lengkap}) sudah ada di Recycle Bin. Silakan pulihkan data tersebut dari menu Recycle Bin."
+                ])->withInput();
+            }
+        }
+
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id',
-            'no_rekening' => 'nullable|string',
-            'nama_bank' => 'nullable|string',
-            'nama_pemilik_rekening' => 'nullable|string',
             'alamat' => 'nullable|string',
             'kecamatan' => 'nullable|string',
             'catatan' => 'nullable|string',
@@ -108,9 +118,6 @@ class MitraController extends Controller
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id,' . $mitra->id,
-            'no_rekening' => 'nullable|string',
-            'nama_bank' => 'nullable|string',
-            'nama_pemilik_rekening' => 'nullable|string',
             'alamat' => 'nullable|string',
             'kecamatan' => 'nullable|string',
             'catatan' => 'nullable|string',
@@ -138,7 +145,7 @@ class MitraController extends Controller
     public function bulkDestroy(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:mitras,id',
         ]);
 
@@ -158,7 +165,7 @@ class MitraController extends Controller
         $query = Mitra::onlyTrashed()
             ->when($search, function ($query, $search) {
                 $query->where('nama_lengkap', 'like', "%{$search}%")
-                      ->orWhere('sobat_id', 'like', "%{$search}%");
+                    ->orWhere('sobat_id', 'like', "%{$search}%");
             })
             ->latest('deleted_at');
 
@@ -182,9 +189,19 @@ class MitraController extends Controller
     public function restore($id)
     {
         $mitra = Mitra::onlyTrashed()->findOrFail($id);
+
+        if (!empty($mitra->sobat_id)) {
+            $activeExists = Mitra::where('sobat_id', $mitra->sobat_id)->exists();
+            if ($activeExists) {
+                return redirect()->back()->withErrors([
+                    'restore' => "Gagal memulihkan mitra. Sobat ID '{$mitra->sobat_id}' saat ini sudah digunakan oleh mitra aktif lain."
+                ]);
+            }
+        }
+
         $mitra->restore();
 
-        return redirect()->back()->with('message', 'Mitra berhasil dipulihkan.');
+        return redirect()->back()->with('message', "Mitra {$mitra->nama_lengkap} berhasil dipulihkan.");
     }
 
     /**
@@ -193,9 +210,17 @@ class MitraController extends Controller
     public function forceDelete($id)
     {
         $mitra = Mitra::onlyTrashed()->findOrFail($id);
+
+        $hasPenugasan = \App\Models\Penugasan::withTrashed()->where('mitra_id', $mitra->id)->exists();
+        if ($hasPenugasan) {
+            return redirect()->back()->withErrors([
+                'forceDelete' => "Mitra {$mitra->nama_lengkap} tidak dapat dihapus permanen karena masih memiliki riwayat data penugasan kegiatan."
+            ]);
+        }
+
         $mitra->forceDelete();
 
-        return redirect()->back()->with('message', 'Mitra dihapus secara permanen.');
+        return redirect()->back()->with('message', "Mitra {$mitra->nama_lengkap} dihapus secara permanen.");
     }
 
     /**
@@ -233,19 +258,21 @@ class MitraController extends Controller
         $headerRow = null;
         $headerRowNum = 1;
         $colMap = [];
-        
+
         foreach ($allRows as $index => $row) {
             $foundSobat = false;
             $foundNama = false;
-            
+
             foreach ($row as $colLetter => $val) {
-                if ($val !== null && trim((string)$val) !== '') {
-                    $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string)$val)));
-                    if (str_contains($clean, 'sobat') || str_contains($clean, 'nik')) $foundSobat = true;
-                    if (str_contains($clean, 'nama')) $foundNama = true;
+                if ($val !== null && trim((string) $val) !== '') {
+                    $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string) $val)));
+                    if (str_contains($clean, 'sobat') || str_contains($clean, 'nik'))
+                        $foundSobat = true;
+                    if (str_contains($clean, 'nama'))
+                        $foundNama = true;
                 }
             }
-            
+
             if ($foundSobat && $foundNama) {
                 $headerRow = $row;
                 $headerRowNum = $index;
@@ -266,15 +293,16 @@ class MitraController extends Controller
 
         // Bangun mapping kolom: nomor kolom -> nama header (dinormalisasi)
         foreach ($headerRow as $colLetter => $headerVal) {
-            if ($headerVal !== null && trim((string)$headerVal) !== '') {
-                $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string)$headerVal)));
+            if ($headerVal !== null && trim((string) $headerVal) !== '') {
+                $clean = strtolower(trim(preg_replace('/\s+/', ' ', (string) $headerVal)));
                 $colMap[$colLetter] = $clean;
             }
         }
 
         $cleanLoc = function ($val) {
-            if (!$val) return '';
-            return trim(preg_replace('/^\(\d+\)\s*/', '', (string)$val));
+            if (!$val)
+                return '';
+            return trim(preg_replace('/^\(\d+\)\s*/', '', (string) $val));
         };
 
         $errors = [];
@@ -287,12 +315,12 @@ class MitraController extends Controller
             // Bangun associative array dari kolom
             $assoc = [];
             foreach ($colMap as $colLetter => $headerName) {
-                $assoc[$headerName] = isset($row[$colLetter]) ? trim((string)$row[$colLetter]) : '';
+                $assoc[$headerName] = isset($row[$colLetter]) ? trim((string) $row[$colLetter]) : '';
             }
 
             $getVal = function ($keys) use ($assoc) {
-                foreach ((array)$keys as $k) {
-                    $cleanK = strtolower(trim(preg_replace('/\s+/', ' ', (string)$k)));
+                foreach ((array) $keys as $k) {
+                    $cleanK = strtolower(trim(preg_replace('/\s+/', ' ', (string) $k)));
                     if (isset($assoc[$cleanK]) && $assoc[$cleanK] !== '') {
                         return $assoc[$cleanK];
                     }
@@ -313,13 +341,6 @@ class MitraController extends Controller
                 continue;
             }
 
-            $namaBank = $getVal(['nama bank', 'nama_bank', 'bank']);
-            $noRekening = $getVal(['no rekening', 'no_rekening', 'rekening']);
-            $namaPemilikRekening = $getVal(['nama pemilik rekening', 'nama_pemilik_rekening', 'pemilik rekening', 'nama_pemilik']);
-            if (empty($namaPemilikRekening)) {
-                $namaPemilikRekening = $namaLengkap;
-            }
-
             $alamatRaw = $getVal(['alamat']);
             $desaRaw = $cleanLoc($getVal(['desa', 'kelurahan', 'alamat desa/kel', 'alamat desa', 'alamat_desa']));
             $alamat = $alamatRaw ?: ($desaRaw ? "Desa {$desaRaw}" : null);
@@ -335,11 +356,8 @@ class MitraController extends Controller
             }
 
             $validData[] = [
-                'sobat_id' => (string)$sobatId,
+                'sobat_id' => (string) $sobatId,
                 'nama_lengkap' => $namaLengkap,
-                'nama_bank' => $namaBank ?: null,
-                'no_rekening' => $noRekening ?: null,
-                'nama_pemilik_rekening' => $namaPemilikRekening ?: null,
                 'alamat' => $alamat ?: null,
                 'kecamatan' => $kecamatan ?: null,
                 'catatan' => $catatan ?: null,
@@ -381,7 +399,7 @@ class MitraController extends Controller
                 Mitra::upsert(
                     $chunk,
                     ['sobat_id'],
-                    ['nama_lengkap', 'nama_bank', 'no_rekening', 'nama_pemilik_rekening', 'alamat', 'kecamatan', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
+                    ['nama_lengkap', 'alamat', 'kecamatan', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
                 );
             }
         });
@@ -396,7 +414,7 @@ class MitraController extends Controller
     public function bulkRestore(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:mitras,id'
         ]);
 
@@ -411,7 +429,7 @@ class MitraController extends Controller
     public function bulkForceDelete(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:mitras,id'
         ]);
 

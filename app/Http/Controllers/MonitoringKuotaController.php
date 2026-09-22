@@ -32,13 +32,11 @@ class MonitoringKuotaController extends Controller
             ->leftJoin('penugasans as p', function($join) use ($bulan, $tahun) {
                 $join->on('p.mitra_id', '=', 'mitras.id')
                      ->where('p.bulan', '=', $bulan)
-                     ->where('p.tahun', '=', $tahun);
+                     ->where('p.tahun', '=', $tahun)
+                     ->where('p.status', '!=', 'Batal')
+                     ->whereNull('p.deleted_at');
             })
-            ->leftJoin('kegiatans as k', function($join) {
-                $join->on('p.kegiatan_id', '=', 'k.id')
-                     ->whereNull('k.deleted_at');
-            })
-            ->leftJoin('detil_kegiatan as dk', 'dk.kegiatan_id', '=', 'k.id')
+            ->leftJoin('detil_kegiatan as dk', 'dk.id', '=', 'p.detil_kegiatan_id')
             ->selectRaw("
                 COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pendataan' THEN p.total_honor ELSE 0 END), 0) as terpakai_pendataan,
                 COALESCE(SUM(CASE WHEN dk.jenis_sbml = 'pengolahan' THEN p.total_honor ELSE 0 END), 0) as terpakai_pengolahan,
@@ -287,10 +285,11 @@ class MonitoringKuotaController extends Controller
         $bulan = $request->input('bulan', date('m'));
         $tahun = $request->input('tahun', date('Y'));
         
-        $penugasans = Penugasan::with(['kegiatan.detilKegiatan'])
+        $penugasans = Penugasan::with(['kegiatan', 'detilKegiatan'])
             ->where('mitra_id', $id)
             ->where('bulan', $bulan)
             ->where('tahun', $tahun)
+            ->where('status', '!=', 'Batal')
             ->get();
             
         $sbmlLimits = SbmlLimit::where('tahun', $tahun)->get()->keyBy('jenis_kegiatan');
@@ -301,15 +300,12 @@ class MonitoringKuotaController extends Controller
         $terpakaiPengolahan = 0;
         
         foreach ($penugasans as $p) {
-            if (!$p->kegiatan) continue;
+            $honorTotal = (float) ($p->total_honor ?? 0);
             
-            $honorTotal = $p->total_honor ?? 0;
+            // Cek jenis_sbml spesifik dari detil kegiatan penugasan ini
+            $jenisSbml = strtolower($p->detilKegiatan?->jenis_sbml ?? 'pendataan');
             
-            // Cek jenis_sbml dari detil_kegiatan
-            $detils = $p->kegiatan?->detilKegiatan ?? collect();
-            $hasPengolahan = $detils->contains(fn($d) => strtolower($d->jenis_sbml) === 'pengolahan');
-            
-            if ($hasPengolahan) {
+            if ($jenisSbml === 'pengolahan') {
                 $terpakaiPengolahan += $honorTotal;
             } else {
                 $terpakaiPendataan += $honorTotal;

@@ -180,6 +180,7 @@ class KegiatanController extends Controller implements HasMiddleware
             'deskripsi'       => 'nullable|string',
 
             'detil'                       => 'required|array|min:1',
+            'detil.*.id'                  => 'nullable',
             'detil.*.nama_detil'          => 'required|string|max:255',
             'detil.*.jenis_sbml'          => 'required|string|in:pendataan,pengolahan',
             'detil.*.frekuensi_penugasan' => 'nullable|string|in:bulanan,triwulanan,tahunan',
@@ -203,23 +204,57 @@ class KegiatanController extends Controller implements HasMiddleware
                 'total_anggaran'  => $totalAnggaran,
             ]);
 
-            $kegiatan->detilKegiatan()->delete();
+            // Smart-Sync Detil Kegiatan:
+            // 1. Dapatkan semua detil lama di database untuk kegiatan ini
+            $existingDetils = $kegiatan->detilKegiatan->keyBy('id');
+            $submittedDetilIds = [];
 
             foreach ($validated['detil'] as $detilData) {
+                $detilId = isset($detilData['id']) && is_numeric($detilData['id']) ? (int)$detilData['id'] : null;
                 $jumlah = (float)$detilData['jumlah'];
                 $hargaSatuan = (float)$detilData['harga_satuan'];
                 $total = $jumlah * $hargaSatuan;
 
-                DetilKegiatan::create([
-                    'kegiatan_id'         => $kegiatan->id,
-                    'nama_detil'          => trim($detilData['nama_detil']),
-                    'jenis_sbml'          => strtolower($detilData['jenis_sbml'] ?? 'pendataan'),
-                    'frekuensi_penugasan' => !empty($detilData['frekuensi_penugasan']) ? strtolower($detilData['frekuensi_penugasan']) : 'bulanan',
-                    'satuan'              => trim($detilData['satuan']),
-                    'jumlah'              => $jumlah,
-                    'harga_satuan'        => $hargaSatuan,
-                    'total'               => $total,
-                ]);
+                if ($detilId && $existingDetils->has($detilId)) {
+                    // Update detil yang sudah ada tanpa mengubah ID (agar relasi penugasan mitra tidak putus)
+                    $existingDetils[$detilId]->update([
+                        'nama_detil'          => trim($detilData['nama_detil']),
+                        'jenis_sbml'          => strtolower($detilData['jenis_sbml'] ?? 'pendataan'),
+                        'frekuensi_penugasan' => !empty($detilData['frekuensi_penugasan']) ? strtolower($detilData['frekuensi_penugasan']) : 'bulanan',
+                        'satuan'              => trim($detilData['satuan']),
+                        'jumlah'              => $jumlah,
+                        'harga_satuan'        => $hargaSatuan,
+                        'total'               => $total,
+                    ]);
+                    $submittedDetilIds[] = $detilId;
+                } else {
+                    // Buat detil baru
+                    $newDetil = DetilKegiatan::create([
+                        'kegiatan_id'         => $kegiatan->id,
+                        'nama_detil'          => trim($detilData['nama_detil']),
+                        'jenis_sbml'          => strtolower($detilData['jenis_sbml'] ?? 'pendataan'),
+                        'frekuensi_penugasan' => !empty($detilData['frekuensi_penugasan']) ? strtolower($detilData['frekuensi_penugasan']) : 'bulanan',
+                        'satuan'              => trim($detilData['satuan']),
+                        'jumlah'              => $jumlah,
+                        'harga_satuan'        => $hargaSatuan,
+                        'total'               => $total,
+                    ]);
+                    $submittedDetilIds[] = $newDetil->id;
+                }
+            }
+
+            // 2. Cek detil lama yang dihapus dari form input
+            $detilsToDelete = $existingDetils->filter(function ($detil) use ($submittedDetilIds) {
+                return !in_array($detil->id, $submittedDetilIds);
+            });
+
+            foreach ($detilsToDelete as $detilToDelete) {
+                // Periksa apakah ada penugasan (aktif maupun di recycle bin) yang merujuk pada rincian ini
+                $hasPenugasan = \App\Models\Penugasan::withTrashed()->where('detil_kegiatan_id', $detilToDelete->id)->exists();
+                if ($hasPenugasan) {
+                    throw new \Exception("Rincian kegiatan '{$detilToDelete->nama_detil}' tidak dapat dihapus karena sudah memiliki data penugasan mitra.");
+                }
+                $detilToDelete->delete();
             }
         });
 

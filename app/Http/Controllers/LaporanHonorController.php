@@ -208,8 +208,79 @@ class LaporanHonorController extends Controller
      */
     public function show($id, Request $request)
     {
+        $mitra = Mitra::findOrFail($id);
+
+        $bulan = (int) $request->input('bulan', Carbon::now()->month);
+        $tahun = (int) $request->input('tahun', Carbon::now()->year);
+        $jenisSbml = $request->input('jenis_sbml', '');
+
+        $query = Penugasan::with(['kegiatan', 'detilKegiatan'])
+            ->where('mitra_id', $id)
+            ->where('bulan', $bulan)
+            ->where('tahun', $tahun)
+            ->where('status', '!=', 'Batal');
+
+        if ($jenisSbml && $jenisSbml !== 'semua') {
+            $query->whereHas('detilKegiatan', function ($q) use ($jenisSbml) {
+                $q->where('jenis_sbml', $jenisSbml);
+            });
+        }
+
+        $penugasans = $query->orderBy('tanggal_selesai', 'desc')->get();
+
+        $namaBulan = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $periodeTeks = ($namaBulan[$bulan] ?? "Bulan $bulan") . " " . $tahun;
+
+        $rincian = $penugasans->map(function ($p) use ($namaBulan) {
+            $tgl = $p->tanggal_selesai ?? $p->kegiatan?->tanggal_selesai;
+            $tglFormatted = '-';
+            if ($tgl) {
+                $c = Carbon::parse($tgl);
+                $tglFormatted = $c->format('d') . ' ' . ($namaBulan[$c->month] ?? $c->format('M')) . ' ' . $c->format('Y');
+            }
+
+            return [
+                'id' => $p->id,
+                'nama_kegiatan' => $p->kegiatan?->nama_kegiatan ?? '-',
+                'nama_detil' => $p->detilKegiatan?->nama_detil ?? '-',
+                'jenis_sbml' => ucfirst($p->detilKegiatan?->jenis_sbml ?? 'Pendataan'),
+                'tanggal_selesai' => $tglFormatted,
+                'volume' => (int) $p->kuota_target,
+                'satuan' => $p->detilKegiatan?->satuan ?? 'Dokumen',
+                'harga_satuan' => (float) ($p->detilKegiatan?->harga_satuan ?? 0),
+                'total' => (float) $p->total_honor,
+                'status' => $p->status ?? 'Aktif',
+            ];
+        });
+
+        $totalPencairan = (float) $penugasans->sum('total_honor');
+        $jumlahTransaksi = $penugasans->count();
+
         return Inertia::render('LaporanHonor/Show', [
             'id' => $id,
+            'mitra' => [
+                'id' => $mitra->id,
+                'nama_lengkap' => $mitra->nama_lengkap,
+                'sobat_id' => $mitra->sobat_id ?? '-',
+                'npwp' => $mitra->npwp ?? '-',
+                'nik' => $mitra->nik ?? '-',
+                'email' => $mitra->email ?? '-',
+                'jenis_kelamin' => $mitra->jenis_kelamin ?? '-',
+                'alamat_domisili' => $mitra->alamat_domisili ?? '-',
+                'kecamatan' => $mitra->kecamatan ?? '-',
+                'desa' => $mitra->desa ?? '-',
+            ],
+            'periode' => $periodeTeks,
+            'bulan' => $bulan,
+            'tahun' => $tahun,
+            'jenis_sbml' => $jenisSbml ? ucfirst($jenisSbml) : 'Semua',
+            'rincian' => $rincian,
+            'total_pencairan' => $totalPencairan,
+            'jumlah_transaksi' => $jumlahTransaksi,
         ]);
     }
 }

@@ -384,7 +384,15 @@ const Index = ({ data, summary, filters, mitraList }) => {
                                             <td className="px-6 py-4 text-center dark:text-gray-300">{item.jml_transaksi}</td>
                                             <td className="px-6 py-4 font-bold text-gray-800 dark:text-white text-right">{formatRupiah(item.total_pencairan)}</td>
                                             <td className="px-6 py-4 text-center">
-                                                <Link href={route('laporan-honor.show', item.mitra_id)} className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max">
+                                                <Link 
+                                                    href={route('laporan-honor.show', {
+                                                        id: item.mitra_id,
+                                                        bulan: item.bulan,
+                                                        tahun: item.tahun,
+                                                        jenis_sbml: item.jenis_sbml
+                                                    })} 
+                                                    className="px-3 py-1.5 text-xs font-semibold text-orange-500 dark:text-orange-400 border border-orange-500 dark:border-orange-500/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition flex items-center justify-center mx-auto gap-1 w-max"
+                                                >
                                                     <Search size={14} /> Detail
                                                 </Link>
                                             </td>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MitraController;
 use App\Http\Controllers\SbmlLimitController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\LaporanHonorController;
 use App\Http\Controllers\MonitoringKuotaController;
 use App\Http\Controllers\PeriodePengisianController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Models\Mitra;
 use App\Models\Kegiatan;
@@ -25,98 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ==========================================
     // 1. DASHBOARD & PROFILE (SEMUA USER TERAUTENTIKASI)
     // ==========================================
-    Route::get('/dashboard', function () {
-        $userRole = strtolower(auth()->user()->role ?? '');
-
-        // 1. Total Mitra yang sedang ada penugasan
-        $totalMitra = Penugasan::whereNotNull('mitra_id')
-            ->distinct('mitra_id')
-            ->count('mitra_id');
-
-        // 2. Kegiatan aktif yang sedang dilaksanakan ataupun sedang ditugaskan
-        $kegiatanAktif = Kegiatan::where('status_aktif', true)
-            ->where(function ($query) {
-                $query->has('penugasans')
-                    ->orWhere(function ($q) {
-                        $q->whereNotNull('tanggal_mulai')
-                          ->whereDate('tanggal_mulai', '<=', now())
-                          ->whereDate('tanggal_selesai', '>=', now());
-                    });
-            })
-            ->count();
-
-        // 3. Honor Mitra Bulan Ini (Rata-rata, Terkecil, Terbesar)
-        $currentMonth = (int) date('m');
-        $currentYear = (int) date('Y');
-
-        $mitraHonorBulanIniSums = DB::table('penugasans')
-            ->whereNull('deleted_at')
-            ->where('bulan', $currentMonth)
-            ->where('tahun', $currentYear)
-            ->selectRaw('SUM(total_honor) as total_honor')
-            ->groupBy('mitra_id')
-            ->pluck('total_honor');
-
-        $rataRataHonor = $mitraHonorBulanIniSums->count() > 0 ? (float) $mitraHonorBulanIniSums->avg() : 0;
-        $honorTerkecil = $mitraHonorBulanIniSums->count() > 0 ? (float) $mitraHonorBulanIniSums->min() : 0;
-        $honorTerbesar = $mitraHonorBulanIniSums->count() > 0 ? (float) $mitraHonorBulanIniSums->max() : 0;
-
-        $honorBulanIni = (float) Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->sum('total_honor');
-        $jumlahPenugasanBulanIni = Penugasan::where('bulan', (int)date('m'))->where('tahun', (int)date('Y'))->count();
-
-        // 4. Rata-rata honor mitra dalam setahun (tahun berjalan)
-        $currentYear = (int) date('Y');
-        $mitraHonorSetahunSums = DB::table('penugasans')
-            ->whereNull('deleted_at')
-            ->where('tahun', $currentYear)
-            ->selectRaw('SUM(total_honor) as total_honor')
-            ->groupBy('mitra_id')
-            ->pluck('total_honor');
-
-        $rataRataHonorSetahun = $mitraHonorSetahunSums->count() > 0 ? (float) $mitraHonorSetahunSums->avg() : 0;
-
-        $sbmlPendataan = SbmlLimit::where('jenis_kegiatan', 'pendataan')->first()?->batas_maksimal ?? 0;
-        $sbmlPengolahan = SbmlLimit::where('jenis_kegiatan', 'pengolahan')->first()?->batas_maksimal ?? 0;
-
-        $performaData = [
-            ['name' => 'Jan', 'honor' => 0],
-            ['name' => 'Feb', 'honor' => 0],
-            ['name' => 'Mar', 'honor' => 0],
-            ['name' => 'Apr', 'honor' => 0],
-            ['name' => 'Mei', 'honor' => 0],
-            ['name' => 'Jun', 'honor' => 0],
-            ['name' => 'Jul', 'honor' => 0],
-            ['name' => 'Agu', 'honor' => (float)$honorBulanIni],
-        ];
-
-        $komposisiData = [
-            ['name' => 'Mitra', 'value' => $totalMitra],
-            ['name' => 'Kegiatan', 'value' => $kegiatanAktif],
-            ['name' => 'Penugasan', 'value' => $jumlahPenugasanBulanIni],
-        ];
-
-        return Inertia::render('Dashboard', [
-            'userRole' => $userRole,
-            'stats' => [
-                'totalMitra' => $totalMitra,
-                'kegiatanAktif' => $kegiatanAktif,
-                'honorBulanIni' => $honorBulanIni,
-                'rataRataHonor' => $rataRataHonor,
-                'honorTerkecil' => $honorTerkecil,
-                'honorTerbesar' => $honorTerbesar,
-                'rataRataHonorSetahun' => $rataRataHonorSetahun,
-                'jumlahInputHonor' => $jumlahPenugasanBulanIni,
-            ],
-            'sbml' => [
-                'pendataan' => $sbmlPendataan,
-                'pengolahan' => $sbmlPengolahan,
-            ],
-            'chartData' => [
-                'performa' => $performaData,
-                'komposisi' => $komposisiData,
-            ]
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/api/dashboard-filter', [DashboardController::class, 'filter'])->name('api.dashboard-filter');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -216,6 +128,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
         Route::post('api/penugasan/bulk-lookup-mitra', [PenugasanController::class, 'bulkLookupMitra'])->name('api.penugasan.bulk-lookup-mitra');
         Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
+        Route::get('api/penugasan/check-sbml', [PenugasanController::class, 'checkMitraSbml'])->name('api.penugasan.check-sbml');
 
         // Recycle Bin Penugasan (OPERATOR, PPK, ADMIN)
         Route::get('/recycle-bin/penugasan', [PenugasanController::class, 'recycleBin'])->name('penugasan.recycle-bin');
