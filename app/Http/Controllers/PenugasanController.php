@@ -20,7 +20,7 @@ class PenugasanController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('role:operator', only: [
+            new Middleware('role:operator,admin', only: [
                 'create', 'store', 'edit', 'update', 'destroy', 
                 'bulkDestroy', 'restore', 'forceDelete', 
                 'bulkRestore', 'bulkForceDelete'

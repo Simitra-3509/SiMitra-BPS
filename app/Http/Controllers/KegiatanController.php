@@ -407,7 +407,11 @@ class KegiatanController extends Controller implements HasMiddleware
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls'
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240'
+        ], [
+            'file.required' => 'File wajib diunggah.',
+            'file.mimes'    => 'File harus berformat .csv, .txt, .xlsx, atau .xls.',
+            'file.max'      => 'Ukuran file maksimal 10MB.',
         ]);
 
         $file = $request->file('file');
