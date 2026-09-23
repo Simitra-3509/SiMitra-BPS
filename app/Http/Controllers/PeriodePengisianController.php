@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PeriodePengisian;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -81,6 +82,8 @@ class PeriodePengisianController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ][$validated['bulan']] ?? $validated['bulan'];
 
+        ActivityLogger::log("PPK mengunci periode pengisian {$namaBulan} {$validated['tahun']}", $request);
+
         return redirect()->back()->with('success', "Periode pengisian {$namaBulan} {$validated['tahun']} berhasil dikunci oleh PPK.");
     }
 
@@ -112,6 +115,8 @@ class PeriodePengisianController extends Controller
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ][$validated['bulan']] ?? $validated['bulan'];
+
+        ActivityLogger::log("PPK membuka kunci periode pengisian {$namaBulan} {$validated['tahun']}", $request);
 
         return redirect()->back()->with('success', "Periode pengisian {$namaBulan} {$validated['tahun']} berhasil dibuka kunci oleh PPK.");
     }
