@@ -7,6 +7,8 @@ use App\Http\Controllers\SbmlLimitController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\UserController; 
 use App\Http\Controllers\PenugasanController;
+use App\Http\Controllers\PenugasanTrashController;
+use App\Http\Controllers\PenugasanApiController;
 use App\Http\Controllers\LaporanHonorController;
 use App\Http\Controllers\MonitoringKuotaController;
 use App\Http\Controllers\PeriodePengisianController;
@@ -124,18 +126,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('penugasan/import', [PenugasanController::class, 'import'])->name('penugasan.import');
         Route::post('penugasan/bulk-destroy', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulk-destroy');
         Route::post('penugasan/bulk-delete', [PenugasanController::class, 'bulkDestroy'])->name('penugasan.bulkDelete');
-        Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
-        Route::get('api/penugasan/search-mitra', [PenugasanController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
-        Route::post('api/penugasan/bulk-lookup-mitra', [PenugasanController::class, 'bulkLookupMitra'])->name('api.penugasan.bulk-lookup-mitra');
-        Route::get('api/penugasan/prev-month-assignments', [PenugasanController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
-        Route::get('api/penugasan/check-sbml', [PenugasanController::class, 'checkMitraSbml'])->name('api.penugasan.check-sbml');
+        Route::get('api/penugasan/detil-by-kegiatan/{kegiatan_id}', [PenugasanApiController::class, 'getDetilByKegiatan'])->name('api.penugasan.detil');
+        Route::get('api/penugasan/search-mitra', [PenugasanApiController::class, 'searchMitra'])->name('api.penugasan.search-mitra');
+        Route::post('api/penugasan/bulk-lookup-mitra', [PenugasanApiController::class, 'bulkLookupMitra'])->name('api.penugasan.bulk-lookup-mitra');
+        Route::get('api/penugasan/prev-month-assignments', [PenugasanApiController::class, 'getPrevMonthPenugasan'])->name('api.penugasan.prev-month');
+        Route::get('api/penugasan/check-sbml', [PenugasanApiController::class, 'checkMitraSbml'])->name('api.penugasan.check-sbml');
 
-        // Recycle Bin Penugasan (OPERATOR, PPK, ADMIN)
-        Route::get('/recycle-bin/penugasan', [PenugasanController::class, 'recycleBin'])->name('penugasan.recycle-bin');
-        Route::post('/recycle-bin/penugasan/bulk-restore', [PenugasanController::class, 'bulkRestore'])->name('penugasan.bulk-restore');
-        Route::delete('/recycle-bin/penugasan/bulk-force-delete', [PenugasanController::class, 'bulkForceDelete'])->name('penugasan.bulk-force-delete');
-        Route::post('/recycle-bin/penugasan/{id}/restore', [PenugasanController::class, 'restore'])->name('penugasan.restore');
-        Route::delete('/recycle-bin/penugasan/{id}/force-delete', [PenugasanController::class, 'forceDelete'])->name('penugasan.force-delete');
+        // Recycle Bin Penugasan
+        Route::get('/recycle-bin/penugasan', [PenugasanTrashController::class, 'recycleBin'])->name('penugasan.recycle-bin');
+        Route::post('/recycle-bin/penugasan/bulk-restore', [PenugasanTrashController::class, 'bulkRestore'])->name('penugasan.bulk-restore');
+        Route::delete('/recycle-bin/penugasan/bulk-force-delete', [PenugasanTrashController::class, 'bulkForceDelete'])->name('penugasan.bulk-force-delete');
+        Route::post('/recycle-bin/penugasan/{id}/restore', [PenugasanTrashController::class, 'restore'])->name('penugasan.restore');
+        Route::delete('/recycle-bin/penugasan/{id}/force-delete', [PenugasanTrashController::class, 'forceDelete'])->name('penugasan.force-delete');
     });
 
 
