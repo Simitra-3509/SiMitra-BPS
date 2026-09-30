@@ -6,6 +6,7 @@ use App\Models\Mitra;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class MitraController extends Controller
 {
@@ -239,7 +240,7 @@ class MitraController extends Controller
 
         try {
             $file = $request->file('file');
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $spreadsheet = IOFactory::load($file->getPathname());
             $sheet = $spreadsheet->getActiveSheet();
             $allRows = $sheet->toArray(null, true, true, true);
         } catch (\Exception $e) {

@@ -1,16 +1,54 @@
-import React from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 function Edit({ penugasan, kegiatan, mitra, auth }) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, processing, errors, isDirty } = useForm({
         kegiatan_id: penugasan.kegiatan_id || '',
         mitra_id: penugasan.mitra_id || '',
         tanggal_mulai: penugasan.tanggal_mulai ? penugasan.tanggal_mulai.split('T')[0] : '',
         tanggal_selesai: penugasan.tanggal_selesai ? penugasan.tanggal_selesai.split('T')[0] : '',
         status: penugasan.status || 'Aktif'
     });
+
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [pendingNavigationUrl, setPendingNavigationUrl] = useState(null);
+    const isSubmittedRef = useRef(false);
+    const bypassLeaveWarningRef = useRef(false);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (isDirty && !isSubmittedRef.current && !bypassLeaveWarningRef.current) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
+
+    useEffect(() => {
+        const removeListener = router.on('before', (event) => {
+            if (isDirty && !isSubmittedRef.current && !bypassLeaveWarningRef.current) {
+                event.preventDefault();
+                setPendingNavigationUrl(event.detail.visit?.url || route('penugasan.index'));
+                setShowLeaveConfirm(true);
+            }
+        });
+        return () => removeListener();
+    }, [isDirty]);
+
+    const handleConfirmLeave = () => {
+        bypassLeaveWarningRef.current = true;
+        setShowLeaveConfirm(false);
+        if (pendingNavigationUrl) {
+            router.visit(pendingNavigationUrl);
+        } else {
+            router.visit(route('penugasan.index'));
+        }
+    };
 
     const yearNum = parseInt(penugasan.tahun) || new Date().getFullYear();
     const monthNum = parseInt(penugasan.bulan) || (new Date().getMonth() + 1);
@@ -25,7 +63,12 @@ function Edit({ penugasan, kegiatan, mitra, auth }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(route('penugasan.update', penugasan.id));
+        isSubmittedRef.current = true;
+        put(route('penugasan.update', penugasan.id), {
+            onError: () => {
+                isSubmittedRef.current = false;
+            }
+        });
     };
 
     return (
@@ -138,6 +181,19 @@ function Edit({ penugasan, kegiatan, mitra, auth }) {
                     </div>
                 </form>
             </div>
+
+            {/* Modal Confirm Leave */}
+            <ConfirmDialog
+                isOpen={showLeaveConfirm}
+                onClose={() => setShowLeaveConfirm(false)}
+                onCancel={() => setShowLeaveConfirm(false)}
+                onConfirm={handleConfirmLeave}
+                variant="warning"
+                title="Perubahan Belum Disimpan"
+                message="Anda telah mengubah data penugasan tetapi belum menyimpannya. Apakah Anda yakin ingin keluar? Semua perubahan akan hilang."
+                confirmText="Ya, Keluar"
+                cancelText="Batal (Lanjutkan Mengedit)"
+            />
         </>
     );
 }

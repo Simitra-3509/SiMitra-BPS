@@ -58,7 +58,7 @@ class PenugasanApiController extends Controller implements HasMiddleware
             $query->where('kecamatan', 'like', "%{$kecamatan}%");
         }
 
-        $mitraList = $query->orderBy('nama_lengkap')->limit(50)
+        $mitraList = $query->orderBy('nama_lengkap')
             ->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
 
         return response()->json($mitraList);
