@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     Users,
     Calendar,
@@ -23,6 +23,7 @@ import {
     ChevronRight,
     Briefcase,
     ShieldAlert,
+    FileText,
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1158,13 +1159,39 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                 <div className="text-xs text-gray-400">
                                     Tekan tombol <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[10px] font-mono">ESC</kbd> untuk menutup
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedMitra(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl transition cursor-pointer"
-                                >
-                                    Tutup
-                                </button>
+                                <div className="flex gap-2">
+                                    <a
+                                        href={route('spk.generate-and-download', {
+                                            mitra_id: selectedMitra.id,
+                                            bulan: bulan === 'semua' ? '' : bulan,
+                                            tahun: tahun === 'tahunan' ? '' : tahun,
+                                            format: 'pdf'
+                                        })}
+                                        className="px-4 py-2 text-xs font-semibold text-white bg-[#F26522] hover:bg-orange-600 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5"
+                                    >
+                                        <FileText size={14} />
+                                        PDF
+                                    </a>
+                                    <a
+                                        href={route('spk.generate-and-download', {
+                                            mitra_id: selectedMitra.id,
+                                            bulan: bulan === 'semua' ? '' : bulan,
+                                            tahun: tahun === 'tahunan' ? '' : tahun,
+                                            format: 'docx'
+                                        })}
+                                        className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5"
+                                    >
+                                        <FileText size={14} />
+                                        Word
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedMitra(null)}
+                                        className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl transition cursor-pointer"
+                                    >
+                                        Tutup
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

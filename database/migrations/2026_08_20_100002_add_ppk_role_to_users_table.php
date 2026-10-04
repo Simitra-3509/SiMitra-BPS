@@ -10,8 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("UPDATE users SET role = LOWER(role)");
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin','operator','viewer','mitra','ppk') NOT NULL DEFAULT 'operator'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("UPDATE users SET role = LOWER(role)");
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin','operator','viewer','mitra','ppk') NOT NULL DEFAULT 'operator'");
+        }
     }
 
     /**
@@ -19,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE users MODIFY COLUMN role VARCHAR(255) NOT NULL DEFAULT 'operator'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role VARCHAR(255) NOT NULL DEFAULT 'operator'");
+        }
     }
 };

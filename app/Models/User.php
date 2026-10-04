@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Pegawai;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -96,5 +97,13 @@ class User extends Authenticatable
         }
 
         return $currentRole === strtolower($roles);
+    }
+
+    /**
+     * Relationship to Pegawai (staff/employee data).
+     */
+    public function pegawai()
+    {
+        return $this->belongsTo(Pegawai::class, 'pegawai_id');
     }
 }
