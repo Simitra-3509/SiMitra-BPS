@@ -156,9 +156,9 @@ class SpkController extends Controller implements HasMiddleware
             $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
             $objWriter->save($tempFile);
 
-            return response()->download($tempFile, $baseFilename . '.docx', [
+            return response()->file($tempFile, [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'Content-Disposition' => 'attachment; filename="' . $baseFilename . '.docx"',
+                'Content-Disposition' => 'inline; filename="' . $baseFilename . '.docx"',
             ])->deleteFileAfterSend(true);
         }
 
@@ -166,7 +166,7 @@ class SpkController extends Controller implements HasMiddleware
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.spk', compact('spk'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download($baseFilename . '.pdf');
+        return $pdf->stream($baseFilename . '.pdf');
     }
 
     /**
