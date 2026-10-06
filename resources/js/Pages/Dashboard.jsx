@@ -1167,6 +1167,8 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                             tahun: tahun === 'tahunan' ? '' : tahun,
                                             format: 'pdf'
                                         })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="px-4 py-2 text-xs font-semibold text-white bg-[#F26522] hover:bg-orange-600 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5"
                                     >
                                         <FileText size={14} />
@@ -1179,6 +1181,8 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                             tahun: tahun === 'tahunan' ? '' : tahun,
                                             format: 'docx'
                                         })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5"
                                     >
                                         <FileText size={14} />
