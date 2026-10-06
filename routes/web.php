@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PenugasanController;
 use App\Http\Controllers\PenugasanTrashController;
 use App\Http\Controllers\PenugasanApiController;
+use App\Http\Controllers\SpkController;
 use App\Http\Controllers\LaporanHonorController;
 use App\Http\Controllers\MonitoringKuotaController;
 use App\Http\Controllers\PeriodePengisianController;
@@ -162,6 +163,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('monitoring-kuota', [MonitoringKuotaController::class, 'index'])->name('monitoring-kuota.index');
         Route::get('monitoring-kuota/export', [MonitoringKuotaController::class, 'export'])->name('monitoring-kuota.export');
         Route::get('monitoring-kuota/{id}', [MonitoringKuotaController::class, 'show'])->name('monitoring-kuota.show');
+    });
+
+
+    // ==========================================
+    // 8. SURAT PERINTAH KERJA (SPK)
+    // ==========================================
+    Route::middleware('role:admin,administrator,ppk,operator')->group(function () {
+        Route::get('spk', [SpkController::class, 'index'])->name('spk.index');
+        Route::get('spk/create', [SpkController::class, 'create'])->name('spk.create');
+        Route::get('spk/generate-and-download', [SpkController::class, 'generateAndDownload'])->middleware('auth')->name('spk.generate-and-download');
+        Route::get('spk/create-from-penugasan', [SpkController::class, 'createFromPenugasan'])->name('spk.create-from-penugasan');
+        Route::post('spk', [SpkController::class, 'store'])->name('spk.store');
+        Route::get('spk/{spk}', [SpkController::class, 'show'])->name('spk.show');
+        Route::get('spk/{spk}/edit', [SpkController::class, 'edit'])->name('spk.edit');
+        Route::put('spk/{spk}', [SpkController::class, 'update'])->name('spk.update');
+        Route::delete('spk/{spk}', [SpkController::class, 'destroy'])->name('spk.destroy');
+        Route::get('spk/{spk}/export-pdf', [SpkController::class, 'exportPdf'])->name('spk.export-pdf');
     });
 
 });
