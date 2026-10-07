@@ -61,15 +61,15 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "Sobat ID", "Nama Lengkap", "Kecamatan", "Desa"
+            "SOBAT ID", "Email", "Nama Lengkap", "Pekerjaan", "Alamat Dusun/Lingkungan", "Alamat Desa/Kel", "Alamat Kecamatan"
         ];
         const sampleRow = [
-            "276426", "Budi Santoso", "Sumbersari", "Antirogo"
+            "276426", "budi@email.com", "Budi Santoso", "Petani", "Krajan", "Antirogo", "Sumbersari"
         ];
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
         worksheet['!cols'] = [
-            { wch: 18 }, { wch: 28 }, { wch: 20 }, { wch: 20 }
+            { wch: 14 }, { wch: 24 }, { wch: 28 }, { wch: 18 }, { wch: 24 }, { wch: 20 }, { wch: 20 }
         ];
 
         const workbook = XLSX.utils.book_new();
@@ -149,8 +149,11 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         sobat_id: '',
         nama_lengkap: '',
-        alamat: '',
+        pekerjaan: '',
+        desa: '',
+        dusun: '',
         kecamatan: '',
+        email: '',
         catatan: '',
         status_aktif: true,
     });
@@ -172,7 +175,7 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
     const handlePerPageChange = (e) => {
         const val = e.target.value;
         setPerPage(val);
-        router.get(route('mitra.index'), { search, status, bank, per_page: val }, { preserveState: true });
+        router.get(route('mitra.index'), { search, status, kecamatan, desa, per_page: val }, { preserveState: true });
     };
 
     const openCreateModal = () => {
@@ -188,8 +191,11 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
         setData({
             sobat_id: mitra.sobat_id || '',
             nama_lengkap: mitra.nama_lengkap,
-            alamat: mitra.alamat || '',
+            pekerjaan: mitra.pekerjaan || '',
+            desa: mitra.desa || '',
+            dusun: mitra.dusun || '',
             kecamatan: mitra.kecamatan || '',
+            email: mitra.email || '',
             catatan: mitra.catatan || '',
             status_aktif: Boolean(mitra.status_aktif),
         });
@@ -411,7 +417,6 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                     <th className="p-4">SOBAT ID</th>
                                     <th className="p-4">NAMA</th>
                                     <th className="p-4">KECAMATAN</th>
-                                    <th className="p-4">DESA</th>
                                     <th className="p-4 text-center">STATUS</th>
                                     <th className="p-4 text-center">AKSI</th>
                                 </tr>
@@ -438,9 +443,6 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                             </td>
                                             <td className="p-4 text-gray-700 dark:text-gray-300 capitalize">
                                                 {mitra.kecamatan ? mitra.kecamatan.toLowerCase() : '-'}
-                                            </td>
-                                            <td className="p-4 text-gray-700 dark:text-gray-300 capitalize">
-                                                {mitra.alamat ? mitra.alamat.toLowerCase().replace('desa ', '') : '-'}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full border ${mitra.status_aktif
@@ -483,7 +485,7 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={isAdmin ? 7 : 6} className="p-8 text-center text-gray-400">
+                                        <td colSpan={isAdmin ? 6 : 5} className="p-8 text-center text-gray-400">
                                             Tidak ada data Mitra ditemukan.
                                         </td>
                                     </tr>
@@ -577,13 +579,37 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Alamat</label>
-                                <textarea
-                                    value={data.alamat}
-                                    onChange={(e) => setData('alamat', e.target.value)}
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Desa</label>
+                                <input
+                                    type="text"
+                                    value={data.desa}
+                                    onChange={(e) => setData('desa', e.target.value)}
                                     className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    rows="2"
+                                    placeholder="Nama desa..."
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Dusun</label>
+                                    <input
+                                        type="text"
+                                        value={data.dusun}
+                                        onChange={(e) => setData('dusun', e.target.value)}
+                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        placeholder="Nama dusun..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        value={data.email}
+                                        onChange={(e) => setData('email', e.target.value)}
+                                        className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        placeholder="email@contoh.com"
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 pt-1">
@@ -665,24 +691,54 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                     <MapPin size={15} /> Domisili & Alamat
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
-                                    <div className="sm:col-span-1">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Alamat Lengkap</span>
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                            {detailMitra.alamat || '-'}
+                                    <div className="sm:col-span-2">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Kecamatan</span>
+                                        <span className="text-sm font-bold text-orange-600 dark:text-orange-400 capitalize">
+                                            {detailMitra.kecamatan ? detailMitra.kecamatan.toLowerCase() : '-'}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Kecamatan</span>
-                                        <span className="text-sm font-bold text-orange-600 dark:text-orange-400 capitalize">
-                                            {detailMitra.kecamatan || '-'}
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Desa</span>
+                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 capitalize">
+                                            {detailMitra.desa ? detailMitra.desa.toLowerCase().replace('desa ', '') : '-'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Dusun</span>
+                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 capitalize">
+                                            {detailMitra.dusun ? detailMitra.dusun.toLowerCase() : '-'}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
 
-
-
+                            {/* Section: Pekerjaan & Kontak */}
+                            {(detailMitra.pekerjaan || detailMitra.email) && (
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#D9531E] mb-3 flex items-center gap-2">
+                                        <Briefcase size={15} /> Pekerjaan &amp; Kontak
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700/60">
+                                        {detailMitra.pekerjaan && (
+                                            <div>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Pekerjaan</span>
+                                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                    {detailMitra.pekerjaan}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {detailMitra.email && (
+                                            <div>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">Email</span>
+                                                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                                    {detailMitra.email}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Section: Catatan */}
                             {detailMitra.catatan && (
@@ -763,7 +819,7 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                 </p>
                                 <ul className="list-disc pl-4 space-y-1 text-blue-800 dark:text-blue-300 leading-relaxed">
                                     <li>
-                                        Header kolom: <span className="font-mono font-bold">Sobat ID, Nama Lengkap, Kecamatan (Alamat Kecamatan), Desa (Alamat Desa/Kel)</span>
+                                        Header kolom: <span className="font-mono font-bold">SOBAT ID, Email, Nama Lengkap, Pekerjaan, Alamat Dusun/Lingkungan, Alamat Desa/Kel, Alamat Kecamatan</span>
                                     </li>
                                     <li><strong className="text-blue-950 dark:text-white">Sobat ID & Nama Lengkap wajib diisi</strong>.</li>
                                     <li>System menggunakan mode <strong className="text-emerald-700 dark:text-emerald-400">UPSERT</strong>: Sobat ID yang sudah ada akan otomatis di-update data terbarunya.</li>

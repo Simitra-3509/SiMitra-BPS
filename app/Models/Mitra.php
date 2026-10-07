@@ -15,8 +15,10 @@ class Mitra extends Model
         'nama_lengkap',
         'pekerjaan',
         'sobat_id',
-        'alamat',
+        'desa',
+        'dusun',
         'kecamatan',
+        'email',
         'catatan',
         'status_aktif',
     ];
