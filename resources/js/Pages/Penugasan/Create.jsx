@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     UserPlus,
@@ -25,6 +25,7 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 
 export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     const listKegiatan = kegiatanList || kegiatan || [];
@@ -69,7 +70,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     const activeTahun = parseInt(data.tahun) || new Date().getFullYear();
     const minTanggalStr = `${activeTahun}-${String(activeBulan).padStart(2, '0')}-01`;
     const maxDays = new Date(activeTahun, activeBulan, 0).getDate();
-    
+
     // Custom calendar popover states
     const [showMulaiPicker, setShowMulaiPicker] = useState(false);
     const [showSelesaiPicker, setShowSelesaiPicker] = useState(false);
@@ -105,6 +106,54 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     const [importErrors, setImportErrors] = useState(null);
     const [processingImport, setProcessingImport] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+
+    // ===== UNSAVED CHANGES LEAVE WARNING =====
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [pendingNavigationUrl, setPendingNavigationUrl] = useState(null);
+    const isSubmittedRef = useRef(false);
+    const bypassLeaveWarningRef = useRef(false);
+
+    const isFormFilled = Boolean(
+        data.kegiatan_id ||
+        data.detil_kegiatan_id ||
+        data.hari_mulai ||
+        data.hari_selesai ||
+        data.mitras.length > 0
+    );
+
+    // 1. Tab/Browser refresh or close listener
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (isFormFilled && !isSubmittedRef.current && !bypassLeaveWarningRef.current) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isFormFilled]);
+
+    // 2. Inertia router navigation listener (Kembali, Batal, Sidebar, Navbar links)
+    useEffect(() => {
+        const removeListener = router.on('before', (event) => {
+            if (isFormFilled && !isSubmittedRef.current && !bypassLeaveWarningRef.current) {
+                event.preventDefault();
+                setPendingNavigationUrl(event.detail.visit?.url || route('penugasan.index'));
+                setShowLeaveConfirm(true);
+            }
+        });
+        return () => removeListener();
+    }, [isFormFilled]);
+
+    const handleConfirmLeave = () => {
+        bypassLeaveWarningRef.current = true;
+        setShowLeaveConfirm(false);
+        if (pendingNavigationUrl) {
+            router.visit(pendingNavigationUrl);
+        } else {
+            router.visit(route('penugasan.index'));
+        }
+    };
 
     const handleDrag = (e) => {
         e.preventDefault();
@@ -361,22 +410,17 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                 mitra_ids: mitraIds
             }
         })
-        .then((res) => {
-            setMitraSbmlMap(res.data || {});
-        })
-        .catch((err) => {
-            console.error('Error fetching SBML check:', err);
-        });
+            .then((res) => {
+                setMitraSbmlMap(res.data || {});
+            })
+            .catch((err) => {
+                console.error('Error fetching SBML check:', err);
+            });
     }, [data.mitras.map((m) => m.id).join(','), selectedDetilInfo?.jenis_sbml, activeBulan, activeTahun]);
 
-    // 5. Search Mitra in Modal Picker (Debounce ~400ms, min 2 chars, dengan filter kecamatan)
+    // 5. Search Mitra in Modal Picker (Debounce ~300ms, tanpa batasan minimum karakter agar semua data kecamatan tertampil)
     useEffect(() => {
         if (!isPickerModalOpen) return;
-
-        if (searchQuery.trim().length < 2 && filterKecamatan === 'semua') {
-            setSearchResults([]);
-            return;
-        }
 
         const timer = setTimeout(() => {
             setIsSearching(true);
@@ -392,7 +436,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                 })
                 .catch((err) => console.error('Error searching mitra:', err))
                 .finally(() => setIsSearching(false));
-        }, 400);
+        }, 300);
 
         return () => clearTimeout(timer);
     }, [searchQuery, filterKecamatan, filterStatus, isPickerModalOpen]);
@@ -400,17 +444,6 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
     // Fetch initial mitras when picker modal opens
     const handleOpenPickerModal = () => {
         setIsPickerModalOpen(true);
-        setIsSearching(true);
-        axios.get(route('api.penugasan.search-mitra'), {
-            params: {
-                q: searchQuery,
-                kecamatan: filterKecamatan,
-                status_aktif: filterStatus
-            }
-        })
-            .then((res) => setSearchResults(res.data || []))
-            .catch((err) => console.error('Error fetching initial mitras:', err))
-            .finally(() => setIsSearching(false));
     };
 
     // Toggle Mitra in selected list WITHOUT auto closing modal (Multi-select)
@@ -632,7 +665,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
             alert('Tanggal Selesai wajib dipilih.');
             return;
         }
-        
+
         const selMonth = parseInt(data.bulan);
         const selYear = parseInt(data.tahun);
 
@@ -655,7 +688,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
             targetMonth = 1;
             targetYear += 1;
         }
-        
+
         if (selMonth !== targetMonth || selYear !== targetYear) {
             alert('Penugasan hanya dapat dibuat untuk bulan berikutnya.');
             return;
@@ -676,7 +709,12 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
             };
         });
 
-        post(route('penugasan.store'));
+        isSubmittedRef.current = true;
+        post(route('penugasan.store'), {
+            onError: () => {
+                isSubmittedRef.current = false;
+            }
+        });
     };
 
     const formatRupiah = (val) => {
@@ -843,7 +881,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                             targetYear = currYear + 1;
                                         }
                                         setData(prev => ({
-                                            ...prev, 
+                                            ...prev,
                                             bulan: selectedMonth.toString(),
                                             tahun: targetYear.toString(),
                                             tanggal_mulai: '',
@@ -901,7 +939,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
                                     Tanggal Mulai <span className="text-red-500">*</span>
                                 </label>
-                                <div 
+                                <div
                                     onClick={() => {
                                         setShowMulaiPicker(!showMulaiPicker);
                                         setShowSelesaiPicker(false);
@@ -910,7 +948,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                 >
                                     {data.hari_mulai ? `${String(data.hari_mulai).padStart(2, '0')} ${namaBulan[activeBulan - 1]} ${activeTahun}` : '📅 Pilih Tanggal'}
                                 </div>
-                                
+
                                 {showMulaiPicker && (
                                     <div className="absolute z-50 mt-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg w-64">
                                         <div className="text-center font-bold text-sm mb-2 dark:text-white">{namaBulan[activeBulan - 1]} {activeTahun}</div>
@@ -944,7 +982,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                 <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
                                     Tanggal Selesai <span className="text-red-500">*</span>
                                 </label>
-                                <div 
+                                <div
                                     onClick={() => {
                                         setShowSelesaiPicker(!showSelesaiPicker);
                                         setShowMulaiPicker(false);
@@ -953,7 +991,7 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                 >
                                     {data.hari_selesai ? `${String(data.hari_selesai).padStart(2, '0')} ${namaBulan[activeBulan - 1]} ${activeTahun}` : '📅 Pilih Tanggal'}
                                 </div>
-                                
+
                                 {showSelesaiPicker && (
                                     <div className="absolute z-50 mt-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg w-64 right-0 md:left-0 md:right-auto">
                                         <div className="text-center font-bold text-sm mb-2 dark:text-white">{namaBulan[activeBulan - 1]} {activeTahun}</div>
@@ -1247,21 +1285,20 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                         </div>
                     </div>
 
-                    {/* Results Table (Sobat ID, Nama Lengkap, Kecamatan, Alamat) */}
+                    {/* Results Table (Sobat ID, Nama Lengkap, Kecamatan) */}
                     <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl max-h-64 overflow-y-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead className="bg-gray-50 dark:bg-gray-900/60 sticky top-0 border-b border-gray-200 dark:border-gray-700 text-gray-500 uppercase text-[10px] tracking-wider z-10">
                                 <tr>
                                     <th className="py-2.5 px-3 font-bold w-28">Sobat ID</th>
                                     <th className="py-2.5 px-3 font-bold">Nama Lengkap</th>
-                                    <th className="py-2.5 px-3 font-bold w-32">Kecamatan</th>
-                                    <th className="py-2.5 px-3 font-bold">Alamat</th>
+                                    <th className="py-2.5 px-3 font-bold w-36">Kecamatan</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
                                 {isSearching ? (
                                     <tr>
-                                        <td colSpan="4" className="py-6 text-center text-xs text-gray-400 font-semibold animate-pulse">
+                                        <td colSpan="3" className="py-6 text-center text-xs text-gray-400 font-semibold animate-pulse">
                                             Mencari data mitra...
                                         </td>
                                     </tr>
@@ -1293,18 +1330,13 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                                                 <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 capitalize whitespace-nowrap">
                                                     {m.kecamatan ? m.kecamatan.toLowerCase() : '-'}
                                                 </td>
-                                                <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400 capitalize truncate max-w-[160px]" title={m.alamat}>
-                                                    {m.alamat ? m.alamat.toLowerCase() : '-'}
-                                                </td>
                                             </tr>
                                         );
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="py-6 text-center text-xs text-gray-400">
-                                            {searchQuery.trim().length < 2 && filterKecamatan === 'semua'
-                                                ? 'Ketik minimal 2 karakter atau pilih Kecamatan untuk mencari.'
-                                                : 'Tidak ditemukan data mitra yang sesuai.'}
+                                        <td colSpan="3" className="py-6 text-center text-xs text-gray-400">
+                                            Tidak ditemukan data mitra yang sesuai.
                                         </td>
                                     </tr>
                                 )}
@@ -1314,8 +1346,10 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
 
                     {/* Modal Footer */}
                     <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                            Terpilih saat ini: <span className="font-bold text-[#D9531E]">{data.mitras.length} Mitra</span>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2">
+                            <span>Total Ditemukan: <strong className="text-gray-900 dark:text-white font-bold">{searchResults.length}</strong> Mitra</span>
+                            <span>•</span>
+                            <span>Terpilih: <strong className="text-[#D9531E] font-bold">{data.mitras.length}</strong> Mitra</span>
                         </div>
                         <button
                             type="button"
@@ -1655,6 +1689,19 @@ export default function Create({ kegiatan, kegiatanList, kecamatanList = [] }) {
                     </form>
                 </div>
             </Modal>
+
+            {/* ===== MODAL KONFIRMASI KELUAR FORM (UNSAVED CHANGES) ===== */}
+            <ConfirmDialog
+                isOpen={showLeaveConfirm}
+                onClose={() => setShowLeaveConfirm(false)}
+                onCancel={() => setShowLeaveConfirm(false)}
+                onConfirm={handleConfirmLeave}
+                variant="warning"
+                title="Perubahan Belum Disimpan"
+                message="Anda telah mengisi data penugasan tetapi belum menyimpannya. Apakah Anda yakin ingin keluar? Semua data yang sudah diisi akan hilang."
+                confirmText="Ya, Keluar"
+                cancelText="Batal (Lanjutkan Mengisi)"
+            />
         </>
     );
 }

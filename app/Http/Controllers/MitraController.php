@@ -6,6 +6,7 @@ use App\Models\Mitra;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class MitraController extends Controller
 {
@@ -42,7 +43,7 @@ class MitraController extends Controller
                 $query->where('kecamatan', 'like', "%{$kecamatan}%");
             })
             ->when($desa !== 'semua', function ($query) use ($desa) {
-                $query->where('alamat', 'like', "%{$desa}%");
+                $query->where('desa', 'like', "%{$desa}%");
             })
             ->latest();
 
@@ -54,14 +55,14 @@ class MitraController extends Controller
         $deletedCount = Mitra::onlyTrashed()->count();
 
         $desaByKecamatan = Mitra::whereNotNull('kecamatan')
-            ->whereNotNull('alamat')
-            ->select('kecamatan', 'alamat')
+            ->whereNotNull('desa')
+            ->select('kecamatan', 'desa')
             ->distinct()
             ->get()
             ->groupBy('kecamatan')
             ->map(function ($items) {
-                return $items->pluck('alamat')->map(function ($alamat) {
-                    return trim(str_ireplace('Desa ', '', $alamat));
+                return $items->pluck('desa')->map(function ($desa) {
+                    return trim(str_ireplace('Desa ', '', $desa));
                 })->filter()->unique()->sort()->values();
             });
 
@@ -98,11 +99,13 @@ class MitraController extends Controller
 
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
-            'pekerjaan' => 'nullable|string|max:255',
-            'sobat_id' => 'required|string|unique:mitras,sobat_id',
-            'alamat' => 'nullable|string',
-            'kecamatan' => 'nullable|string',
-            'catatan' => 'nullable|string',
+            'pekerjaan'    => 'nullable|string|max:255',
+            'sobat_id'     => 'required|string|unique:mitras,sobat_id',
+            'desa'         => 'nullable|string',
+            'dusun'        => 'nullable|string|max:255',
+            'kecamatan'    => 'nullable|string',
+            'email'        => 'nullable|email|max:255',
+            'catatan'      => 'nullable|string',
             'status_aktif' => 'boolean',
         ]);
 
@@ -118,11 +121,13 @@ class MitraController extends Controller
     {
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
-            'pekerjaan' => 'nullable|string|max:255',
-            'sobat_id' => 'required|string|unique:mitras,sobat_id,' . $mitra->id,
-            'alamat' => 'nullable|string',
-            'kecamatan' => 'nullable|string',
-            'catatan' => 'nullable|string',
+            'pekerjaan'    => 'nullable|string|max:255',
+            'sobat_id'     => 'required|string|unique:mitras,sobat_id,' . $mitra->id,
+            'desa'         => 'nullable|string',
+            'dusun'        => 'nullable|string|max:255',
+            'kecamatan'    => 'nullable|string',
+            'email'        => 'nullable|email|max:255',
+            'catatan'      => 'nullable|string',
             'status_aktif' => 'boolean',
         ]);
 
@@ -241,7 +246,7 @@ class MitraController extends Controller
 
         try {
             $file = $request->file('file');
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $spreadsheet = IOFactory::load($file->getPathname());
             $sheet = $spreadsheet->getActiveSheet();
             $allRows = $sheet->toArray(null, true, true, true);
         } catch (\Exception $e) {
@@ -336,16 +341,18 @@ class MitraController extends Controller
                 $sobatId = $nik;
             }
 
+            $email = $getVal(['email']);
             $namaLengkap = $getVal(['nama lengkap', 'nama_lengkap', 'nama']);
+            $pekerjaan = $getVal(['pekerjaan', 'pekerjaan/jabatan']);
 
             // Skip baris yang benar-benar kosong
             if (empty($sobatId) && empty($namaLengkap)) {
                 continue;
             }
 
-            $alamatRaw = $getVal(['alamat']);
-            $desaRaw = $cleanLoc($getVal(['desa', 'kelurahan', 'alamat desa/kel', 'alamat desa', 'alamat_desa']));
-            $alamat = $alamatRaw ?: ($desaRaw ? "Desa {$desaRaw}" : null);
+            $dusun = $getVal(['dusun', 'alamat dusun/lingkungan', 'alamat dusun', 'dusun/lingkungan', 'dusun / lingkungan']);
+            $desaRaw = $cleanLoc($getVal(['desa', 'kelurahan', 'alamat desa/kel', 'alamat desa', 'alamat_desa', 'alamat desa / kel']));
+            $desa = $desaRaw ? "Desa {$desaRaw}" : ($getVal(['alamat']) ?: null);
 
             $kecamatan = $cleanLoc($getVal(['kecamatan', 'alamat kecamatan', 'alamat_kecamatan']));
             $catatan = $getVal(['catatan', 'keahlian']);
@@ -358,11 +365,14 @@ class MitraController extends Controller
             }
 
             $validData[] = [
-                'sobat_id' => (string) $sobatId,
+                'sobat_id'     => (string) $sobatId,
                 'nama_lengkap' => $namaLengkap,
-                'alamat' => $alamat ?: null,
-                'kecamatan' => $kecamatan ?: null,
-                'catatan' => $catatan ?: null,
+                'pekerjaan'    => $pekerjaan ?: null,
+                'desa'         => $desa ?: null,
+                'dusun'        => $dusun ?: null,
+                'kecamatan'    => $kecamatan ?: null,
+                'email'        => $email ?: null,
+                'catatan'      => $catatan ?: null,
                 'status_aktif' => 1,
             ];
         }
@@ -401,7 +411,7 @@ class MitraController extends Controller
                 Mitra::upsert(
                     $chunk,
                     ['sobat_id'],
-                    ['nama_lengkap', 'alamat', 'kecamatan', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
+                    ['nama_lengkap', 'pekerjaan', 'desa', 'dusun', 'kecamatan', 'email', 'catatan', 'status_aktif', 'deleted_at', 'updated_at']
                 );
             }
         });

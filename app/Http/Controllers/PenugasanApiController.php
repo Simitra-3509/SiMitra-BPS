@@ -49,7 +49,8 @@ class PenugasanApiController extends Controller implements HasMiddleware
             $query->where(function ($sub) use ($q) {
                 $sub->where('sobat_id',     'like', "%{$q}%")
                     ->orWhere('nama_lengkap', 'like', "%{$q}%")
-                    ->orWhere('alamat',       'like', "%{$q}%")
+                    ->orWhere('desa',         'like', "%{$q}%")
+                    ->orWhere('dusun',        'like', "%{$q}%")
                     ->orWhere('kecamatan',    'like', "%{$q}%");
             });
         }
@@ -58,8 +59,8 @@ class PenugasanApiController extends Controller implements HasMiddleware
             $query->where('kecamatan', 'like', "%{$kecamatan}%");
         }
 
-        $mitraList = $query->orderBy('nama_lengkap')->limit(50)
-            ->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
+        $mitraList = $query->orderBy('nama_lengkap')
+            ->get(['id', 'sobat_id', 'nama_lengkap', 'desa', 'kecamatan']);
 
         return response()->json($mitraList);
     }
@@ -79,7 +80,7 @@ class PenugasanApiController extends Controller implements HasMiddleware
 
         $mitras = Mitra::where('status_aktif', true)
             ->whereIn('sobat_id', $sobatIds)
-            ->get(['id', 'sobat_id', 'nama_lengkap', 'alamat', 'kecamatan']);
+            ->get(['id', 'sobat_id', 'nama_lengkap', 'desa', 'kecamatan']);
 
         $foundSobatIds    = $mitras->pluck('sobat_id')->toArray();
         $notFoundSobatIds = array_values(array_diff($sobatIds, $foundSobatIds));

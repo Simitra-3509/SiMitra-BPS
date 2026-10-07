@@ -138,8 +138,17 @@ class PenugasanController extends Controller implements HasMiddleware
             $tahunList = [$currentYr - 1, $currentYr, $currentYr + 1];
         }
 
-        $targetBulan = (int) ($request->input('bulan') ?: date('n'));
-        $targetTahun = (int) ($tahunFilter ?: date('Y'));
+        $currentMonth = (int) date('n');
+        $currentYear  = (int) date('Y');
+        $nextMonth    = $currentMonth + 1;
+        $nextYear     = $currentYear;
+        if ($nextMonth > 12) {
+            $nextMonth = 1;
+            $nextYear += 1;
+        }
+
+        $targetBulan = (int) ($request->input('bulan') ?: $nextMonth);
+        $targetTahun = (int) ($tahunFilter ?: $nextYear);
 
         $periodeAktif = PeriodePengisian::where('bulan', $targetBulan)
             ->where('tahun', $targetTahun)
