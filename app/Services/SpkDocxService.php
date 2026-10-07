@@ -63,7 +63,7 @@ class SpkDocxService
 
         // Pembukaan
         $tanggalSpk = \Carbon\Carbon::parse($spk->tanggal_spk ?? now());
-        $hari = $tanggalSpk->translatedFormat('l');
+        $hari = \App\Services\SpkService::hariIndo($tanggalSpk);
         $tanggalTerbilang = self::tanggalTerbilang($tanggalSpk);
         
         $section->addText(
@@ -86,8 +86,10 @@ class SpkDocxService
 
         // PIHAK KEDUA
         $mitra = $spk->mitra;
-        $pekerjaan = $mitra->pekerjaan ?? 'Petugas Lapangan';
-        $alamat = ($mitra->alamat ?? '-') . ' ' . ($mitra->kecamatan ? 'Kec. ' . $mitra->kecamatan : '');
+        $pekerjaan = $mitra->pekerjaan ?? '[PEKERJAAN KOSONG - ISI DATA MITRA]';
+        // Format alamat Title Case
+        $alamatRaw = trim(($mitra->alamat ?? '-') . ' ' . ($mitra->kecamatan ? 'Kec. ' . $mitra->kecamatan : ''));
+        $alamat = ucwords(strtolower($alamatRaw));
         
         $section->addText('2.', ['name' => 'Arial', 'size' => 10]);
         $section->addText($mitra->nama_lengkap, ['name' => 'Arial', 'size' => 10, 'bold' => true]);
@@ -152,7 +154,7 @@ class SpkDocxService
         ]);
 
         $sectionLampiran->addText('LAMPIRAN', ['name' => 'Arial', 'size' => 10, 'bold' => true], 'centered');
-        $sectionLampiran->addText('PERJANJIAN KERJA PETUGAS PENDATAAN LAPANGAN', ['name' => 'Arial', 'size' => 10, 'bold' => true], 'centered');
+        $sectionLampiran->addText('PERJANJIAN KERJA PETUGAS LAPANGAN', ['name' => 'Arial', 'size' => 10, 'bold' => true], 'centered');
         $sectionLampiran->addText('KEGIATAN SENSUS/SURVEI BULAN ' . self::bulanIndo($spk->bulan) . ' TAHUN ' . $spk->tahun, ['name' => 'Arial', 'size' => 10, 'bold' => true], 'centered');
         $sectionLampiran->addText('BADAN PUSAT STATISTIK KABUPATEN JEMBER', ['name' => 'Arial', 'size' => 10, 'bold' => true], 'centered');
         $sectionLampiran->addText('NOMOR: ' . $spk->nomor_spk, ['name' => 'Arial', 'size' => 10], 'centered');
@@ -189,26 +191,32 @@ class SpkDocxService
             $row->addCell(500)->addText($no++, ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::CENTER]);
             $row->addCell(2500)->addText($detail->uraian_tugas, ['name' => 'Arial', 'size' => 9]);
             
-            $jangkaWaktu = \Carbon\Carbon::parse($detail->tanggal_mulai_detail)->format('d') . ' s.d. ' . 
-                           \Carbon\Carbon::parse($detail->tanggal_selesai_detail)->format('d F Y');
+            $startD = \Carbon\Carbon::parse($detail->tanggal_mulai_detail);
+            $endD = \Carbon\Carbon::parse($detail->tanggal_selesai_detail);
+            $jangkaWaktu = $startD->day . ' s.d. ' . $endD->day . ' ' . self::bulanIndo($endD->month) . ' ' . $endD->year;
             $row->addCell(1500)->addText($jangkaWaktu, ['name' => 'Arial', 'size' => 8]);
             $row->addCell(800)->addText($detail->volume, ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::CENTER]);
             $row->addCell(800)->addText($detail->satuan, ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::CENTER]);
-            $row->addCell(1200)->addText('Rp ' . number_format($detail->harga_satuan, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
-            $row->addCell(1400)->addText('Rp ' . number_format($detail->nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
-            $row->addCell(1300)->addText($detail->kode_anggaran ?? '-', ['name' => 'Arial', 'size' => 8]);
+            $row->addCell(1200)->addText('Rp' . "\u{00A0}" . number_format($detail->harga_satuan, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
+            $row->addCell(1400)->addText('Rp' . "\u{00A0}" . number_format($detail->nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
+            // Kode anggaran lengkap: kode_kegiatan + akun_anggaran
+            $kodeLengkap = $detail->kode_anggaran;
+            if (!empty($detail->akun_anggaran)) {
+                $kodeLengkap .= $detail->akun_anggaran;
+            }
+            $row->addCell(1300)->addText($kodeLengkap ?: '-', ['name' => 'Arial', 'size' => 8]);
         }
         
         // Total row
         $totalRow = $table->addRow();
         $totalRow->addCell(500)->addText('', ['name' => 'Arial', 'size' => 9]);
         $totalRow->addCell(6800, ['gridSpan' => 5])->addText('TOTAL', ['name' => 'Arial', 'size' => 9, 'bold' => true], ['alignment' => Jc::RIGHT]);
-        $totalRow->addCell(1400)->addText('Rp ' . number_format($spk->total_nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9, 'bold' => true], ['alignment' => Jc::RIGHT]);
+        $totalRow->addCell(1400)->addText('Rp' . "\u{00A0}" . number_format($spk->total_nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9, 'bold' => true], ['alignment' => Jc::RIGHT]);
         $totalRow->addCell(1300)->addText('', ['name' => 'Arial', 'size' => 9]);
         
         $sectionLampiran->addTextBreak();
         $sectionLampiran->addText('Terbilang: ' . ucwords(self::terbilang($spk->total_nilai)) . ' Rupiah', ['name' => 'Arial', 'size' => 10, 'bold' => true]);
-        $sectionLampiran->addText('Rp ' . number_format($spk->total_nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 11, 'bold' => true]);
+        $sectionLampiran->addText('Rp' . "\u{00A0}" . number_format($spk->total_nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 11, 'bold' => true]);
 
         return $phpWord;
     }
@@ -216,11 +224,13 @@ class SpkDocxService
     private static function getPasals(Spk $spk): array
     {
         $mitra = $spk->mitra;
-        $tanggalMulai = \Carbon\Carbon::parse($spk->tanggal_mulai)->format('d F Y');
-        $tanggalSelesai = \Carbon\Carbon::parse($spk->tanggal_selesai)->format('d F Y');
-        $honor = 'Rp ' . number_format($spk->total_nilai, 0, ',', '.') . ',-';
+        $mulaiCarbon = \Carbon\Carbon::parse($spk->tanggal_mulai);
+        $selesaiCarbon = \Carbon\Carbon::parse($spk->tanggal_selesai);
+        $tanggalMulai = $mulaiCarbon->day . ' ' . self::bulanIndo($mulaiCarbon->month) . ' ' . $mulaiCarbon->year;
+        $tanggalSelesai = $selesaiCarbon->day . ' ' . self::bulanIndo($selesaiCarbon->month) . ' ' . $selesaiCarbon->year;
+        $honor = 'Rp' . "\u{00A0}" . number_format($spk->total_nilai, 0, ',', '.') . ',-';
         $honorTerbilang = ucwords(self::terbilang($spk->total_nilai)) . ' rupiah';
-        $gantiRugi = 'Rp ' . number_format(ceil($spk->total_nilai / 2), 0, ',', '.') . ',-';
+        $gantiRugi = 'Rp.' . "\u{00A0}" . number_format(ceil($spk->total_nilai / 2), 0, ',', '.') . ',-';
 
         return [
             [
@@ -244,7 +254,7 @@ class SpkDocxService
             [
                 'title' => 'Pasal 4',
                 'content' => [
-                    'PIHAK KEDUA berkewajiban melaksanakan seluruh pekerjaan yang diberikan oleh PIHAK PERTAMA sampai selesai, sesuai ruang lingkup pekerjaan sebagaimana dimaksud dalam Pasal 2, dengan menerapkan protokol kesehatan yang berlaku di wilayah kerja masing-masing.',
+                    'PIHAK KEDUA berkewajiban melaksanakan seluruh pekerjaan yang diberikan oleh PIHAK PERTAMA sampai selesai, sesuai ruang lingkup pekerjaan sebagaimana dimaksud dalam Pasal 2.',
                 ],
             ],
             [
@@ -323,7 +333,7 @@ class SpkDocxService
         $bln = self::bulanIndo($date->month);
         $thn = self::terbilang($date->year);
         
-        return "tanggal {$tgl} Bulan {$bln} Tahun {$thn}";
+        return "{$tgl} Bulan {$bln} Tahun {$thn}";
     }
 
     private static function terbilang(float $angka): string

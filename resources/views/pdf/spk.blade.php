@@ -125,11 +125,18 @@
 
     @php
         $tanggalSpk = \Carbon\Carbon::parse($spk->tanggal_spk ?? now());
-        $hari = $tanggalSpk->translatedFormat('l');
+        $hari = \App\Services\SpkService::hariIndo($tanggalSpk);
         $tanggalTerbilang = \App\Services\SpkDocxService::tanggalTerbilangStatic($tanggalSpk);
         $mitra = $spk->mitra;
-        $pekerjaan = $mitra->pekerjaan ?? 'Petugas Lapangan';
-        $alamat = ($mitra->alamat ?? '-') . ' ' . ($mitra->kecamatan ? 'Kec. ' . $mitra->kecamatan : '');
+        $pekerjaan = $mitra->pekerjaan ?? '[PEKERJAAN KOSONG - ISI DATA MITRA]';
+        // Format alamat Title Case
+        $alamatRaw = trim(($mitra->alamat ?? '-') . ' ' . ($mitra->kecamatan ? 'Kec. ' . $mitra->kecamatan : ''));
+        $alamat = ucwords(strtolower($alamatRaw));
+        // Format tanggal Pasal 3: "D Bulan YYYY"
+        $mulaiC = \Carbon\Carbon::parse($spk->tanggal_mulai);
+        $selesaiC = \Carbon\Carbon::parse($spk->tanggal_selesai);
+        $tglMulaiPasal3 = $mulaiC->day . ' ' . \App\Services\SpkDocxService::bulanStatic($mulaiC->month) . ' ' . $mulaiC->year;
+        $tglSelesaiPasal3 = $selesaiC->day . ' ' . \App\Services\SpkDocxService::bulanStatic($selesaiC->month) . ' ' . $selesaiC->year;
     @endphp
 
     <p>Pada hari ini {{ $hari }}, tanggal {{ $tanggalTerbilang }}, bertempat di Jember, yang bertanda tangan di bawah ini:</p>
@@ -160,11 +167,11 @@
     <p>Ruang lingkup pekerjaan dalam Perjanjian ini mengacu pada wilayah kerja dan beban kerja sebagaimana tertuang dalam lampiran perjanjian Petugas Lapangan dari masing-masing kegiatan sesuai dengan pasal 1 yang merupakan bagian tidak terpisahkan dari Perjanjian ini, Pedoman Pendataan Survei BPS dan ketentuan lainnya yang ditetapkan oleh <strong>PIHAK PERTAMA</strong>.</p>
 
     <div class="pasal-title">Pasal 3</div>
-    <p>Jangka Waktu Perjanjian terhitung sejak tanggal {{ \Carbon\Carbon::parse($spk->tanggal_mulai)->format('d F Y') }} sampai dengan tanggal {{ \Carbon\Carbon::parse($spk->tanggal_selesai)->format('d F Y') }}.</p>
+    <p>Jangka Waktu Perjanjian terhitung sejak tanggal {{ $tglMulaiPasal3 }} sampai dengan tanggal {{ $tglSelesaiPasal3 }}.</p>
 
     <div class="page-break"></div>
     <div class="pasal-title">Pasal 4</div>
-    <p><strong>PIHAK KEDUA</strong> berkewajiban melaksanakan seluruh pekerjaan yang diberikan oleh <strong>PIHAK PERTAMA</strong> sampai selesai, sesuai ruang lingkup pekerjaan sebagaimana dimaksud dalam Pasal 2, dengan menerapkan protokol kesehatan yang berlaku di wilayah kerja masing-masing.</p>
+    <p><strong>PIHAK KEDUA</strong> berkewajiban melaksanakan seluruh pekerjaan yang diberikan oleh <strong>PIHAK PERTAMA</strong> sampai selesai, sesuai ruang lingkup pekerjaan sebagaimana dimaksud dalam Pasal 2.</p>
 
     <div class="pasal-title">Pasal 5</div>
     <table class="pasal-list">
@@ -184,10 +191,10 @@
 
     <div class="pasal-title">Pasal 6</div>
     @php
-        $honor = 'Rp. ' . number_format($spk->total_nilai, 0, ',', '.') . ',-';
+        $honor = 'Rp' . "\u{00A0}" . number_format($spk->total_nilai, 0, ',', '.') . ',-';
         $honorTerbilang = strtolower(\App\Services\SpkDocxService::terbilangStatic($spk->total_nilai)) . ' rupiah';
         $gantiRugiAngka = ceil($spk->total_nilai / 2);
-        $gantiRugi = 'Rp. ' . number_format($gantiRugiAngka, 0, ',', '.') . ',-';
+        $gantiRugi = 'Rp.' . "\u{00A0}" . number_format($gantiRugiAngka, 0, ',', '.') . ',-';
         $gantiRugiTerbilang = strtolower(\App\Services\SpkDocxService::terbilangStatic($gantiRugiAngka)) . ' rupiah';
     @endphp
     <table class="pasal-list">
@@ -221,7 +228,6 @@
         </tr>
     </table>
 
-    <div class="page-break"></div>
     <div class="pasal-title">Pasal 8</div>
     <p><strong>PIHAK PERTAMA</strong> dapat memutuskan Perjanjian ini secara sepihak sewaktu-waktu dalam hal <strong>PIHAK KEDUA</strong> tidak dapat melaksanakan kewajibannya sebagaimana dimaksud dalam Pasal 4, dengan menerbitkan Surat Pemutusan Perjanjian Kerja.</p>
 
@@ -293,7 +299,7 @@
     <div class="landscape-page" style="page-break-before: always;">
         <div style="float: right; text-align: left; margin-bottom: 25px; font-size: 10pt; width: 50%;">
             Lampiran<br>
-            PERJANJIAN KERJA PETUGAS PENDATAAN LAPANGAN<br>
+            PERJANJIAN KERJA PETUGAS LAPANGAN<br>
             KEGIATAN SENSUS/SURVEI BULAN {{ strtoupper(\App\Services\SpkDocxService::bulanStatic($spk->bulan)) }} TAHUN {{ $spk->tahun }}<br>
             BADAN PUSAT STATISTIK KABUPATEN JEMBER<br>
             NOMOR: {{ $spk->nomor_spk ?? '[DRAFT]' }}
@@ -323,11 +329,11 @@
                     <th>(1)</th>
                     <th>(2)</th>
                     <th>(3)</th>
-                    <th>(3)</th>
                     <th>(4)</th>
                     <th>(5)</th>
                     <th>(6)</th>
                     <th>(7)</th>
+                    <th>(8)</th>
                 </tr>
             </thead>
             <tbody>
@@ -336,18 +342,18 @@
                     <td style="text-align: center;">{{ $index + 1 }}</td>
                     <td>{{ $detail->uraian_tugas }}</td>
                     <td style="text-align: center; font-size: 8.5pt;">
-                        {{ \Carbon\Carbon::parse($detail->tanggal_mulai_detail)->format('d') }} s.d. {{ \Carbon\Carbon::parse($detail->tanggal_selesai_detail)->format('d F Y') }}
+                        {{ \App\Services\SpkService::formatJangkaWaktu(\Carbon\Carbon::parse($detail->tanggal_mulai_detail), \Carbon\Carbon::parse($detail->tanggal_selesai_detail)) }}
                     </td>
                     <td style="text-align: center;">{{ $detail->volume }}</td>
                     <td style="text-align: center;">{{ $detail->satuan }}</td>
-                    <td style="text-align: right;">Rp. {{ number_format($detail->harga_satuan, 0, ',', '.') }},-</td>
-                    <td style="text-align: right;">Rp. {{ number_format($detail->nilai, 0, ',', '.') }},-</td>
-                    <td style="text-align: center; font-size: 8pt;">{{ $detail->kode_anggaran ?? '-' }}</td>
+                    <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($detail->harga_satuan, 0, ',', '.') }},-</td>
+                    <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($detail->nilai, 0, ',', '.') }},-</td>
+                    <td style="text-align: center; font-size: 8pt;">{{ ($detail->kode_anggaran ?? '') . ($detail->akun_anggaran ?? '') ?: '-' }}</td>
                 </tr>
                 @endforeach
                 <tr>
                     <td colspan="6" style="text-align: center; font-style: italic;">Terbilang: {{ ucwords(\App\Services\SpkDocxService::terbilangStatic($spk->total_nilai)) }} Rupiah</td>
-                    <td style="text-align: right;">Rp. {{ number_format($spk->total_nilai, 0, ',', '.') }},-</td>
+                    <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($spk->total_nilai, 0, ',', '.') }},-</td>
                     <td></td>
                 </tr>
             </tbody>

@@ -556,11 +556,11 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Alamat</label>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Pekerjaan</label>
                                     <input
                                         type="text"
-                                        value={data.alamat}
-                                        onChange={(e) => setData('alamat', e.target.value)}
+                                        value={data.pekerjaan}
+                                        onChange={(e) => setData('pekerjaan', e.target.value)}
                                         className="w-full p-2 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                     />
                                 </div>
