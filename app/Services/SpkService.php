@@ -48,4 +48,39 @@ class SpkService
         if ($angka < 1000000000) return self::terbilang(floor($angka / 1000000)) . ' Juta ' . self::terbilang($angka % 1000000);
         return self::terbilang(floor($angka / 1000000000)) . ' Milyar ' . self::terbilang($angka % 1000000000);
     }
+
+    /**
+     * Indonesian day name
+     */
+    public static function hariIndo(\Carbon\Carbon $date): string
+    {
+        $hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        return $hari[$date->dayOfWeek];
+    }
+
+    /**
+     * Format date range: "D Bulan s.d. D Bulan YYYY" or "D Bulan s.d. D Bulan YYYY" (if cross-month)
+     */
+    public static function formatJangkaWaktu(\Carbon\Carbon $start, \Carbon\Carbon $end): string
+    {
+        $startDay = $start->day;
+        $startMonth = self::bulanIndo($start->month);
+        $endDay = $end->day;
+        $endMonth = self::bulanIndo($end->month);
+        $year = $end->year;
+
+        if ($start->month === $end->month && $start->year === $end->year) {
+            return "{$startDay} s.d. {$endDay} {$endMonth} {$year}";
+        } elseif ($start->year === $end->year) {
+            return "{$startDay} {$startMonth} s.d. {$endDay} {$endMonth} {$year}";
+        } else {
+            return "{$startDay} {$startMonth} {$start->year} s.d. {$endDay} {$endMonth} {$year}";
+        }
+    }
+
+    private static function bulanIndo(int $bulan): string
+    {
+        $bulanNama = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        return $bulanNama[$bulan - 1] ?? '';
+    }
 }

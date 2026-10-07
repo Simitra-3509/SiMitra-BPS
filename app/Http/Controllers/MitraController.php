@@ -99,6 +99,7 @@ class MitraController extends Controller
 
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
+            'pekerjaan' => 'nullable|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id',
             'alamat' => 'nullable|string',
             'kecamatan' => 'nullable|string',
@@ -118,6 +119,7 @@ class MitraController extends Controller
     {
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
+            'pekerjaan' => 'nullable|string|max:255',
             'sobat_id' => 'required|string|unique:mitras,sobat_id,' . $mitra->id,
             'alamat' => 'nullable|string',
             'kecamatan' => 'nullable|string',
