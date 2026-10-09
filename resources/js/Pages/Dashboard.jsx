@@ -1156,44 +1156,46 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
 
                             {/* Modal Footer */}
                             <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80 flex justify-between items-center gap-3">
-                                {/* Kiri: Tombol Cetak SPK */}
-                                <div className="flex items-center gap-2.5">
-                                    <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                        Cetak SPK:
-                                    </span>
-                                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl border border-gray-200 dark:border-gray-600">
-                                        <a
-                                            href={route('spk.generate-and-download', {
-                                                mitra_id: selectedMitra.id,
-                                                bulan: bulan === 'semua' ? '' : bulan,
-                                                tahun: tahun === 'tahunan' ? '' : tahun,
-                                                format: 'pdf'
-                                            })}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-[#b84418] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
-                                            title="Cetak SPK format PDF"
-                                        >
-                                            <FileText size={13} />
-                                            PDF
-                                        </a>
-                                        <a
-                                            href={route('spk.generate-and-download', {
-                                                mitra_id: selectedMitra.id,
-                                                bulan: bulan === 'semua' ? '' : bulan,
-                                                tahun: tahun === 'tahunan' ? '' : tahun,
-                                                format: 'docx'
-                                            })}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
-                                            title="Cetak SPK format Word (.docx)"
-                                        >
-                                            <FileText size={13} />
-                                            Word
-                                        </a>
+                                {/* Kiri: Tombol Cetak SPK - hanya PPK */}
+                                {user.role === 'ppk' && (
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Cetak SPK:
+                                        </span>
+                                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl border border-gray-200 dark:border-gray-600">
+                                            <a
+                                                href={route('spk.generate-and-download', {
+                                                    mitra_id: selectedMitra.id,
+                                                    bulan: bulan === 'semua' ? '' : bulan,
+                                                    tahun: tahun === 'tahunan' ? '' : tahun,
+                                                    format: 'pdf'
+                                                })}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-[#b84418] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
+                                                title="Cetak SPK format PDF"
+                                            >
+                                                <FileText size={13} />
+                                                PDF
+                                            </a>
+                                            <a
+                                                href={route('spk.generate-and-download', {
+                                                    mitra_id: selectedMitra.id,
+                                                    bulan: bulan === 'semua' ? '' : bulan,
+                                                    tahun: tahun === 'tahunan' ? '' : tahun,
+                                                    format: 'docx'
+                                                })}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
+                                                title="Cetak SPK format Word (.docx)"
+                                            >
+                                                <FileText size={13} />
+                                                Word
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Kanan: Tombol Tutup */}
                                 <button

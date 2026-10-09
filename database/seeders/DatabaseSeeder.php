@@ -133,7 +133,7 @@ class DatabaseSeeder extends Seeder
             $mitra = Mitra::create([
                 'nama_lengkap' => $i <= count($sampleMitras) ? $sample['nama'] : $sample['nama'] . ' (' . $i . ')',
                 'sobat_id' => $sample['sobat'] . $i,
-                'alamat' => 'Kabupaten Jember',
+                'desa' => 'Kabupaten Jember',
                 'status_aktif' => $sample['status'],
             ]);
 

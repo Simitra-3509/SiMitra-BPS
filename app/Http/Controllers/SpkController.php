@@ -22,7 +22,7 @@ class SpkController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('role:admin,administrator,ppk,operator', only: ['index', 'show', 'exportPdf']),
-            new Middleware('role:admin,administrator,ppk', only: ['create', 'store', 'edit', 'update', 'destroy', 'terbitkan', 'generateAndDownload']),
+            new Middleware('role:ppk', only: ['create', 'store', 'edit', 'update', 'destroy', 'terbitkan', 'generateAndDownload']),
         ];
     }
 
