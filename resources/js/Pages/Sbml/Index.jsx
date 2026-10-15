@@ -1,14 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { 
-    Settings, 
-    Info, 
-    FileText, 
-    CheckCircle2, 
-    Save, 
-    TrendingUp, 
-    Calendar, 
-    ShieldAlert, 
+import {
+    Settings,
+    Info,
+    FileText,
+    CheckCircle2,
+    Save,
+    TrendingUp,
+    Calendar,
+    ShieldAlert,
     RotateCcw,
     Layers,
     Monitor,
@@ -30,10 +30,10 @@ export default function SbmlIndex({ limits, history, flash }) {
 
     const formatRp = (number) => {
         if (!number && number !== 0) return 'Rp 0';
-        return new Intl.NumberFormat('id-ID', { 
-            style: 'currency', 
-            currency: 'IDR', 
-            minimumFractionDigits: 0 
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
         }).format(number);
     };
 
@@ -59,7 +59,7 @@ export default function SbmlIndex({ limits, history, flash }) {
             <Head title="Pengaturan Batas SBML" />
 
             <div className="space-y-6">
-                
+
                 {/* Alert Notification */}
                 {flash?.success && showToast && (
                     <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-lg shadow-sm flex items-center justify-between transition-all">
@@ -67,8 +67,8 @@ export default function SbmlIndex({ limits, history, flash }) {
                             <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span className="font-medium text-sm">{flash.success}</span>
                         </div>
-                        <button 
-                            onClick={() => setShowToast(false)} 
+                        <button
+                            onClick={() => setShowToast(false)}
                             className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-200 text-sm font-bold"
                         >
                             ✕
@@ -190,7 +190,7 @@ export default function SbmlIndex({ limits, history, flash }) {
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                     Tahun Anggaran Kebijakan
                                 </label>
-                                <input 
+                                <input
                                     type="number"
                                     min="2020"
                                     max="2099"
@@ -215,8 +215,8 @@ export default function SbmlIndex({ limits, history, flash }) {
                                     </div>
                                     <div className="relative">
                                         <span className="absolute left-3.5 top-2.5 text-gray-500 font-semibold text-sm">Rp</span>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={data.pendataan}
                                             disabled={!isAdmin}
                                             onChange={(e) => setData('pendataan', e.target.value)}
@@ -242,8 +242,8 @@ export default function SbmlIndex({ limits, history, flash }) {
                                     </div>
                                     <div className="relative">
                                         <span className="absolute left-3.5 top-2.5 text-gray-500 font-semibold text-sm">Rp</span>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={data.pengolahan}
                                             disabled={!isAdmin}
                                             onChange={(e) => setData('pengolahan', e.target.value)}
@@ -281,7 +281,7 @@ export default function SbmlIndex({ limits, history, flash }) {
                                 <ShieldAlert className="text-amber-500" size={20} />
                                 Ringkasan Batas SBML {data.tahun}
                             </h4>
-                            
+
                             <div className="space-y-3 divide-y divide-gray-100 dark:divide-gray-700 text-sm">
                                 <div className="pt-2 flex items-center justify-between">
                                     <span className="text-gray-500 dark:text-gray-400">Jenis Pendataan</span>
