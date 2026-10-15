@@ -24,6 +24,10 @@ import {
     Briefcase,
     ShieldAlert,
     FileText,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    Filter,
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -364,6 +368,60 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
     const [statusFilter,  setStatusFilter]  = useState('semua'); // 'semua' | 'kritis' | 'warning' | 'normal'
     const [currentPage,   setCurrentPage]   = useState(1);
     const [perPage,       setPerPage]       = useState(10);
+    const [sortField,     setSortField]     = useState(null);      // null | 'nama' | 'kecamatan' | 'honor'
+    const [sortDir,       setSortDir]       = useState('asc');     // 'asc' | 'desc'
+    const [filterNama,    setFilterNama]    = useState(new Set()); // selected nama values
+    const [filterKec,     setFilterKec]     = useState(new Set()); // selected kecamatan values
+    const [activeFilterCol, setActiveFilterCol] = useState(null);  // 'nama' | 'kecamatan' | null
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortField(field);
+            setSortDir('asc');
+        }
+        setCurrentPage(1);
+    };
+
+    const toggleFilterValue = (col, value) => {
+        const setter = col === 'nama' ? setFilterNama : setFilterKec;
+        setter((prev) => {
+            const next = new Set(prev);
+            if (next.has(value)) next.delete(value);
+            else next.add(value);
+            return next;
+        });
+        setCurrentPage(1);
+    };
+
+    const clearFilter = (col) => {
+        if (col === 'nama') setFilterNama(new Set());
+        else setFilterKec(new Set());
+        setCurrentPage(1);
+    };
+
+    // Unique options from full mitraList (unfiltered)
+    const uniqueNamaOptions = useMemo(() => {
+        return [...new Set((mitraList || []).map(m => m.nama_lengkap).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id'));
+    }, [mitraList]);
+
+    const uniqueKecOptions = useMemo(() => {
+        return [...new Set((mitraList || []).map(m => m.kecamatan).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id'));
+    }, [mitraList]);
+
+    // Close filter popover on click outside
+    const filterPopoverRef = useRef(null);
+    useEffect(() => {
+        if (!activeFilterCol) return;
+        const handler = (e) => {
+            if (filterPopoverRef.current && !filterPopoverRef.current.contains(e.target)) {
+                setActiveFilterCol(null);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [activeFilterCol]);
 
     const fetchFilterData = useCallback(async (f, t, b) => {
         setLoading(true);
@@ -411,10 +469,14 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
 
     // ── Mitra Table computation ───────────────────────────────────────────────
     const filteredMitras = useMemo(() => {
-        return (mitraList || []).filter((m) => {
+        let list = (mitraList || []).filter((m) => {
             if (statusFilter === 'kritis' && !m.melewati_sbml) return false;
             if (statusFilter === 'warning' && m.status_sbml !== 'warning') return false;
             if (statusFilter === 'normal' && (m.status_sbml !== 'normal' || m.melewati_sbml)) return false;
+
+            // Column filters
+            if (filterNama.size > 0 && !filterNama.has(m.nama_lengkap)) return false;
+            if (filterKec.size > 0 && !filterKec.has(m.kecamatan)) return false;
 
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
@@ -426,7 +488,30 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
 
             return true;
         });
-    }, [mitraList, statusFilter, searchQuery]);
+
+        // Sort
+        if (sortField) {
+            list = [...list].sort((a, b) => {
+                let valA, valB;
+                if (sortField === 'nama') {
+                    valA = (a.nama_lengkap || '').toLowerCase();
+                    valB = (b.nama_lengkap || '').toLowerCase();
+                    return sortDir === 'asc' ? valA.localeCompare(valB, 'id') : valB.localeCompare(valA, 'id');
+                } else if (sortField === 'kecamatan') {
+                    valA = (a.kecamatan || '').toLowerCase();
+                    valB = (b.kecamatan || '').toLowerCase();
+                    return sortDir === 'asc' ? valA.localeCompare(valB, 'id') : valB.localeCompare(valA, 'id');
+                } else if (sortField === 'honor') {
+                    valA = a.total_honor || 0;
+                    valB = b.total_honor || 0;
+                    return sortDir === 'asc' ? valA - valB : valB - valA;
+                }
+                return 0;
+            });
+        }
+
+        return list;
+    }, [mitraList, statusFilter, searchQuery, filterNama, filterKec, sortField, sortDir]);
 
     const totalCount = mitraList.length;
     const kritisCount = useMemo(() => (mitraList || []).filter(m => m.melewati_sbml).length, [mitraList]);
@@ -683,9 +768,120 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                 <tr>
                                     <th className="p-4 w-12 text-center">NO</th>
                                     <th className="p-4">ID SOBAT</th>
-                                    <th className="p-4">NAMA MITRA</th>
-                                    <th className="p-4">ASAL KECAMATAN</th>
-                                    <th className="p-4 text-right">TOTAL HONOR</th>
+                                    <th className="p-4">
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSort('nama')}
+                                                className="group flex items-center gap-1 hover:text-[#F26522] transition-colors cursor-pointer"
+                                                title="Urutkan Nama Mitra"
+                                            >
+                                                NAMA MITRA
+                                                {sortField === 'nama'
+                                                    ? (sortDir === 'asc' ? <ArrowUp size={13} className="text-[#F26522]" /> : <ArrowDown size={13} className="text-[#F26522]" />)
+                                                    : <ArrowUpDown size={13} className="opacity-40 group-hover:opacity-80 transition-opacity" />
+                                                }
+                                            </button>
+                                            <div className="relative" ref={activeFilterCol === 'nama' ? filterPopoverRef : null}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveFilterCol(activeFilterCol === 'nama' ? null : 'nama')}
+                                                    className={`p-0.5 rounded transition-colors cursor-pointer ${filterNama.size > 0 ? 'text-[#F26522]' : 'text-gray-400 hover:text-[#F26522]'}`}
+                                                    title="Filter Nama Mitra"
+                                                >
+                                                    <Filter size={12} />
+                                                    {filterNama.size > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#F26522] rounded-full" />}
+                                                </button>
+                                                {activeFilterCol === 'nama' && (
+                                                    <div className="absolute z-50 top-full mt-1 left-0 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}>
+                                                        <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Filter Nama</span>
+                                                            {filterNama.size > 0 && (
+                                                                <button onClick={() => clearFilter('nama')} className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer">Reset</button>
+                                                            )}
+                                                        </div>
+                                                        <div className="max-h-48 overflow-y-auto py-1">
+                                                            {uniqueNamaOptions.map((nama) => (
+                                                                <label key={nama} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={filterNama.has(nama)}
+                                                                        onChange={() => toggleFilterValue('nama', nama)}
+                                                                        className="rounded border-gray-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer"
+                                                                    />
+                                                                    <span className="truncate">{nama}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th className="p-4">
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSort('kecamatan')}
+                                                className="group flex items-center gap-1 hover:text-[#F26522] transition-colors cursor-pointer"
+                                                title="Urutkan Asal Kecamatan"
+                                            >
+                                                ASAL KECAMATAN
+                                                {sortField === 'kecamatan'
+                                                    ? (sortDir === 'asc' ? <ArrowUp size={13} className="text-[#F26522]" /> : <ArrowDown size={13} className="text-[#F26522]" />)
+                                                    : <ArrowUpDown size={13} className="opacity-40 group-hover:opacity-80 transition-opacity" />
+                                                }
+                                            </button>
+                                            <div className="relative" ref={activeFilterCol === 'kecamatan' ? filterPopoverRef : null}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveFilterCol(activeFilterCol === 'kecamatan' ? null : 'kecamatan')}
+                                                    className={`p-0.5 rounded transition-colors cursor-pointer ${filterKec.size > 0 ? 'text-[#F26522]' : 'text-gray-400 hover:text-[#F26522]'}`}
+                                                    title="Filter Kecamatan"
+                                                >
+                                                    <Filter size={12} />
+                                                    {filterKec.size > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#F26522] rounded-full" />}
+                                                </button>
+                                                {activeFilterCol === 'kecamatan' && (
+                                                    <div className="absolute z-50 top-full mt-1 left-0 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}>
+                                                        <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Filter Kecamatan</span>
+                                                            {filterKec.size > 0 && (
+                                                                <button onClick={() => clearFilter('kecamatan')} className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer">Reset</button>
+                                                            )}
+                                                        </div>
+                                                        <div className="max-h-48 overflow-y-auto py-1">
+                                                            {uniqueKecOptions.map((kec) => (
+                                                                <label key={kec} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={filterKec.has(kec)}
+                                                                        onChange={() => toggleFilterValue('kecamatan', kec)}
+                                                                        className="rounded border-gray-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer"
+                                                                    />
+                                                                    <span className="truncate">{kec}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th className="p-4 text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSort('honor')}
+                                            className="group flex items-center gap-1 hover:text-[#F26522] transition-colors cursor-pointer ml-auto"
+                                            title="Urutkan Total Honor"
+                                        >
+                                            TOTAL HONOR
+                                            {sortField === 'honor'
+                                                ? (sortDir === 'asc' ? <ArrowUp size={13} className="text-[#F26522]" /> : <ArrowDown size={13} className="text-[#F26522]" />)
+                                                : <ArrowUpDown size={13} className="opacity-40 group-hover:opacity-80 transition-opacity" />
+                                            }
+                                        </button>
+                                    </th>
                                     <th className="p-4 text-center">STATUS SBML</th>
                                     <th className="p-4 text-center">AKSI</th>
                                 </tr>

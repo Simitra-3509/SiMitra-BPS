@@ -320,12 +320,7 @@ const Sidebar = forwardRef(function Sidebar({
                                 active={route().current('monitoring-kuota.*')}
                             />
 
-                            <NavItem
-                                href={route('spk.index')}
-                                icon={FileText}
-                                label="Surat Perintah Kerja (SPK)"
-                                active={route().current('spk.*')}
-                            />
+
                         </>
                     )}
 
