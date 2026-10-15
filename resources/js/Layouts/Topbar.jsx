@@ -65,7 +65,7 @@ const Topbar = forwardRef(function Topbar({ user, header, isCollapsed, toggleSid
                 </button>
 
                 <div className="font-bold text-base sm:text-lg tracking-wide">
-                    {header || 'Dashboard'}
+                    SiMitra BPS
                 </div>
             </div>
 

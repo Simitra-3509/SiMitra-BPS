@@ -58,7 +58,7 @@ export default function SbmlIndex({ limits, history, flash }) {
         <AuthenticatedLayout header="Pengaturan Batas SBML">
             <Head title="Pengaturan Batas SBML" />
 
-            <div className="space-y-6 max-w-7xl mx-auto">
+            <div className="space-y-6">
                 
                 {/* Alert Notification */}
                 {flash?.success && showToast && (
