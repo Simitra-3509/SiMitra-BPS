@@ -14,7 +14,7 @@ class PenugasanTrashController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('role:operator,ppk,admin,administrator'),
+            new Middleware('role:operator'),
         ];
     }
 

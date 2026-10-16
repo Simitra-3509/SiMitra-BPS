@@ -82,7 +82,7 @@ function Index({ auth, penugasan, kegiatanTanpaMitra, semuaKegiatan, tahunList =
     };
 
     const userRole = (auth?.user?.role || usePage().props?.auth?.user?.role || '').toLowerCase();
-    const canManagePenugasan = ['operator', 'admin', 'administrator'].includes(userRole);
+    const canManagePenugasan = ['operator'].includes(userRole);
     const isPPK = userRole === 'ppk';
 
     const activeBulan = statusPeriode?.bulan || (bulan ? parseInt(bulan) : new Date().getMonth() + 1);

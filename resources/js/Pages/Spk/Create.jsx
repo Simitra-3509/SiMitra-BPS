@@ -38,7 +38,9 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                 harga_satuan: 0,
                 nilai: 0,
                 kode_anggaran: '',
-                akun_anggaran: ''
+                akun_anggaran: '',
+                komponen: '',
+                subkomponen: ''
             }
         ]
     });
@@ -56,11 +58,13 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                 harga_satuan: 0,
                 nilai: 0,
                 kode_anggaran: '',
-                akun_anggaran: ''
+                akun_anggaran: '',
+                komponen: '',
+                subkomponen: ''
             }
-        ]);
-    };
-
+        ]
+    });
+    
     const removeDetail = (index) => {
         if (data.details.length === 1) return;
         const newDetails = data.details.filter((_, i) => i !== index);
@@ -403,6 +407,37 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 {formatRupiah(detail.nilai)}
                                             </div>
                                         </div>
+
+                                        {/* Komponen & Subkomponen */}
+                                        <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Komponen
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={3}
+                                                    value={detail.komponen}
+                                                    onChange={(e) => handleDetailChange(index, 'komponen', e.target.value)}
+                                                    placeholder="005"
+                                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Subkomponen
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={1}
+                                                    value={detail.subkomponen}
+                                                    onChange={(e) => handleDetailChange(index, 'subkomponen', e.target.value.toUpperCase())}
+                                                    placeholder="A"
+                                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
+                                                />
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             ))}

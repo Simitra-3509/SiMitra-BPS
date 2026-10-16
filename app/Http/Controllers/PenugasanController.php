@@ -25,10 +25,10 @@ class PenugasanController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('role:operator,admin', only: [
+            new Middleware('role:operator', only: [
                 'create', 'store', 'edit', 'update', 'destroy', 
                 'bulkDestroy', 'restore', 'forceDelete', 
-                'bulkRestore', 'bulkForceDelete'
+                'bulkRestore', 'bulkForceDelete', 'import'
             ]),
         ];
     }
@@ -179,8 +179,8 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
-            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        if (strtolower(auth()->user()->role ?? '') !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
         }
 
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
@@ -203,8 +203,8 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
-        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
-            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        if (strtolower(auth()->user()->role ?? '') !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
         }
 
         $request->validate([
@@ -283,8 +283,8 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function edit(Penugasan $penugasan)
     {
-        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
-            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        if (strtolower(auth()->user()->role ?? '') !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
         }
         $penugasan->load(['kegiatan', 'mitra']);
         $kegiatan = Kegiatan::where('status_aktif', true)->orderBy('nama_kegiatan')->get(['id', 'nama_kegiatan', 'kode_kegiatan']);
@@ -302,8 +302,8 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function update(UpdatePenugasanRequest $request, Penugasan $penugasan)
     {
-        if (!in_array(strtolower(auth()->user()->role ?? ''), ['operator', 'admin', 'administrator'])) {
-            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        if (strtolower(auth()->user()->role ?? '') !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
         }
 
         $userRole    = strtolower(auth()->user()->role ?? '');
@@ -359,8 +359,8 @@ class PenugasanController extends Controller implements HasMiddleware
     public function destroy(Penugasan $penugasan)
     {
         $userRole = strtolower(auth()->user()->role ?? '');
-        if (!in_array($userRole, ['operator', 'admin', 'administrator'])) {
-            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        if ($userRole !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
         }
 
         // Cek apakah periode penugasan sudah dikunci oleh PPK
@@ -385,8 +385,8 @@ class PenugasanController extends Controller implements HasMiddleware
     public function bulkDestroy(Request $request)
     {
         $userRole = strtolower(auth()->user()->role ?? '');
-        if (!in_array($userRole, ['operator', 'admin', 'administrator'])) {
-            abort(403, 'Hanya Operator dan Admin yang berhak mengelola penugasan mitra.');
+        if ($userRole !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
         }
 
         $request->validate([
@@ -424,6 +424,10 @@ class PenugasanController extends Controller implements HasMiddleware
      */
     public function import(Request $request)
     {
+        if (strtolower(auth()->user()->role ?? '') !== 'operator') {
+            abort(403, 'Hanya Operator yang berhak mengelola penugasan mitra.');
+        }
+
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls|max:10240',
         ], [

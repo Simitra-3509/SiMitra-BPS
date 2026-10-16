@@ -10,6 +10,7 @@ use App\Http\Controllers\PenugasanController;
 use App\Http\Controllers\PenugasanTrashController;
 use App\Http\Controllers\PenugasanApiController;
 use App\Http\Controllers\SpkController;
+use App\Http\Controllers\KonfigurasiAnggaranController;
 use App\Http\Controllers\LaporanHonorController;
 use App\Http\Controllers\MonitoringKuotaController;
 use App\Http\Controllers\PeriodePengisianController;
@@ -54,6 +55,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('user.store');
         Route::get('/users/edit', [UserController::class, 'edit'])->name('users.edit');
+
+        // Konfigurasi Anggaran
+        Route::resource('konfigurasi-anggaran', KonfigurasiAnggaranController::class);
 
         // Recycle Bin User (HANYA ADMIN)
         Route::get('/recycle-bin/users', [UserController::class, 'recycleBin'])->name('users.recycle-bin');
