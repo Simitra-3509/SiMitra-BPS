@@ -19,6 +19,9 @@ class SpkDetail extends Model
         'nilai',
         'kode_anggaran',
         'akun_anggaran',
+        'komponen',
+        'subkomponen',
+        'kode_beban_anggaran',
     ];
 
     protected $casts = [

@@ -10,6 +10,7 @@ use App\Models\SbmlLimit;
 use App\Models\User;
 use App\Services\SpkService;
 use App\Services\SpkDocxService;
+use App\Services\KodeBebanAnggaranService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -102,9 +103,22 @@ class SpkController extends Controller implements HasMiddleware
         $tanggalMulaiAll = $penugasans->map(fn($p) => $p->tanggal_mulai)->filter()->min();
         $tanggalSelesaiAll = $penugasans->map(fn($p) => $p->tanggal_selesai)->filter()->max();
 
-        $details = $penugasans->map(function ($p) {
+        $kodeService = new KodeBebanAnggaranService();
+        $tahunSpk = (int) ($firstP->tahun ?? date('Y'));
+
+        $details = $penugasans->map(function ($p) use ($kodeService, $tahunSpk) {
             $dk = $p->detilKegiatan;
             $k = $p->kegiatan;
+            
+            $rakitan = null;
+            if ($k && $k->kode_kegiatan) {
+                try {
+                    $rakitan = $kodeService->rakit($tahunSpk, $k->kode_kegiatan);
+                } catch (\Exception $e) {
+                    // Fallback jika konfigurasi tidak ada atau format tidak valid
+                }
+            }
+
             return [
                 'kegiatan_id' => $p->kegiatan_id,
                 'uraian_tugas' => $dk->nama_detil ?? $k->nama_kegiatan ?? '',
@@ -115,7 +129,10 @@ class SpkController extends Controller implements HasMiddleware
                 'harga_satuan' => (float) ($p->harga_satuan_snapshot ?? $dk->harga_satuan ?? 0),
                 'nilai' => (float) ($p->total_honor ?? 0),
                 'kode_anggaran' => $k->kode_kegiatan ?? '',
-                'akun_anggaran' => '',
+                'akun_anggaran' => $rakitan['kode_akun'] ?? '',
+                'komponen' => $rakitan['komponen'] ?? null,
+                'subkomponen' => $rakitan['subkomponen'] ?? null,
+                'kode_beban_anggaran' => $rakitan['kode_beban_anggaran'] ?? null,
             ];
         })->toArray();
 
@@ -261,6 +278,8 @@ class SpkController extends Controller implements HasMiddleware
             'details.*.nilai' => 'required|numeric|min:0',
             'details.*.kode_anggaran' => 'nullable|string',
             'details.*.akun_anggaran' => 'nullable|string',
+            'details.*.komponen' => 'nullable|string|regex:/^\d{3}$/',
+            'details.*.subkomponen' => 'nullable|string|regex:/^[A-Z]$/',
         ]);
 
         $user = auth()->user();
@@ -289,7 +308,25 @@ class SpkController extends Controller implements HasMiddleware
             'catatan' => $request->catatan,
         ]);
 
+        $kodeService = new KodeBebanAnggaranService();
+        $tahunAnggaran = (int) $request->tahun;
+
         foreach ($request->details as $detail) {
+            $kegiatan = Kegiatan::find($detail['kegiatan_id']);
+            $rakitan = null;
+            if ($kegiatan && $kegiatan->kode_kegiatan) {
+                try {
+                    $rakitan = $kodeService->rakit(
+                        $tahunAnggaran,
+                        $kegiatan->kode_kegiatan,
+                        $detail['komponen'] ?? null,
+                        $detail['subkomponen'] ?? null
+                    );
+                } catch (\Exception $e) {
+                    // Fallback: simpan NULL, cetakan pakai nilai lama
+                }
+            }
+
             SpkDetail::create([
                 'spk_id' => $spk->id,
                 'kegiatan_id' => $detail['kegiatan_id'],
@@ -301,7 +338,10 @@ class SpkController extends Controller implements HasMiddleware
                 'harga_satuan' => $detail['harga_satuan'],
                 'nilai' => $detail['nilai'],
                 'kode_anggaran' => $detail['kode_anggaran'] ?? null,
-                'akun_anggaran' => $detail['akun_anggaran'] ?? null,
+                'akun_anggaran' => $rakitan['kode_akun'] ?? ($detail['akun_anggaran'] ?? null),
+                'komponen' => $rakitan['komponen'] ?? null,
+                'subkomponen' => $rakitan['subkomponen'] ?? null,
+                'kode_beban_anggaran' => $rakitan['kode_beban_anggaran'] ?? null,
             ]);
         }
 
@@ -355,6 +395,8 @@ class SpkController extends Controller implements HasMiddleware
             'details.*.nilai' => 'required|numeric|min:0',
             'details.*.kode_anggaran' => 'nullable|string',
             'details.*.akun_anggaran' => 'nullable|string',
+            'details.*.komponen' => 'nullable|string|regex:/^\d{3}$/',
+            'details.*.subkomponen' => 'nullable|string|regex:/^[A-Z]$/',
         ]);
 
         $totalNilai = collect($request->details)->sum(fn($d) => $d['nilai']);
@@ -372,7 +414,25 @@ class SpkController extends Controller implements HasMiddleware
 
         // Sync details
         $spk->details()->delete();
+        $kodeService = new KodeBebanAnggaranService();
+        $tahunAnggaran = (int) $request->tahun;
+
         foreach ($request->details as $detail) {
+            $kegiatan = Kegiatan::find($detail['kegiatan_id']);
+            $rakitan = null;
+            if ($kegiatan && $kegiatan->kode_kegiatan) {
+                try {
+                    $rakitan = $kodeService->rakit(
+                        $tahunAnggaran,
+                        $kegiatan->kode_kegiatan,
+                        $detail['komponen'] ?? null,
+                        $detail['subkomponen'] ?? null
+                    );
+                } catch (\Exception $e) {
+                    // Fallback: simpan NULL, cetakan pakai nilai lama
+                }
+            }
+
             SpkDetail::create([
                 'spk_id' => $spk->id,
                 'kegiatan_id' => $detail['kegiatan_id'],
@@ -384,7 +444,10 @@ class SpkController extends Controller implements HasMiddleware
                 'harga_satuan' => $detail['harga_satuan'],
                 'nilai' => $detail['nilai'],
                 'kode_anggaran' => $detail['kode_anggaran'] ?? null,
-                'akun_anggaran' => $detail['akun_anggaran'] ?? null,
+                'akun_anggaran' => $rakitan['kode_akun'] ?? ($detail['akun_anggaran'] ?? null),
+                'komponen' => $rakitan['komponen'] ?? null,
+                'subkomponen' => $rakitan['subkomponen'] ?? null,
+                'kode_beban_anggaran' => $rakitan['kode_beban_anggaran'] ?? null,
             ]);
         }
 

@@ -28,6 +28,28 @@ class Kegiatan extends Model
         'created_by',
     ];
 
+    /**
+     * Parse kode_kegiatan menjadi segmen kegiatan.kro.ro.
+     * Format: 2903.BMA.009 -> ['kegiatan' => '2903', 'kro' => 'BMA', 'ro' => '009']
+     * @return array{kegiatan: string, kro: string, ro: string}|null
+     */
+    public function parseKodeKegiatan(): ?array
+    {
+        if (!$this->kode_kegiatan) {
+            return null;
+        }
+
+        if (!preg_match('/^(\d{4})\.([A-Z]{3})\.(\d{3})$/', $this->kode_kegiatan, $matches)) {
+            return null;
+        }
+
+        return [
+            'kegiatan' => $matches[1],
+            'kro' => $matches[2],
+            'ro' => $matches[3],
+        ];
+    }
+
     public function masterKegiatan()
     {
         return $this->belongsTo(MasterKegiatan::class, 'master_kegiatan_id');
