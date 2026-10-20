@@ -97,6 +97,8 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
+    'ppk_name' => env('PPK_NAME', 'Ratna Achdiati Permatasari'),
+
     'key' => env('APP_KEY'),
 
     'previous_keys' => [
