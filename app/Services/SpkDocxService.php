@@ -75,7 +75,7 @@ class SpkDocxService
 
         // PIHAK PERTAMA - Always use Bu Ratna's name for document output
         $section->addText('1.', ['name' => 'Arial', 'size' => 10]);
-        $section->addText('Ratna Achdiati Permatasari', ['name' => 'Arial', 'size' => 10, 'bold' => true]);
+        $section->addText(config('app.ppk_name'), ['name' => 'Arial', 'size' => 10, 'bold' => true]);
         $section->addText(':', ['name' => 'Arial', 'size' => 10]);
         $section->addText(
             'Pejabat Pembuat Komitmen Badan Pusat Statistik Kabupaten Jember, berkedudukan di Jl. Cendrawasih No. 20 Kel. Slawu, bertindak untuk dan atas nama BPS Kabupaten Jember, selanjutnya disebut sebagai PIHAK PERTAMA.',
@@ -139,7 +139,7 @@ class SpkDocxService
         $cell2->addTextBreak(4);
         
         $cell1->addText($mitra->nama_lengkap, ['name' => 'Arial', 'size' => 10, 'bold' => true, 'underline' => true], 'centered');
-        $cell2->addText('Ratna Achdiati Permatasari', ['name' => 'Arial', 'size' => 10, 'bold' => true, 'underline' => true], 'centered');
+        $cell2->addText(config('app.ppk_name'), ['name' => 'Arial', 'size' => 10, 'bold' => true, 'underline' => true], 'centered');
         
         $cell1->addText('SOBAT ID: ' . ($mitra->sobat_id ?? '-'), ['name' => 'Arial', 'size' => 9], 'centered');
         $cell2->addText('NIP. ' . ($spk->nip_ppk_snapshot ?? '-'), ['name' => 'Arial', 'size' => 9], 'centered');

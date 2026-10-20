@@ -51,7 +51,7 @@ class SpkModelTest extends TestCase
             'tanggal_mulai' => '2026-07-01',
             'tanggal_selesai' => '2026-07-31',
             'ppk_user_id' => $this->ppk->id,
-            'nama_ppk_snapshot' => 'Ratna Achdiati Permatasari',
+            'nama_ppk_snapshot' => config('app.ppk_name'),
             'nip_ppk_snapshot' => '197012101989032001',
             'jabatan_ppk_snapshot' => 'Pejabat Pembuat Komitmen',
             'total_nilai' => 1_852_000,

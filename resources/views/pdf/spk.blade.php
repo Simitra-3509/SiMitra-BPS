@@ -144,9 +144,9 @@
     <div class="parties">
         <table style="width: 100%; border: none; margin-bottom: 10px;">
             <tr>
-                <td style="width: 3%; vertical-align: top; border: none;">1.</td>
-                <td style="width: 27%; vertical-align: top; border: none;">Ratna Achdiati Permatasari</td>
-                <td style="width: 2%; vertical-align: top; border: none;">:</td>
+                <td style="width: 25%; vertical-align: top; border: none;">PIHAK PERTAMA,</td>
+                <td style="width: 25%; vertical-align: top; border: none;"></td>
+                <td style="width: 27%; vertical-align: top; border: none;">{{ config('app.ppk_name') }}</td>
                 <td style="width: 68%; vertical-align: top; border: none; text-align: justify;">Pejabat Pembuat Komitmen Badan Pusat Statistik Kabupaten Jember, berkedudukan di Jl. Cendrawasih No. 20 Kel. Slawu, bertindak untuk dan atas nama BPS Kabupaten Jember, selanjutnya disebut sebagai <strong>PIHAK PERTAMA</strong>.</td>
             </tr>
             <tr>
@@ -290,7 +290,7 @@
             <td>
                 <strong>PIHAK PERTAMA,</strong>
                 <div class="sign-space"></div>
-                RATNA ACHDIATI PERMATASARI
+                {{ config('app.ppk_name') }}
             </td>
         </tr>
     </table>
