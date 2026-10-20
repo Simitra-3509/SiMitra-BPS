@@ -33,11 +33,11 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const BULAN_NAMES = [
-    'Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember',
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ];
 
-const currentYear  = new Date().getFullYear();
+const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth() + 1;
 
 // Daftar tahun yang tersedia (5 tahun ke belakang)
@@ -125,15 +125,15 @@ const GREETINGS_DEFAULT = {
 function getGreeting(userName, role) {
     const hour = new Date().getHours();
     let period;
-    if      (hour >= 5  && hour < 10) period = 'pagi';
+    if (hour >= 5 && hour < 10) period = 'pagi';
     else if (hour >= 10 && hour < 14) period = 'siang';
     else if (hour >= 14 && hour < 19) period = 'sore';
     else if (hour >= 19 && hour < 24) period = 'malam';
-    else                              period = 'diniHari';
+    else period = 'diniHari';
 
-    const pool     = strtolower(role) === 'operator' ? GREETINGS_OPERATOR : GREETINGS_DEFAULT;
+    const pool = strtolower(role) === 'operator' ? GREETINGS_OPERATOR : GREETINGS_DEFAULT;
     const messages = pool[period];
-    const picked   = messages[Math.floor(Math.random() * messages.length)];
+    const picked = messages[Math.floor(Math.random() * messages.length)];
     return picked.replace('{nama}', userName ?? 'Pengguna');
 }
 
@@ -171,7 +171,7 @@ function BaseDropdown({ triggerLabel, triggerIcon, children, minWidth = 'min-w-[
 
             {open && (
                 <div className="absolute z-50 top-full mt-2 left-0 w-52 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
-                     style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}
+                    style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}
                 >
                     <div className="py-2 max-h-72 overflow-y-auto">
                         {children(setOpen)}
@@ -339,40 +339,42 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
     // ── filter state ──────────────────────────────────────────────────────────
     // yearSel : 'tahunan' | number
     // monthSel: 'semua'   | number (1-12)
-    const [yearSel,  setYearSel]  = useState(currentYear);
+    const [yearSel, setYearSel] = useState(currentYear);
     const [monthSel, setMonthSel] = useState('semua');
 
     // derived filter for backend
     const filter = yearSel === 'tahunan'
         ? 'semua'       // all-time per-year bar chart
         : monthSel === 'semua'
-        ? 'tahunan'     // all months of a year line chart
-        : 'bulanan';    // daily of a specific month
+            ? 'tahunan'     // all months of a year line chart
+            : 'bulanan';    // daily of a specific month
 
     const tahun = yearSel === 'tahunan' ? currentYear : yearSel;
     const bulan = monthSel === 'semua' ? 1 : monthSel;
 
     // ── data state ────────────────────────────────────────────────────────────
-    const [stats,         setStats]         = useState(initStats);
-    const [chartData,     setChartData]     = useState(initChartData);
-    const [sbml,          setSbml]          = useState(initSbml || { pendataan: 3085000, pengolahan: 2854000 });
-    const [mitraList,     setMitraList]     = useState(initMitraList || []);
-    const [filterLabel,   setFilterLabel]   = useState(
+    const [stats, setStats] = useState(initStats);
+    const [chartData, setChartData] = useState(initChartData);
+    const [sbml, setSbml] = useState(initSbml || { pendataan: 3085000, pengolahan: 2854000 });
+    const [mitraList, setMitraList] = useState(initMitraList || []);
+    const [filterLabel, setFilterLabel] = useState(
         monthSel === 'semua' ? `Tahun ${currentYear}` : `Bulan ${BULAN_NAMES[monthSel - 1]} ${currentYear}`
     );
-    const [loading,       setLoading]       = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // ── Table & Modal state ───────────────────────────────────────────────────
     const [selectedMitra, setSelectedMitra] = useState(null);
-    const [searchQuery,   setSearchQuery]   = useState('');
-    const [statusFilter,  setStatusFilter]  = useState('semua'); // 'semua' | 'kritis' | 'warning' | 'normal'
-    const [currentPage,   setCurrentPage]   = useState(1);
-    const [perPage,       setPerPage]       = useState(10);
-    const [sortField,     setSortField]     = useState(null);      // null | 'nama' | 'kecamatan' | 'honor'
-    const [sortDir,       setSortDir]       = useState('asc');     // 'asc' | 'desc'
-    const [filterNama,    setFilterNama]    = useState(new Set()); // selected nama values
-    const [filterKec,     setFilterKec]     = useState(new Set()); // selected kecamatan values
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('semua'); // 'semua' | 'kritis' | 'warning' | 'normal'
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [sortField, setSortField] = useState(null);      // null | 'nama' | 'kecamatan' | 'honor'
+    const [sortDir, setSortDir] = useState('asc');     // 'asc' | 'desc'
+    const [filterNama, setFilterNama] = useState(new Set()); // selected nama values
+    const [filterKec, setFilterKec] = useState(new Set()); // selected kecamatan values
     const [activeFilterCol, setActiveFilterCol] = useState(null);  // 'nama' | 'kecamatan' | null
+    const [filterNamaSearch, setFilterNamaSearch] = useState('');  // search inside nama filter popover
+    const [filterKecSearch, setFilterKecSearch] = useState('');  // search inside kecamatan filter popover
 
     const handleSort = (field) => {
         if (sortField === field) {
@@ -417,11 +419,26 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
         const handler = (e) => {
             if (filterPopoverRef.current && !filterPopoverRef.current.contains(e.target)) {
                 setActiveFilterCol(null);
+                setFilterNamaSearch('');
+                setFilterKecSearch('');
             }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [activeFilterCol]);
+
+    // Filtered options inside popover (based on in-popover search)
+    const filteredNamaOptions = useMemo(() => {
+        const q = filterNamaSearch.toLowerCase().trim();
+        if (!q) return uniqueNamaOptions;
+        return uniqueNamaOptions.filter((n) => n.toLowerCase().includes(q));
+    }, [uniqueNamaOptions, filterNamaSearch]);
+
+    const filteredKecOptions = useMemo(() => {
+        const q = filterKecSearch.toLowerCase().trim();
+        if (!q) return uniqueKecOptions;
+        return uniqueKecOptions.filter((k) => k.toLowerCase().includes(q));
+    }, [uniqueKecOptions, filterKecSearch]);
 
     const fetchFilterData = useCallback(async (f, t, b) => {
         setLoading(true);
@@ -463,9 +480,9 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
 
     // Stat card label
     const statHonorTitle =
-        filter === 'semua'    ? 'Statistik Honor (Semua Waktu)' :
-        filter === 'tahunan'  ? `Statistik Honor Tahun ${tahun}` :
-                                `Statistik Honor — ${BULAN_NAMES[bulan - 1]} ${tahun}`;
+        filter === 'semua' ? 'Statistik Honor (Semua Waktu)' :
+            filter === 'tahunan' ? `Statistik Honor Tahun ${tahun}` :
+                `Statistik Honor — ${BULAN_NAMES[bulan - 1]} ${tahun}`;
 
     // ── Mitra Table computation ───────────────────────────────────────────────
     const filteredMitras = useMemo(() => {
@@ -555,11 +572,10 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
 
                 {/* ── Animated Loading Progress Bar ────────────────── */}
                 <div
-                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                        loading
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${loading
                             ? 'opacity-100 max-h-16 mb-2 scale-100'
                             : 'opacity-0 max-h-0 mb-0 scale-98 pointer-events-none'
-                    }`}
+                        }`}
                 >
                     <div className="flex items-center justify-between text-xs font-semibold text-[#F26522] dark:text-orange-400 mb-1.5 px-1">
                         <span className="flex items-center gap-1.5">
@@ -673,7 +689,7 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
 
                 {/* ── Mitra Honor & SBML Monitoring Table ─────────── */}
                 <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-opacity duration-300 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                    
+
                     {/* Table Header / Toolbar */}
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700 space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -793,16 +809,40 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                     {filterNama.size > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#F26522] rounded-full" />}
                                                 </button>
                                                 {activeFilterCol === 'nama' && (
-                                                    <div className="absolute z-50 top-full mt-1 left-0 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}>
-                                                        <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Filter Nama</span>
-                                                            {filterNama.size > 0 && (
-                                                                <button onClick={() => clearFilter('nama')} className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer">Reset</button>
-                                                            )}
+                                                    <div className="absolute z-50 top-full mt-1 left-0 w-60 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}>
+                                                        {/* Header */}
+                                                        <div className="px-3 pt-2.5 pb-1.5 border-b border-gray-100 dark:border-gray-700">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Filter Nama Mitra</span>
+                                                                {filterNama.size > 0 && (
+                                                                    <button onClick={() => clearFilter('nama')} className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer">Reset</button>
+                                                                )}
+                                                            </div>
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={filterNamaSearch}
+                                                                    onChange={(e) => setFilterNamaSearch(e.target.value)}
+                                                                    placeholder="Cari nama..."
+                                                                    autoFocus
+                                                                    className="w-full pl-6 pr-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#F26522] focus:border-[#F26522] transition-colors"
+                                                                />
+                                                                {filterNamaSearch && (
+                                                                    <button
+                                                                        onClick={() => setFilterNamaSearch('')}
+                                                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                                    >
+                                                                        <X size={10} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
+                                                        {/* Checkbox list */}
                                                         <div className="max-h-48 overflow-y-auto py-1">
-                                                            {uniqueNamaOptions.map((nama) => (
-                                                                <label key={nama} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                                                            {filteredNamaOptions.length > 0 ? filteredNamaOptions.map((nama) => (
+                                                                <label key={nama} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors">
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={filterNama.has(nama)}
@@ -811,7 +851,13 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                                     />
                                                                     <span className="truncate">{nama}</span>
                                                                 </label>
-                                                            ))}
+                                                            )) : (
+                                                                <p className="px-3 py-3 text-xs text-gray-400 text-center">Tidak ditemukan</p>
+                                                            )}
+                                                        </div>
+                                                        {/* Footer count */}
+                                                        <div className="px-3 py-1.5 border-t border-gray-100 dark:border-gray-700 text-[10px] text-gray-400">
+                                                            {filterNama.size > 0 ? `${filterNama.size} dipilih` : `${filteredNamaOptions.length} opsi`}
                                                         </div>
                                                     </div>
                                                 )}
@@ -843,16 +889,40 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                     {filterKec.size > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#F26522] rounded-full" />}
                                                 </button>
                                                 {activeFilterCol === 'kecamatan' && (
-                                                    <div className="absolute z-50 top-full mt-1 left-0 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}>
-                                                        <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Filter Kecamatan</span>
-                                                            {filterKec.size > 0 && (
-                                                                <button onClick={() => clearFilter('kecamatan')} className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer">Reset</button>
-                                                            )}
+                                                    <div className="absolute z-50 top-full mt-1 left-0 w-60 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.18)' }}>
+                                                        {/* Header */}
+                                                        <div className="px-3 pt-2.5 pb-1.5 border-b border-gray-100 dark:border-gray-700">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Filter Kecamatan</span>
+                                                                {filterKec.size > 0 && (
+                                                                    <button onClick={() => clearFilter('kecamatan')} className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer">Reset</button>
+                                                                )}
+                                                            </div>
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={filterKecSearch}
+                                                                    onChange={(e) => setFilterKecSearch(e.target.value)}
+                                                                    placeholder="Cari kecamatan..."
+                                                                    autoFocus
+                                                                    className="w-full pl-6 pr-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#F26522] focus:border-[#F26522] transition-colors"
+                                                                />
+                                                                {filterKecSearch && (
+                                                                    <button
+                                                                        onClick={() => setFilterKecSearch('')}
+                                                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                                    >
+                                                                        <X size={10} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
+                                                        {/* Checkbox list */}
                                                         <div className="max-h-48 overflow-y-auto py-1">
-                                                            {uniqueKecOptions.map((kec) => (
-                                                                <label key={kec} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                                                            {filteredKecOptions.length > 0 ? filteredKecOptions.map((kec) => (
+                                                                <label key={kec} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors">
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={filterKec.has(kec)}
@@ -861,7 +931,13 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                                     />
                                                                     <span className="truncate">{kec}</span>
                                                                 </label>
-                                                            ))}
+                                                            )) : (
+                                                                <p className="px-3 py-3 text-xs text-gray-400 text-center">Tidak ditemukan</p>
+                                                            )}
+                                                        </div>
+                                                        {/* Footer count */}
+                                                        <div className="px-3 py-1.5 border-t border-gray-100 dark:border-gray-700 text-[10px] text-gray-400">
+                                                            {filterKec.size > 0 ? `${filterKec.size} dipilih` : `${filteredKecOptions.length} opsi`}
                                                         </div>
                                                     </div>
                                                 )}
@@ -897,13 +973,12 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                             <tr
                                                 key={mitra.id}
                                                 onClick={() => setSelectedMitra(mitra)}
-                                                className={`group transition-all duration-150 cursor-pointer ${
-                                                    isKritis
+                                                className={`group transition-all duration-150 cursor-pointer ${isKritis
                                                         ? 'bg-red-50/70 hover:bg-red-100/80 dark:bg-red-950/25 dark:hover:bg-red-950/40 border-l-4 border-l-red-500'
                                                         : isWarning
-                                                        ? 'bg-amber-50/40 hover:bg-amber-100/60 dark:bg-amber-950/15 dark:hover:bg-amber-950/30 border-l-4 border-l-amber-500'
-                                                        : 'hover:bg-orange-50/30 dark:hover:bg-gray-700/30 border-l-4 border-l-transparent hover:border-l-[#F26522]'
-                                                }`}
+                                                            ? 'bg-amber-50/40 hover:bg-amber-100/60 dark:bg-amber-950/15 dark:hover:bg-amber-950/30 border-l-4 border-l-amber-500'
+                                                            : 'hover:bg-orange-50/30 dark:hover:bg-gray-700/30 border-l-4 border-l-transparent hover:border-l-[#F26522]'
+                                                    }`}
                                             >
                                                 {/* No */}
                                                 <td className="p-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400">
@@ -1187,13 +1262,12 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                                                     <span className="uppercase tracking-wider">Honor Pendataan</span>
                                                     <span
-                                                        className={`font-bold ${
-                                                            isExceededPendataan
+                                                        className={`font-bold ${isExceededPendataan
                                                                 ? 'text-red-600 dark:text-red-400'
                                                                 : isWarningPendataan
-                                                                ? 'text-amber-600 dark:text-amber-400'
-                                                                : 'text-orange-600 dark:text-orange-400'
-                                                        }`}
+                                                                    ? 'text-amber-600 dark:text-amber-400'
+                                                                    : 'text-orange-600 dark:text-orange-400'
+                                                            }`}
                                                         title={isMonthly ? 'Utilisasi Pagu Bulan Ini' : 'Utilisasi Pagu Tertinggi dalam Sebulan'}
                                                     >
                                                         {pctPendataan}%{!isMonthly && <span className="text-[9px] font-normal text-gray-400 ml-1">(puncak/bln)</span>}
@@ -1204,13 +1278,12 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                 </div>
                                                 <div className="w-full bg-gray-100 dark:bg-gray-600 h-1.5 rounded-full mt-2 overflow-hidden">
                                                     <div
-                                                        className={`h-full rounded-full transition-all ${
-                                                            isExceededPendataan
+                                                        className={`h-full rounded-full transition-all ${isExceededPendataan
                                                                 ? 'bg-red-500'
                                                                 : isWarningPendataan
-                                                                ? 'bg-amber-500'
-                                                                : 'bg-[#F26522]'
-                                                        }`}
+                                                                    ? 'bg-amber-500'
+                                                                    : 'bg-[#F26522]'
+                                                            }`}
                                                         style={{ width: `${Math.min(100, pctPendataan)}%` }}
                                                     />
                                                 </div>
@@ -1227,13 +1300,12 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                                                     <span className="uppercase tracking-wider">Honor Pengolahan</span>
                                                     <span
-                                                        className={`font-bold ${
-                                                            isExceededPengolahan
+                                                        className={`font-bold ${isExceededPengolahan
                                                                 ? 'text-red-600 dark:text-red-400'
                                                                 : isWarningPengolahan
-                                                                ? 'text-amber-600 dark:text-amber-400'
-                                                                : 'text-cyan-600 dark:text-cyan-400'
-                                                        }`}
+                                                                    ? 'text-amber-600 dark:text-amber-400'
+                                                                    : 'text-cyan-600 dark:text-cyan-400'
+                                                            }`}
                                                         title={isMonthly ? 'Utilisasi Pagu Bulan Ini' : 'Utilisasi Pagu Tertinggi dalam Sebulan'}
                                                     >
                                                         {pctPengolahan}%{!isMonthly && <span className="text-[9px] font-normal text-gray-400 ml-1">(puncak/bln)</span>}
@@ -1244,13 +1316,12 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                 </div>
                                                 <div className="w-full bg-gray-100 dark:bg-gray-600 h-1.5 rounded-full mt-2 overflow-hidden">
                                                     <div
-                                                        className={`h-full rounded-full transition-all ${
-                                                            isExceededPengolahan
+                                                        className={`h-full rounded-full transition-all ${isExceededPengolahan
                                                                 ? 'bg-red-500'
                                                                 : isWarningPengolahan
-                                                                ? 'bg-amber-500'
-                                                                : 'bg-cyan-500'
-                                                        }`}
+                                                                    ? 'bg-amber-500'
+                                                                    : 'bg-cyan-500'
+                                                            }`}
                                                         style={{ width: `${Math.min(100, pctPengolahan)}%` }}
                                                     />
                                                 </div>
