@@ -245,7 +245,7 @@ export default function Index({ spks, filters }) {
                                                             <Edit size={16} />
                                                         </Link>
                                                     )}
-                                                    <Link
+                                                    <a
                                                         href={route('spk.export-pdf', spk.id)}
                                                         className="p-2 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-900/30 rounded-lg transition"
                                                         title="Export PDF"

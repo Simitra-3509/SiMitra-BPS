@@ -200,11 +200,8 @@ class SpkDocxService
             $row->addCell(1200)->addText('Rp' . "\u{00A0}" . number_format($detail->harga_satuan, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
             $row->addCell(1400)->addText('Rp' . "\u{00A0}" . number_format($detail->nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
             // Kode anggaran lengkap: kode_kegiatan + akun_anggaran
-            $kodeLengkap = $detail->kode_anggaran;
-            if (!empty($detail->akun_anggaran)) {
-                $kodeLengkap .= $detail->akun_anggaran;
-            }
-            $row->addCell(1300)->addText($kodeLengkap ?: '-', ['name' => 'Arial', 'size' => 8]);
+            $kodeLengkap = $detail->kode_beban_anggaran . "\n" . $detail->akun_anggaran;
+            $row->addCell(1300)->addText($kodeLengkap, ['name' => 'Arial', 'size' => 8], ['alignment' => Jc::CENTER]);
         }
         
         // Total row
