@@ -348,7 +348,7 @@
                     <td style="text-align: center;">{{ $detail->satuan }}</td>
                     <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($detail->harga_satuan, 0, ',', '.') }},-</td>
                     <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($detail->nilai, 0, ',', '.') }},-</td>
-                    <td style="text-align: center; font-size: 8pt;">{{ ($detail->kode_anggaran ?? '') . ($detail->akun_anggaran ?? '') ?: '-' }}</td>
+                    <td style="text-align: center; font-size: 8pt;">{{ $detail->kodeBebanTampil }}</td>
                 </tr>
                 @endforeach
                 <tr>

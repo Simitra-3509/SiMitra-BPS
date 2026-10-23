@@ -40,4 +40,12 @@ class SpkDetail extends Model
     {
         return $this->belongsTo(Kegiatan::class);
     }
+
+    public function getKodeBebanTampilAttribute(): string
+    {
+        if ($this->kode_beban_anggaran) {
+            return $this->kode_beban_anggaran;
+        }
+        return ($this->kode_anggaran ?? '') . ($this->akun_anggaran ?? '') ?: '-';
+    }
 }
