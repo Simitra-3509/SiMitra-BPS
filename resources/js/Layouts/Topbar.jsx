@@ -77,9 +77,7 @@ const Topbar = forwardRef(function Topbar({ user, header, isCollapsed, toggleSid
                 >
                     {isDarkMode ? <><Sun size={16} /> <span className="hidden sm:inline">Light Mode</span></> : <><Moon size={16} /> <span className="hidden sm:inline">Dark Mode</span></>}
                 </button>
-                <div className="text-sm border-l border-white/30 pl-4 hidden lg:block">
-                    Mode saat ini: <strong>{isDarkMode ? 'Dark' : 'Light'}</strong>
-                </div>
+
 
                 {/* User dropdown */}
                 <div className="relative ml-1 sm:ml-2" ref={dropdownRef}>

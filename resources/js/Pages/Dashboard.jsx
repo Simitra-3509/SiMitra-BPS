@@ -556,18 +556,7 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                             {getGreeting(user?.name, user?.role)}
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={toggleDarkMode}
-                            className="flex items-center gap-2 border border-simitra-orange text-simitra-orange hover:bg-orange-50 dark:hover:bg-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-white dark:bg-gray-800"
-                        >
-                            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-                            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                        </button>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                            Mode saat ini: <strong className="text-gray-800 dark:text-gray-200">{isDarkMode ? 'Dark' : 'Light'}</strong>
-                        </span>
-                    </div>
+
                 </div>
 
                 {/* ── Animated Loading Progress Bar ────────────────── */}
