@@ -418,15 +418,19 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                     <th className="p-4">NAMA</th>
                                     <th className="p-4">KECAMATAN</th>
                                     <th className="p-4 text-center">STATUS</th>
-                                    <th className="p-4 text-center">AKSI</th>
+                                    {isAdmin && <th className="p-4 text-center">AKSI</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-800">
                                 {mitras.data.length > 0 ? (
                                     mitras.data.map((mitra) => (
-                                        <tr key={mitra.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                                        <tr
+                                            key={mitra.id}
+                                            onClick={() => openDetailModal(mitra)}
+                                            className="hover:bg-orange-50/60 dark:hover:bg-orange-900/10 transition-colors cursor-pointer"
+                                        >
                                             {isAdmin && (
-                                                <td className="p-4 text-center">
+                                                <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedIds.includes(mitra.id)}
@@ -452,40 +456,31 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                                                     {mitra.status_aktif ? 'Aktif' : 'Nonaktif'}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <button
-                                                        onClick={() => openDetailModal(mitra)}
-                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 dark:border-blue-900/50 dark:hover:bg-blue-900/30 dark:text-blue-500 rounded transition"
-                                                        title="Detail Mitra"
-                                                    >
-                                                        <Eye size={15} />
-                                                    </button>
-                                                    {isAdmin && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => openEditModal(mitra)}
-                                                                className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
-                                                                title="Edit Mitra"
-                                                            >
-                                                                <Edit2 size={15} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(mitra.id)}
-                                                                className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
-                                                                title="Pindahkan ke Recycle Bin"
-                                                            >
-                                                                <Trash2 size={15} />
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
+                                            {isAdmin && (
+                                                <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            onClick={() => openEditModal(mitra)}
+                                                            className="p-1.5 text-orange-600 hover:bg-orange-50 border border-orange-200 dark:border-orange-900/50 dark:hover:bg-orange-900/30 dark:text-orange-500 rounded transition"
+                                                            title="Edit Mitra"
+                                                        >
+                                                            <Edit2 size={15} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(mitra.id)}
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 dark:border-red-900/50 dark:hover:bg-red-900/30 dark:text-red-500 rounded transition"
+                                                            title="Pindahkan ke Recycle Bin"
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={isAdmin ? 6 : 5} className="p-8 text-center text-gray-400">
+                                        <td colSpan={isAdmin ? 6 : 4} className="p-8 text-center text-gray-400">
                                             Tidak ada data Mitra ditemukan.
                                         </td>
                                     </tr>
@@ -516,8 +511,11 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
 
             {/* Modal Form Create/Edit */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-xl border border-gray-200 dark:border-gray-700">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+                    onClick={closeModal}
+                >
+                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-xl border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white border-b pb-3 dark:border-gray-700">
                             {editingMitra ? 'Edit Data Mitra' : 'Tambah Mitra Baru'}
                         </h3>
@@ -648,8 +646,11 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
 
             {/* Modal Detail Mitra (Read-Only) */}
             {isDetailModalOpen && detailMitra && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+                    onClick={closeDetailModal}
+                >
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
                         {/* Header Banner */}
                         <div className="bg-gradient-to-r from-[#D9531E] to-orange-600 p-6 text-white relative">
                             <button
@@ -754,15 +755,8 @@ export default function Index({ auth, mitras, filters, kecamatanList, desaByKeca
                         </div>
 
                         {/* Footer */}
-                        <div className="p-4 bg-gray-50 dark:bg-gray-900/80 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900/80 border-t border-gray-100 dark:border-gray-700">
                             <span className="text-xs text-gray-400 italic">Data Mitra BPS Kabupaten Jember</span>
-                            <button
-                                type="button"
-                                onClick={closeDetailModal}
-                                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-semibold rounded-xl transition cursor-pointer"
-                            >
-                                Tutup
-                            </button>
                         </div>
                     </div>
                 </div>
