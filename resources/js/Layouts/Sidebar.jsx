@@ -14,6 +14,7 @@ import {
     Banknote,
     Lock,
     FileText,
+    FileCheck,
     TrendingUp,
     User,
     ChevronDown,
@@ -318,6 +319,13 @@ const Sidebar = forwardRef(function Sidebar({
                                 icon={Gauge}
                                 label="Monitoring Kuota SBML"
                                 active={route().current('monitoring-kuota.*')}
+                            />
+
+                            <NavItem
+                                href={route('spk.index')}
+                                icon={FileCheck}
+                                label="Surat Perintah Kerja"
+                                active={route().current('spk.*')}
                             />
 
 
