@@ -62,8 +62,8 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                 komponen: '',
                 subkomponen: ''
             }
-        ]
-    });
+        ]);
+    };
     
     const removeDetail = (index) => {
         if (data.details.length === 1) return;

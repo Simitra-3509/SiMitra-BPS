@@ -252,7 +252,7 @@ export default function Index({ spks, filters }) {
                                                         target="_blank"
                                                     >
                                                         <Download size={16} />
-                                                    </Link>
+                                                    </a>
                                                     {canCreate && (
                                                         <Link
                                                             as="button"
