@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                 'message' => fn () => $request->session()->get('message') ?? $request->session()->get('success'),
                 'success' => fn () => $request->session()->get('success') ?? $request->session()->get('message'),
                 'error'   => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
             ],
             'counts' => [
                 'recycleBinUser'      => fn () => $request->user() ? User::onlyTrashed()->count() : 0,

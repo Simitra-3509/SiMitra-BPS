@@ -23,6 +23,7 @@ import { formatRupiah } from '@/utils/formatters';
 export default function Index({ spks, filters }) {
     const { props } = usePage();
     const authUser = props.auth?.user;
+    const flash = props.flash || {};
     const canCreate = ['admin', 'administrator', 'ppk'].includes(authUser?.role);
 
     const [localFilters, setLocalFilters] = useState({
@@ -67,6 +68,30 @@ export default function Index({ spks, filters }) {
         <AuthenticatedLayout header="Surat Perintah Kerja (SPK)">
             <Head title="SPK" />
             <div className="space-y-6">
+                {/* Flash: sukses, peringatan, error */}
+                {flash.success && (
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CheckCircle size={18} />
+                        </div>
+                        <span className="text-sm font-semibold">{flash.success}</span>
+                    </div>
+                )}
+                {flash.warning && (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs font-bold">!</div>
+                        <span className="text-sm font-semibold">{flash.warning}</span>
+                    </div>
+                )}
+                {flash.error && (
+                    <div className="p-4 bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 rounded-xl shadow-xs flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <XCircle size={18} />
+                        </div>
+                        <span className="text-sm font-semibold">{flash.error}</span>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
