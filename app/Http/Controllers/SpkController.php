@@ -334,7 +334,7 @@ class SpkController extends Controller implements HasMiddleware
                     'satuan' => $detail['satuan'],
                     'harga_satuan' => $detail['harga_satuan'],
                     'nilai' => $detail['nilai'],
-                    'kode_anggaran' => $detail['kode_anggaran'] ?? null,
+                    'kode_anggaran' => $detail['kode_anggaran'] ?? $rakitan['kode_kegiatan'][$i] ?? null,
                     'akun_anggaran' => $r['kode_akun'] ?? ($detail['akun_anggaran'] ?? null),
                     'komponen' => $r['komponen'] ?? null,
                     'subkomponen' => $r['subkomponen'] ?? null,
@@ -360,11 +360,13 @@ class SpkController extends Controller implements HasMiddleware
         $kodeService = new KodeBebanAnggaranService();
         $kegiatans = Kegiatan::whereIn('id', collect($details)->pluck('kegiatan_id'))->get()->keyBy('id');
         $hasil = [];
+        $kodeKegiatan = [];
         $gagal = [];
 
         foreach ($details as $i => $detail) {
             $nomor = $i + 1;
             $kegiatan = $kegiatans->get($detail['kegiatan_id']);
+            $kodeKegiatan[$i] = $kegiatan->kode_kegiatan ?? null;
 
             if (!$kegiatan || !$kegiatan->kode_kegiatan) {
                 $hasil[$i] = null;
@@ -385,7 +387,7 @@ class SpkController extends Controller implements HasMiddleware
             }
         }
 
-        return ['hasil' => $hasil, 'gagal' => $gagal];
+        return ['hasil' => $hasil, 'gagal' => $gagal, 'kode_kegiatan' => $kodeKegiatan];
     }
 
     public function show(Spk $spk)

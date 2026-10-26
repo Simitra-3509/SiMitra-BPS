@@ -170,4 +170,14 @@ class SpkStoreKodeBebanTest extends TestCase
         $this->assertSame(0, Spk::withTrashed()->count());
         $this->assertSame(0, SpkDetail::count());
     }
+
+    #[Test]
+    public function kode_anggaran_detail_terisi_dari_kode_kegiatan_bila_form_tidak_mengirim(): void
+    {
+        $k = $this->buatKegiatan('2903.BMA.009');
+
+        $this->actingAs($this->ppk)->post(route('spk.store'), $this->payload([$k], 'draft'));
+
+        $this->assertSame('2903.BMA.009', SpkDetail::firstOrFail()->kode_anggaran);
+    }
 }
