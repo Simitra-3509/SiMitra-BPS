@@ -153,7 +153,7 @@ class SpkStoreKodeBebanTest extends TestCase
 
         $spk = Spk::firstOrFail();
         $this->assertSame('terbit', $spk->status);
-        $this->assertSame('0001/SPK/11/2026', $spk->nomor_spk);
+        $this->assertSame('1/SPK/11/2026', $spk->nomor_spk);
         $this->assertSame(1, $spk->details()->count());
     }
 
