@@ -14,22 +14,20 @@ class SpkService
     public static function generateNomorSpk(int $bulan, int $tahun): string
     {
         return DB::transaction(function () use ($bulan, $tahun) {
-            $formattedMonth = str_pad((string)$bulan, 2, '0', STR_PAD_LEFT);
-            
-            // Dapatkan nomor urut tertinggi untuk tahun/bulan tersebut
-            $lastSpk = Spk::where('tahun', $tahun)
-                ->where('bulan', $bulan)
+            $formattedMonth = str_pad((string) $bulan, 2, '0', STR_PAD_LEFT);
+
+            // Urutan direset tiap tahun (bukan tiap bulan), mengikuti nomor SPK kantor.
+            // SPK yang dihapus (soft delete) tetap dihitung supaya nomor tidak dipakai ulang.
+            // Nomor terbesar dicari secara numerik, bukan dari baris terakhir.
+            $counter = Spk::withTrashed()
+                ->where('tahun', $tahun)
                 ->whereNotNull('nomor_spk')
                 ->lockForUpdate()
-                ->orderByDesc('id')
-                ->first();
+                ->pluck('nomor_spk')
+                ->map(fn ($nomor) => preg_match('/^(\d+)\/SPK\//', $nomor, $m) ? (int) $m[1] : 0)
+                ->max() ?? 0;
 
-            $counter = 1;
-            if ($lastSpk && preg_match('/^(\d+)\/SPK\//', $lastSpk->nomor_spk, $matches)) {
-                $counter = ((int) $matches[1]) + 1;
-            }
-
-            return sprintf('%04d/SPK/%s/%d', $counter, $formattedMonth, $tahun);
+            return sprintf('%d/SPK/%s/%d', $counter + 1, $formattedMonth, $tahun);
         });
     }
 

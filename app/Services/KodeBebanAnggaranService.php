@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\KonfigurasiAnggaran;
 use App\Models\Kegiatan;
-use InvalidArgumentException;
+use App\Exceptions\KodeBebanAnggaranException;
 
 class KodeBebanAnggaranService
 {
@@ -16,20 +16,20 @@ class KodeBebanAnggaranService
      * @param string|null $komponen Override (default dari konfigurasi)
      * @param string|null $subkomponen Override (default dari konfigurasi)
      * @return array{kode_beban_anggaran: string, komponen: string, subkomponen: string, kode_akun: string}
-     * @throws InvalidArgumentException jika konfigurasi atau format tidak valid
+     * @throws KodeBebanAnggaranException jika konfigurasi atau format tidak valid
      */
     public function rakit(int $tahunAnggaran, string $kodeKegiatan, ?string $komponen = null, ?string $subkomponen = null): array
     {
         // 1. Ambil konfigurasi tahun anggaran
         $config = KonfigurasiAnggaran::where('tahun_anggaran', $tahunAnggaran)->first();
         if (!$config) {
-            throw new InvalidArgumentException("Konfigurasi anggaran untuk tahun {$tahunAnggaran} tidak ditemukan.");
+            throw new KodeBebanAnggaranException("Konfigurasi anggaran untuk tahun {$tahunAnggaran} tidak ditemukan.");
         }
 
         // 2. Validasi dan parse kode_kegiatan
         $parsed = $this->parseKodeKegiatan($kodeKegiatan);
         if (!$parsed) {
-            throw new InvalidArgumentException("Format kode_kegiatan tidak valid: {$kodeKegiatan}. Harus format: 2903.BMA.009");
+            throw new KodeBebanAnggaranException("Format kode_kegiatan tidak valid: {$kodeKegiatan}. Harus format: 2903.BMA.009");
         }
 
         // 3. Gunakan komponen/subkomponen dari parameter atau default
@@ -119,31 +119,31 @@ class KodeBebanAnggaranService
     /**
      * Validasi komponen: tepat 3 digit.
      *
-     * @throws InvalidArgumentException
+     * @throws KodeBebanAnggaranException
      */
     protected function validasiKomponen(string $komponen): void
     {
         if (!preg_match('/^\d{3}$/', $komponen)) {
-            throw new InvalidArgumentException("Komponen harus 3 digit angka. Diberikan: {$komponen}");
+            throw new KodeBebanAnggaranException("Komponen harus 3 digit angka. Diberikan: {$komponen}");
         }
     }
 
     /**
      * Validasi subkomponen: 1 huruf kapital.
      *
-     * @throws InvalidArgumentException
+     * @throws KodeBebanAnggaranException
      */
     protected function validasiSubkomponen(string $subkomponen): void
     {
         if (!preg_match('/^[A-Z]$/', $subkomponen)) {
-            throw new InvalidArgumentException("Subkomponen harus 1 huruf kapital. Diberikan: {$subkomponen}");
+            throw new KodeBebanAnggaranException("Subkomponen harus 1 huruf kapital. Diberikan: {$subkomponen}");
         }
     }
 
     /**
      * Validasi kode dengan regex dari konfigurasi.
      *
-     * @throws InvalidArgumentException
+     * @throws KodeBebanAnggaranException
      */
     protected function validasiDenganRegex(string $kode, string $pattern): void
     {
@@ -151,7 +151,7 @@ class KodeBebanAnggaranService
         $pattern = '/' . $pattern . '/';
 
         if (!preg_match($pattern, $kode)) {
-            throw new InvalidArgumentException("Kode beban anggaran tidak sesuai pola: {$kode}");
+            throw new KodeBebanAnggaranException("Kode beban anggaran tidak sesuai pola: {$kode}");
         }
     }
 

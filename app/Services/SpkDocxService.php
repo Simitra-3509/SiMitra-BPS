@@ -142,7 +142,6 @@ class SpkDocxService
         $cell2->addText(config('app.ppk_name'), ['name' => 'Arial', 'size' => 10, 'bold' => true, 'underline' => true], 'centered');
         
         $cell1->addText('SOBAT ID: ' . ($mitra->sobat_id ?? '-'), ['name' => 'Arial', 'size' => 9], 'centered');
-        $cell2->addText('NIP. ' . ($spk->nip_ppk_snapshot ?? '-'), ['name' => 'Arial', 'size' => 9], 'centered');
 
         // ====== HALAMAN 4: LAMPIRAN ======
         $sectionLampiran = $phpWord->addSection([
@@ -200,11 +199,8 @@ class SpkDocxService
             $row->addCell(1200)->addText('Rp' . "\u{00A0}" . number_format($detail->harga_satuan, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
             $row->addCell(1400)->addText('Rp' . "\u{00A0}" . number_format($detail->nilai, 0, ',', '.') . ',-', ['name' => 'Arial', 'size' => 9], ['alignment' => Jc::RIGHT]);
             // Kode anggaran lengkap: kode_kegiatan + akun_anggaran
-            $kodeLengkap = $detail->kode_anggaran;
-            if (!empty($detail->akun_anggaran)) {
-                $kodeLengkap .= $detail->akun_anggaran;
-            }
-            $row->addCell(1300)->addText($kodeLengkap ?: '-', ['name' => 'Arial', 'size' => 8]);
+            $kodeLengkap = $detail->kodeBebanTampil;
+            $row->addCell(1300)->addText($kodeLengkap, ['name' => 'Arial', 'size' => 8], ['alignment' => Jc::CENTER]);
         }
         
         // Total row

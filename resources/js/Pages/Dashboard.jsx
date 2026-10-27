@@ -1429,38 +1429,54 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                         <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                             Cetak SPK:
                                         </span>
-                                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <a
-                                                href={route('spk.generate-and-download', {
-                                                    mitra_id: selectedMitra.id,
-                                                    bulan: bulan === 'semua' ? '' : bulan,
-                                                    tahun: tahun === 'tahunan' ? '' : tahun,
-                                                    format: 'pdf'
-                                                })}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-[#b84418] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
-                                                title="Cetak SPK format PDF"
-                                            >
-                                                <FileText size={13} />
-                                                PDF
-                                            </a>
-                                            <a
-                                                href={route('spk.generate-and-download', {
-                                                    mitra_id: selectedMitra.id,
-                                                    bulan: bulan === 'semua' ? '' : bulan,
-                                                    tahun: tahun === 'tahunan' ? '' : tahun,
-                                                    format: 'docx'
-                                                })}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
-                                                title="Cetak SPK format Word (.docx)"
-                                            >
-                                                <FileText size={13} />
-                                                Word
-                                            </a>
-                                        </div>
+                                        {monthSel === 'semua' || yearSel === 'tahunan' ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/40 p-1 rounded-xl border border-gray-200 dark:border-gray-700 opacity-60 cursor-not-allowed">
+                                                    <span className="px-3.5 py-1.5 text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 rounded-lg inline-flex items-center gap-1.5 select-none">
+                                                        <FileText size={13} /> PDF
+                                                    </span>
+                                                    <span className="px-3.5 py-1.5 text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 rounded-lg inline-flex items-center gap-1.5 select-none">
+                                                        <FileText size={13} /> Word
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                                                    *Pilih bulan spesifik di filter atas untuk cetak SPK
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl border border-gray-200 dark:border-gray-600">
+                                                <a
+                                                    href={route('spk.generate-and-download', {
+                                                        mitra_id: selectedMitra.id,
+                                                        bulan: monthSel,
+                                                        tahun: yearSel,
+                                                        format: 'pdf'
+                                                    })}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-[#b84418] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
+                                                    title={`Cetak SPK format PDF (${BULAN_NAMES[monthSel - 1]} ${yearSel})`}
+                                                >
+                                                    <FileText size={13} />
+                                                    PDF
+                                                </a>
+                                                <a
+                                                    href={route('spk.generate-and-download', {
+                                                        mitra_id: selectedMitra.id,
+                                                        bulan: monthSel,
+                                                        tahun: yearSel,
+                                                        format: 'docx'
+                                                    })}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
+                                                    title={`Cetak SPK format Word (${BULAN_NAMES[monthSel - 1]} ${yearSel})`}
+                                                >
+                                                    <FileText size={13} />
+                                                    Word
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

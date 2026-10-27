@@ -144,14 +144,14 @@
     <div class="parties">
         <table style="width: 100%; border: none; margin-bottom: 10px;">
             <tr>
-                <td style="width: 25%; vertical-align: top; border: none;">PIHAK PERTAMA,</td>
-                <td style="width: 25%; vertical-align: top; border: none;"></td>
-                <td style="width: 27%; vertical-align: top; border: none;">{{ config('app.ppk_name') }}</td>
-                <td style="width: 68%; vertical-align: top; border: none; text-align: justify;">Pejabat Pembuat Komitmen Badan Pusat Statistik Kabupaten Jember, berkedudukan di Jl. Cendrawasih No. 20 Kel. Slawu, bertindak untuk dan atas nama BPS Kabupaten Jember, selanjutnya disebut sebagai <strong>PIHAK PERTAMA</strong>.</td>
+                <td style="width: 3%; vertical-align: top; border: none;">1.</td>
+                <td style="width: 32%; vertical-align: top; border: none; white-space: nowrap;">{{ config('app.ppk_name') }}</td>
+                <td style="width: 2%; vertical-align: top; border: none;">:</td>
+                <td style="width: 63%; vertical-align: top; border: none; text-align: justify;">Pejabat Pembuat Komitmen Badan Pusat Statistik Kabupaten Jember, berkedudukan di Jl. Cendrawasih No. 20 Kel. Slawu, bertindak untuk dan atas nama BPS Kabupaten Jember, selanjutnya disebut sebagai <strong>PIHAK PERTAMA</strong>.</td>
             </tr>
             <tr>
                 <td style="vertical-align: top; border: none; padding-top: 10px;">2.</td>
-                <td style="vertical-align: top; border: none; padding-top: 10px;">{{ $mitra->nama_lengkap }}</td>
+                <td style="vertical-align: top; border: none; padding-top: 10px; white-space: nowrap;">{{ ucwords(strtolower($mitra->nama_lengkap)) }}</td>
                 <td style="vertical-align: top; border: none; padding-top: 10px;">:</td>
                 <td style="vertical-align: top; border: none; text-align: justify; padding-top: 10px;">{{ $pekerjaan }}, berkedudukan di {{ $alamat }}, bertindak untuk dan atas nama diri sendiri, selanjutnya disebut <strong>PIHAK KEDUA</strong>.</td>
             </tr>
@@ -348,7 +348,7 @@
                     <td style="text-align: center;">{{ $detail->satuan }}</td>
                     <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($detail->harga_satuan, 0, ',', '.') }},-</td>
                     <td style="text-align: right;">Rp{{ "\u{00A0}" }}{{ number_format($detail->nilai, 0, ',', '.') }},-</td>
-                    <td style="text-align: center; font-size: 8pt;">{{ ($detail->kode_anggaran ?? '') . ($detail->akun_anggaran ?? '') ?: '-' }}</td>
+                    <td style="text-align: center; font-size: 8pt;">{{ $detail->kodeBebanTampil }}</td>
                 </tr>
                 @endforeach
                 <tr>
