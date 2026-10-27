@@ -142,7 +142,6 @@ class SpkDocxService
         $cell2->addText(config('app.ppk_name'), ['name' => 'Arial', 'size' => 10, 'bold' => true, 'underline' => true], 'centered');
         
         $cell1->addText('SOBAT ID: ' . ($mitra->sobat_id ?? '-'), ['name' => 'Arial', 'size' => 9], 'centered');
-        $cell2->addText('NIP. ' . ($spk->nip_ppk_snapshot ?? '-'), ['name' => 'Arial', 'size' => 9], 'centered');
 
         // ====== HALAMAN 4: LAMPIRAN ======
         $sectionLampiran = $phpWord->addSection([
