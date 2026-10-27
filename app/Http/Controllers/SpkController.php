@@ -74,99 +74,109 @@ class SpkController extends Controller implements HasMiddleware
     }
 
     /**
-     * Generate SPK dan langsung download PDF dari Dashboard (tanpa form input).
-     * Ambil penugasan mitra, create SPK, trigger PDF download.
+     * Cetak SPK dari Dashboard untuk satu mitra pada satu periode (bulan + tahun).
+     * - SPK aktif (bukan 'batal') untuk mitra dan periode yang sama dipakai ulang, tidak dibuat ganda.
+     * - Kode beban anggaran dirakit lebih dulu; bila ada yang gagal, tidak ada SPK yang dibuat.
+     * - SPK dan detailnya dibuat dalam satu transaksi.
      */
     public function generateAndDownload(Request $request)
     {
         $mitraId = $request->input('mitra_id');
+        $bulan = (int) $request->input('bulan');
+        $tahun = (int) $request->input('tahun');
+        $format = $request->input('format', 'pdf');
 
         if (!$mitraId) {
             return back()->with('error', 'Mitra ID tidak ditemukan.');
         }
-
-        $penugasans = \App\Models\Penugasan::with(['kegiatan', 'detilKegiatan', 'mitra'])
-            ->where('mitra_id', $mitraId)
-            ->whereNull('deleted_at')
-            ->get();
-
-        if ($penugasans->isEmpty()) {
-            return back()->with('error', 'Tidak ada penugasan ditemukan untuk mitra ini pada periode yang dipilih.');
+        if ($bulan < 1 || $bulan > 12 || $tahun < 2000) {
+            return back()->with('error', 'Pilih bulan dan tahun terlebih dahulu sebelum mencetak SPK.');
         }
 
-        $mitra = $penugasans->first()->mitra;
-        $firstP = $penugasans->first();
-        
-        // Cari PPK aktif
-        $ppk = User::where('role', 'ppk')->orWhere('role', 'administrator')->first();
-        if (!$ppk) {
-            return back()->with('error', 'PPK tidak ditemukan. Harap setup user dengan role PPK terlebih dahulu.');
-        }
+        $spk = Spk::where('mitra_id', $mitraId)
+            ->where('bulan', $bulan)
+            ->where('tahun', $tahun)
+            ->where('status', '!=', 'batal')
+            ->orderBy('id')
+            ->first();
 
-        $tanggalMulaiAll = $penugasans->map(fn($p) => $p->tanggal_mulai)->filter()->min();
-        $tanggalSelesaiAll = $penugasans->map(fn($p) => $p->tanggal_selesai)->filter()->max();
+        if (!$spk) {
+            $penugasans = \App\Models\Penugasan::with(['kegiatan', 'detilKegiatan', 'mitra'])
+                ->where('mitra_id', $mitraId)
+                ->where('bulan', $bulan)
+                ->where('tahun', $tahun)
+                ->whereNull('deleted_at')
+                ->get();
 
-        $kodeService = new KodeBebanAnggaranService();
-        $tahunSpk = (int) ($firstP->tahun ?? date('Y'));
-
-        $details = $penugasans->map(function ($p) use ($kodeService, $tahunSpk) {
-            $dk = $p->detilKegiatan;
-            $k = $p->kegiatan;
-            
-            $rakitan = null;
-            if ($k && $k->kode_kegiatan) {
-                try {
-                    $rakitan = $kodeService->rakit($tahunSpk, $k->kode_kegiatan);
-                } catch (\Exception $e) {
-                    // Fallback jika konfigurasi tidak ada atau format tidak valid
-                }
+            if ($penugasans->isEmpty()) {
+                return back()->with('error', 'Tidak ada penugasan untuk mitra ini pada periode yang dipilih.');
             }
 
-            return [
-                'kegiatan_id' => $p->kegiatan_id,
-                'uraian_tugas' => $dk->nama_detil ?? $k->nama_kegiatan ?? '',
-                'tanggal_mulai_detail' => $p->tanggal_mulai ? $p->tanggal_mulai->format('Y-m-d') : now()->format('Y-m-d'),
-                'tanggal_selesai_detail' => $p->tanggal_selesai ? $p->tanggal_selesai->format('Y-m-d') : now()->format('Y-m-d'),
-                'volume' => (int) ($p->kuota_target ?? 1),
-                'satuan' => $dk->satuan ?? 'Dokumen',
-                'harga_satuan' => (float) ($p->harga_satuan_snapshot ?? $dk->harga_satuan ?? 0),
-                'nilai' => (float) ($p->total_honor ?? 0),
-                'kode_anggaran' => $k->kode_kegiatan ?? '',
-                'akun_anggaran' => $rakitan['kode_akun'] ?? '',
-                'komponen' => $rakitan['komponen'] ?? null,
-                'subkomponen' => $rakitan['subkomponen'] ?? null,
-                'kode_beban_anggaran' => $rakitan['kode_beban_anggaran'] ?? null,
-            ];
-        })->toArray();
+            $user = auth()->user();
+            $tanggalMulaiAll = $penugasans->map(fn ($p) => $p->tanggal_mulai)->filter()->min();
+            $tanggalSelesaiAll = $penugasans->map(fn ($p) => $p->tanggal_selesai)->filter()->max();
 
-        $totalNilai = array_sum(array_column($details, 'nilai'));
+            $details = $penugasans->map(function ($p) {
+                $dk = $p->detilKegiatan;
+                $k = $p->kegiatan;
 
-        // Create SPK dengan status terbit (akan auto-generate nomor_spk via Model observer)
-        $spk = Spk::create([
-            'mitra_id' => $mitraId,
-            'bulan' => (int) ($firstP->bulan ?? date('m')),
-            'tahun' => (int) ($firstP->tahun ?? date('Y')),
-            'tanggal_mulai' => $tanggalMulaiAll ? $tanggalMulaiAll->format('Y-m-d') : now()->format('Y-m-d'),
-            'tanggal_selesai' => $tanggalSelesaiAll ? $tanggalSelesaiAll->format('Y-m-d') : now()->format('Y-m-d'),
-            'ppk_user_id' => $ppk->id,
-            'nama_ppk_snapshot' => $ppk->name,
-            'nip_ppk_snapshot' => $ppk->pegawai->nip ?? '-',
-            'jabatan_ppk_snapshot' => 'Pejabat Pembuat Komitmen',
-            'total_nilai' => $totalNilai,
-            'status' => 'terbit',
-            'catatan' => 'SPK dibuat otomatis dari Dashboard pada ' . now()->format('d/m/Y H:i'),
-        ]);
+                return [
+                    'kegiatan_id' => $p->kegiatan_id,
+                    'uraian_tugas' => $dk->nama_detil ?? $k->nama_kegiatan ?? '',
+                    'tanggal_mulai_detail' => $p->tanggal_mulai ? $p->tanggal_mulai->format('Y-m-d') : now()->format('Y-m-d'),
+                    'tanggal_selesai_detail' => $p->tanggal_selesai ? $p->tanggal_selesai->format('Y-m-d') : now()->format('Y-m-d'),
+                    'volume' => (int) ($p->kuota_target ?? 1),
+                    'satuan' => $dk->satuan ?? 'Dokumen',
+                    'harga_satuan' => (float) ($p->harga_satuan_snapshot ?? $dk->harga_satuan ?? 0),
+                    'nilai' => (float) ($p->total_honor ?? 0),
+                    'komponen' => null,
+                    'subkomponen' => null,
+                ];
+            })->values()->all();
 
-        // Create detail records
-        foreach ($details as $detail) {
-            $spk->details()->create($detail);
+            // Rakit dulu semua baris. Bila ada yang gagal, tolak tanpa menyimpan apa pun.
+            $rakitan = $this->rakitSemuaDetail($tahun, $details);
+            if (!empty($rakitan['gagal'])) {
+                return back()->with('error', 'SPK tidak dapat diterbitkan karena kode beban anggaran gagal dirakit. ' . implode(' | ', $rakitan['gagal']));
+            }
+
+            $totalNilai = array_sum(array_column($details, 'nilai'));
+
+            $spk = DB::transaction(function () use ($mitraId, $bulan, $tahun, $user, $totalNilai, $tanggalMulaiAll, $tanggalSelesaiAll, $details, $rakitan) {
+                $spk = Spk::create([
+                    'mitra_id' => $mitraId,
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
+                    'tanggal_mulai' => $tanggalMulaiAll ? $tanggalMulaiAll->format('Y-m-d') : now()->format('Y-m-d'),
+                    'tanggal_selesai' => $tanggalSelesaiAll ? $tanggalSelesaiAll->format('Y-m-d') : now()->format('Y-m-d'),
+                    'ppk_user_id' => $user->id,
+                    'nama_ppk_snapshot' => $user->name ?? $user->username,
+                    'nip_ppk_snapshot' => $user->pegawai->nip ?? '-',
+                    'jabatan_ppk_snapshot' => 'Pejabat Pembuat Komitmen',
+                    'total_nilai' => $totalNilai,
+                    'status' => 'terbit',
+                    'catatan' => 'SPK dibuat otomatis dari Dashboard pada ' . now()->format('d/m/Y H:i'),
+                ]);
+
+                foreach ($details as $i => $detail) {
+                    $r = $rakitan['hasil'][$i];
+                    $spk->details()->create(array_merge($detail, [
+                        'kode_anggaran' => $rakitan['kode_kegiatan'][$i] ?? null,
+                        'akun_anggaran' => $r['kode_akun'] ?? null,
+                        'komponen' => $r['komponen'] ?? null,
+                        'subkomponen' => $r['subkomponen'] ?? null,
+                        'kode_beban_anggaran' => $r['kode_beban_anggaran'] ?? null,
+                    ]));
+                }
+
+                return $spk;
+            });
         }
 
         // Load relationships untuk PDF/DOCX
         $spk->load(['mitra', 'ppk', 'details.kegiatan']);
 
-        $format = $request->input('format', 'pdf');
-        $baseFilename = "SPK-{$spk->nomor_spk}-{$mitra->nama_lengkap}";
+        $baseFilename = "SPK-{$spk->nomor_spk}-{$spk->mitra->nama_lengkap}";
         $baseFilename = str_replace(['/', '\\'], '-', $baseFilename);
 
         if ($format === 'docx') {
