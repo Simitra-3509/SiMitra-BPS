@@ -88,9 +88,19 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
         return data.details.reduce((sum, item) => sum + (parseFloat(item.nilai) || 0), 0);
     };
 
+    // Error validasi untuk baris rincian dikirim Laravel dengan key "details.{index}.{field}"
+    const detailError = (index, field) => errors[`details.${index}.${field}`];
+    const renderDetailError = (index, field) =>
+        detailError(index, field) ? (
+            <p className="text-xs text-red-500 mt-1">{detailError(index, field)}</p>
+        ) : null;
+    const hasErrors = Object.keys(errors).length > 0;
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('spk.store'));
+        post(route('spk.store'), {
+            onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+        });
     };
 
     const months = [
@@ -132,6 +142,16 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {hasErrors && (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm">
+                            <p className="font-semibold mb-1">SPK belum dapat disimpan. Periksa isian berikut:</p>
+                            <ul className="list-disc list-inside space-y-0.5">
+                                {Object.entries(errors).map(([key, msg]) => (
+                                    <li key={key}>{msg}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                     {/* General Information Card */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700 flex items-center gap-2">
@@ -314,6 +334,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                     </option>
                                                 ))}
                                             </select>
+                                            {renderDetailError(index, 'kegiatan_id')}
                                         </div>
 
                                         {/* Uraian Tugas */}
@@ -328,6 +349,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 placeholder="Contoh: Pendataan Lapangan Survei Angkatan Kerja Nasional"
                                                 className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                             />
+                                            {renderDetailError(index, 'uraian_tugas')}
                                         </div>
 
                                         {/* Tanggal Mulai Detail */}
@@ -341,6 +363,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 onChange={(e) => handleDetailChange(index, 'tanggal_mulai_detail', e.target.value)}
                                                 className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                             />
+                                            {renderDetailError(index, 'tanggal_mulai_detail')}
                                         </div>
 
                                         {/* Tanggal Selesai Detail */}
@@ -354,6 +377,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 onChange={(e) => handleDetailChange(index, 'tanggal_selesai_detail', e.target.value)}
                                                 className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                             />
+                                            {renderDetailError(index, 'tanggal_selesai_detail')}
                                         </div>
 
                                         {/* Volume */}
@@ -368,6 +392,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 onChange={(e) => handleDetailChange(index, 'volume', e.target.value)}
                                                 className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                             />
+                                            {renderDetailError(index, 'volume')}
                                         </div>
 
                                         {/* Satuan */}
@@ -382,6 +407,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 placeholder="Dokumen / Rumah Tangga / Blok Sensus"
                                                 className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                             />
+                                            {renderDetailError(index, 'satuan')}
                                         </div>
 
                                         {/* Harga Satuan */}
@@ -396,6 +422,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                 onChange={(e) => handleDetailChange(index, 'harga_satuan', e.target.value)}
                                                 className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                             />
+                                            {renderDetailError(index, 'harga_satuan')}
                                         </div>
 
                                         {/* Total Nilai Detail */}
@@ -422,6 +449,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                     placeholder="005"
                                                     className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                                 />
+                                                {renderDetailError(index, 'komponen')}
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -435,6 +463,7 @@ export default function Create({ mitras = [], kegiatans = [], autoFill = null })
                                                     placeholder="A"
                                                     className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-[#D9531E] focus:border-[#D9531E]"
                                                 />
+                                                {renderDetailError(index, 'subkomponen')}
                                             </div>
                                         </div>
 
