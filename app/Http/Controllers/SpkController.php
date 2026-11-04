@@ -22,6 +22,12 @@ use Illuminate\Support\Facades\DB;
 
 class SpkController extends Controller implements HasMiddleware
 {
+    /**
+     * Status yang menandakan SPK sudah final: tidak boleh diubah atau dihapus
+     * lagi, baik lewat form maupun request PUT/DELETE langsung.
+     */
+    private const LOCKED_STATUSES = ['terbit', 'selesai', 'dibayar'];
+
     public static function middleware(): array
     {
         return [
@@ -304,11 +310,14 @@ class SpkController extends Controller implements HasMiddleware
         // Hitung total nilai
         $totalNilai = collect($request->details)->sum(fn($d) => $d['nilai']);
 
-        // Validasi batas SBML
-        $sbmlLimit = SbmlLimit::where('tahun', $request->tahun)->first();
-        if ($sbmlLimit && $totalNilai > $sbmlLimit->batas_maksimal) {
-            return back()->withErrors(['details' => 'Total nilai SPK (' . number_format($totalNilai, 0, ',', '.') . ') melebihi batas maksimal SBML (' . number_format($sbmlLimit->batas_maksimal, 0, ',', '.') . ').'])->withInput();
-        }
+        // Catatan: pengecekan SBML per-mitra per-jenis yang akurat sudah ditegakkan
+        // di PenugasanService::storeBatch() (pakai lockForUpdate, per-mitra, per-jenis).
+        // Pengecekan sederhana yang sebelumnya ada di sini (SbmlLimit::where('tahun',...)
+        // ->first()) telah dihapus karena mengambil baris SBML secara acak (tanpa filter
+        // jenis_kegiatan) lalu membandingkan total gabungan seluruh SPK terhadap satu
+        // batas saja — bisa meloloskan SPK yang melanggar, atau menolak yang sebenarnya
+        // sah. Skema spk_details saat ini tidak menyimpan detil_kegiatan_id, sehingga
+        // validasi per-jenis di level SPK belum memungkinkan tanpa perubahan skema.
 
         $details = array_values($request->details);
         $rakitan = $this->rakitSemuaDetail((int) $request->tahun, $details);
@@ -415,8 +424,8 @@ class SpkController extends Controller implements HasMiddleware
 
     public function edit(Spk $spk)
     {
-        if ($spk->status === 'terbit' && !in_array(auth()->user()->role, ['admin', 'administrator'])) {
-            return redirect()->route('spk.index')->with('error', 'SPK yang sudah terbit tidak dapat diubah.');
+        if (in_array($spk->status, self::LOCKED_STATUSES, true)) {
+            return redirect()->route('spk.index')->with('error', 'SPK dengan status "' . $spk->status . '" sudah final dan tidak dapat diubah.');
         }
 
         $spk->load(['mitra', 'details.kegiatan']);
@@ -432,6 +441,14 @@ class SpkController extends Controller implements HasMiddleware
 
     public function update(Request $request, Spk $spk)
     {
+        // Jaga konsisten dengan edit(): status final tidak boleh diubah lewat
+        // request PUT langsung, bukan hanya diblokir di tampilan form.
+        if (in_array($spk->status, self::LOCKED_STATUSES, true)) {
+            return back()->withErrors([
+                'status' => 'SPK dengan status "' . $spk->status . '" sudah final dan tidak dapat diubah.',
+            ]);
+        }
+
         $request->validate([
             'mitra_id' => 'required|exists:mitras,id',
             'bulan' => 'required|integer|min:1|max:12',
@@ -515,6 +532,12 @@ class SpkController extends Controller implements HasMiddleware
 
     public function destroy(Spk $spk)
     {
+        if (in_array($spk->status, self::LOCKED_STATUSES, true)) {
+            return back()->withErrors([
+                'status' => 'SPK dengan status "' . $spk->status . '" sudah final dan tidak dapat dihapus.',
+            ]);
+        }
+
         $spk->delete();
         return redirect()->route('spk.index')->with('success', 'SPK berhasil dihapus.');
     }
