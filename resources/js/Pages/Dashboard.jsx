@@ -1460,21 +1460,6 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                                     <FileText size={13} />
                                                     PDF
                                                 </a>
-                                                <a
-                                                    href={route('spk.generate-and-download', {
-                                                        mitra_id: selectedMitra.id,
-                                                        bulan: monthSel,
-                                                        tahun: yearSel,
-                                                        format: 'docx'
-                                                    })}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
-                                                    title={`Cetak SPK format Word (${BULAN_NAMES[monthSel - 1]} ${yearSel})`}
-                                                >
-                                                    <FileText size={13} />
-                                                    Word
-                                                </a>
                                             </div>
                                         )}
                                     </div>
