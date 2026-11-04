@@ -115,7 +115,7 @@ class SpkDashboardTest extends TestCase
         $this->isiKonfigurasi2026();
         $this->buatPenugasan(11, 2026);
 
-        $response = $this->actingAs($this->ppk)->get($this->url(['bulan' => '', 'tahun' => '']));
+        $response = $this->actingAs($this->ppk)->post($this->url(['bulan' => '', 'tahun' => '']));
 
         $response->assertSessionHas('error');
         $this->assertSame(0, Spk::withTrashed()->count());
@@ -126,7 +126,7 @@ class SpkDashboardTest extends TestCase
     {
         $this->buatPenugasan(11, 2026);
 
-        $response = $this->actingAs($this->ppk)->get($this->url());
+        $response = $this->actingAs($this->ppk)->post($this->url());
 
         $response->assertSessionHas('error');
         $this->assertSame(0, Spk::withTrashed()->count());
@@ -139,7 +139,7 @@ class SpkDashboardTest extends TestCase
         $this->isiKonfigurasi2026();
         $this->buatPenugasan(11, 2026);
 
-        $this->actingAs($this->ppk)->get($this->url())->assertOk();
+        $this->actingAs($this->ppk)->post($this->url())->assertOk();
 
         $spk = Spk::firstOrFail();
         $this->assertSame('terbit', $spk->status);
@@ -155,8 +155,8 @@ class SpkDashboardTest extends TestCase
         $this->isiKonfigurasi2026();
         $this->buatPenugasan(11, 2026);
 
-        $this->actingAs($this->ppk)->get($this->url())->assertOk();
-        $this->actingAs($this->ppk)->get($this->url())->assertOk();
+        $this->actingAs($this->ppk)->post($this->url())->assertOk();
+        $this->actingAs($this->ppk)->post($this->url())->assertOk();
 
         $this->assertSame(1, Spk::withTrashed()->count());
         $this->assertSame(1, SpkDetail::count());
@@ -169,7 +169,7 @@ class SpkDashboardTest extends TestCase
         $this->buatPenugasan(10, 2026);
         $this->buatPenugasan(11, 2026);
 
-        $this->actingAs($this->ppk)->get($this->url())->assertOk();
+        $this->actingAs($this->ppk)->post($this->url())->assertOk();
 
         $this->assertSame(1, SpkDetail::count());
         $this->assertSame(11, (int) Spk::firstOrFail()->bulan);
@@ -187,7 +187,7 @@ class SpkDashboardTest extends TestCase
             'role' => 'ppk',
         ]);
 
-        $this->actingAs($lain)->get($this->url())->assertOk();
+        $this->actingAs($lain)->post($this->url())->assertOk();
 
         $this->assertSame($lain->id, Spk::firstOrFail()->ppk_user_id);
     }

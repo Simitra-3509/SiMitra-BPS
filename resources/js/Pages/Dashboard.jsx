@@ -386,6 +386,31 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
         setCurrentPage(1);
     };
 
+    // Endpoint ini menerbitkan SPK (mengubah data), jadi harus dikirim lewat POST
+    // disertai CSRF token, bukan navigasi GET biasa. Form tersembunyi dipakai agar
+    // hasil PDF tetap terbuka di tab baru seperti sebelumnya.
+    const handleCetakSpkPdf = (mitraId, bulan, tahun) => {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = route('spk.generate-and-download');
+        form.target = '_blank';
+
+        const fields = { _token: csrfToken, mitra_id: mitraId, bulan, tahun, format: 'pdf' };
+        Object.entries(fields).forEach(([name, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    };
+
     const toggleFilterValue = (col, value) => {
         const setter = col === 'nama' ? setFilterNama : setFilterKec;
         setter((prev) => {
@@ -1445,21 +1470,15 @@ export default function Dashboard({ stats: initStats, sbml: initSbml, chartData:
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl border border-gray-200 dark:border-gray-600">
-                                                <a
-                                                    href={route('spk.generate-and-download', {
-                                                        mitra_id: selectedMitra.id,
-                                                        bulan: monthSel,
-                                                        tahun: yearSel,
-                                                        format: 'pdf'
-                                                    })}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCetakSpkPdf(selectedMitra.id, monthSel, yearSel)}
                                                     className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#D9531E] hover:bg-[#b84418] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:shadow"
                                                     title={`Cetak SPK format PDF (${BULAN_NAMES[monthSel - 1]} ${yearSel})`}
                                                 >
                                                     <FileText size={13} />
                                                     PDF
-                                                </a>
+                                                </button>
                                             </div>
                                         )}
                                     </div>

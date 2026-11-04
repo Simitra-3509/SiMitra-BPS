@@ -84,7 +84,7 @@ class SpkWordNonaktifTest extends TestCase
     #[Test]
     public function permintaan_word_ditolak_tanpa_membuat_spk(): void
     {
-        $response = $this->actingAs($this->ppk)->get(route('spk.generate-and-download', [
+        $response = $this->actingAs($this->ppk)->post(route('spk.generate-and-download', [
             'mitra_id' => $this->mitra->id,
             'bulan' => 11,
             'tahun' => 2026,
@@ -99,7 +99,7 @@ class SpkWordNonaktifTest extends TestCase
     #[Test]
     public function permintaan_pdf_tetap_berjalan(): void
     {
-        $response = $this->actingAs($this->ppk)->get(route('spk.generate-and-download', [
+        $response = $this->actingAs($this->ppk)->post(route('spk.generate-and-download', [
             'mitra_id' => $this->mitra->id,
             'bulan' => 11,
             'tahun' => 2026,
