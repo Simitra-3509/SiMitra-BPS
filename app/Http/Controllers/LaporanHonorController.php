@@ -262,15 +262,15 @@ class LaporanHonorController extends Controller
 
         return Inertia::render('LaporanHonor/Show', [
             'id' => $id,
+            // Catatan: npwp, nik, jenis_kelamin, dan alamat_domisili sengaja dihapus
+            // dari sini karena kolom tersebut tidak pernah ada (npwp) atau sudah
+            // dihapus (nik, jenis_kelamin) dari tabel mitras. Sebelumnya field ini
+            // selalu tampil "-" di halaman, tidak pernah berisi data sungguhan.
             'mitra' => [
                 'id' => $mitra->id,
                 'nama_lengkap' => $mitra->nama_lengkap,
                 'sobat_id' => $mitra->sobat_id ?? '-',
-                'npwp' => $mitra->npwp ?? '-',
-                'nik' => $mitra->nik ?? '-',
                 'email' => $mitra->email ?? '-',
-                'jenis_kelamin' => $mitra->jenis_kelamin ?? '-',
-                'alamat_domisili' => $mitra->alamat_domisili ?? '-',
                 'kecamatan' => $mitra->kecamatan ?? '-',
                 'desa' => $mitra->desa ?? '-',
             ],
