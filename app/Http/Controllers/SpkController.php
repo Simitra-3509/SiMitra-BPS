@@ -310,11 +310,14 @@ class SpkController extends Controller implements HasMiddleware
         // Hitung total nilai
         $totalNilai = collect($request->details)->sum(fn($d) => $d['nilai']);
 
-        // Validasi batas SBML
-        $sbmlLimit = SbmlLimit::where('tahun', $request->tahun)->first();
-        if ($sbmlLimit && $totalNilai > $sbmlLimit->batas_maksimal) {
-            return back()->withErrors(['details' => 'Total nilai SPK (' . number_format($totalNilai, 0, ',', '.') . ') melebihi batas maksimal SBML (' . number_format($sbmlLimit->batas_maksimal, 0, ',', '.') . ').'])->withInput();
-        }
+        // Catatan: pengecekan SBML per-mitra per-jenis yang akurat sudah ditegakkan
+        // di PenugasanService::storeBatch() (pakai lockForUpdate, per-mitra, per-jenis).
+        // Pengecekan sederhana yang sebelumnya ada di sini (SbmlLimit::where('tahun',...)
+        // ->first()) telah dihapus karena mengambil baris SBML secara acak (tanpa filter
+        // jenis_kegiatan) lalu membandingkan total gabungan seluruh SPK terhadap satu
+        // batas saja — bisa meloloskan SPK yang melanggar, atau menolak yang sebenarnya
+        // sah. Skema spk_details saat ini tidak menyimpan detil_kegiatan_id, sehingga
+        // validasi per-jenis di level SPK belum memungkinkan tanpa perubahan skema.
 
         $details = array_values($request->details);
         $rakitan = $this->rakitSemuaDetail((int) $request->tahun, $details);
