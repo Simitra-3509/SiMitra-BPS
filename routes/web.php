@@ -176,7 +176,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:admin,administrator,ppk,operator')->group(function () {
         Route::get('spk', [SpkController::class, 'index'])->name('spk.index');
         Route::get('spk/create', [SpkController::class, 'create'])->name('spk.create');
-        Route::get('spk/generate-and-download', [SpkController::class, 'generateAndDownload'])->middleware('auth')->name('spk.generate-and-download');
+        // POST, bukan GET: endpoint ini menerbitkan SPK (mengubah data), jadi harus
+        // dilindungi CSRF token dan tidak boleh bisa dipicu lewat navigasi pasif
+        // (mis. <img src=...> atau tautan di halaman/pesan pihak ketiga).
+        Route::post('spk/generate-and-download', [SpkController::class, 'generateAndDownload'])->middleware('auth')->name('spk.generate-and-download');
         Route::get('spk/create-from-penugasan', [SpkController::class, 'createFromPenugasan'])->name('spk.create-from-penugasan');
         Route::post('spk', [SpkController::class, 'store'])->name('spk.store');
         Route::get('spk/{spk}', [SpkController::class, 'show'])->name('spk.show');

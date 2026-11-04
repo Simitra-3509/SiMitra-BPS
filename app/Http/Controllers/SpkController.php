@@ -86,6 +86,10 @@ class SpkController extends Controller implements HasMiddleware
         $tahun = (int) $request->input('tahun');
         $format = $request->input('format', 'pdf');
 
+        if ($format === 'docx') {
+            return back()->with('error', 'Unduh Word tidak tersedia.');
+        }
+
         if (!$mitraId) {
             return back()->with('error', 'Mitra ID tidak ditemukan.');
         }
@@ -453,57 +457,60 @@ class SpkController extends Controller implements HasMiddleware
 
         $totalNilai = collect($request->details)->sum(fn($d) => $d['nilai']);
 
-        $spk->update([
-            'mitra_id' => $request->mitra_id,
-            'bulan' => $request->bulan,
-            'tahun' => $request->tahun,
-            'tanggal_mulai' => $request->tanggal_mulai,
-            'tanggal_selesai' => $request->tanggal_selesai,
-            'total_nilai' => $totalNilai,
-            'status' => $request->status,
-            'catatan' => $request->catatan,
-        ]);
+        $details = array_values($request->details);
+        $rakitan = $this->rakitSemuaDetail((int) $request->tahun, $details);
 
-        // Sync details
-        $spk->details()->delete();
-        $kodeService = new KodeBebanAnggaranService();
-        $tahunAnggaran = (int) $request->tahun;
-
-        foreach ($request->details as $detail) {
-            $kegiatan = Kegiatan::find($detail['kegiatan_id']);
-            $rakitan = null;
-            if ($kegiatan && $kegiatan->kode_kegiatan) {
-                try {
-                    $rakitan = $kodeService->rakit(
-                        $tahunAnggaran,
-                        $kegiatan->kode_kegiatan,
-                        $detail['komponen'] ?? null,
-                        $detail['subkomponen'] ?? null
-                    );
-                } catch (\Exception $e) {
-                    // Fallback: simpan NULL, cetakan pakai nilai lama
-                }
-            }
-
-            SpkDetail::create([
-                'spk_id' => $spk->id,
-                'kegiatan_id' => $detail['kegiatan_id'],
-                'uraian_tugas' => $detail['uraian_tugas'],
-                'tanggal_mulai_detail' => $detail['tanggal_mulai_detail'],
-                'tanggal_selesai_detail' => $detail['tanggal_selesai_detail'],
-                'volume' => $detail['volume'],
-                'satuan' => $detail['satuan'],
-                'harga_satuan' => $detail['harga_satuan'],
-                'nilai' => $detail['nilai'],
-                'kode_anggaran' => $detail['kode_anggaran'] ?? null,
-                'akun_anggaran' => $rakitan['kode_akun'] ?? ($detail['akun_anggaran'] ?? null),
-                'komponen' => $rakitan['komponen'] ?? null,
-                'subkomponen' => $rakitan['subkomponen'] ?? null,
-                'kode_beban_anggaran' => $rakitan['kode_beban_anggaran'] ?? null,
-            ]);
+        // Perilaku "campuran": penerbitan ditolak kalau ada baris yang gagal dirakit.
+        // Konsisten dengan store(): tidak boleh diam-diam menyimpan kode_beban_anggaran = NULL
+        // untuk SPK yang berstatus terbit, karena itu menghilangkan jejak anggaran resmi.
+        if ($request->status === 'terbit' && !empty($rakitan['gagal'])) {
+            return back()->withErrors([
+                'details' => 'SPK tidak dapat diterbitkan karena kode beban anggaran gagal dirakit. ' . implode(' | ', $rakitan['gagal']),
+            ])->withInput();
         }
 
-        return redirect()->route('spk.index')->with('success', 'SPK berhasil diperbarui.');
+        DB::transaction(function () use ($request, $spk, $totalNilai, $details, $rakitan) {
+            $spk->update([
+                'mitra_id' => $request->mitra_id,
+                'bulan' => $request->bulan,
+                'tahun' => $request->tahun,
+                'tanggal_mulai' => $request->tanggal_mulai,
+                'tanggal_selesai' => $request->tanggal_selesai,
+                'total_nilai' => $totalNilai,
+                'status' => $request->status,
+                'catatan' => $request->catatan,
+            ]);
+
+            // Sync details
+            $spk->details()->delete();
+
+            foreach ($details as $i => $detail) {
+                $r = $rakitan['hasil'][$i];
+                SpkDetail::create([
+                    'spk_id' => $spk->id,
+                    'kegiatan_id' => $detail['kegiatan_id'],
+                    'uraian_tugas' => $detail['uraian_tugas'],
+                    'tanggal_mulai_detail' => $detail['tanggal_mulai_detail'],
+                    'tanggal_selesai_detail' => $detail['tanggal_selesai_detail'],
+                    'volume' => $detail['volume'],
+                    'satuan' => $detail['satuan'],
+                    'harga_satuan' => $detail['harga_satuan'],
+                    'nilai' => $detail['nilai'],
+                    'kode_anggaran' => $detail['kode_anggaran'] ?? $rakitan['kode_kegiatan'][$i] ?? null,
+                    'akun_anggaran' => $r['kode_akun'] ?? ($detail['akun_anggaran'] ?? null),
+                    'komponen' => $r['komponen'] ?? null,
+                    'subkomponen' => $r['subkomponen'] ?? null,
+                    'kode_beban_anggaran' => $r['kode_beban_anggaran'] ?? null,
+                ]);
+            }
+        });
+
+        $redirect = redirect()->route('spk.index')->with('success', 'SPK berhasil diperbarui.');
+        if (!empty($rakitan['gagal'])) {
+            $redirect->with('warning', 'SPK disimpan sebagai draft, tetapi kode beban anggaran belum terisi untuk sebagian baris. ' . implode(' | ', $rakitan['gagal']));
+        }
+
+        return $redirect;
     }
 
     public function destroy(Spk $spk)

@@ -55,8 +55,10 @@ class UserController extends Controller
 
         if (empty($plainPassword)) {
             if ($role === 'Mitra') {
+                // Password awal mitra ditebak dari sobat_id/username (data yang sering
+                // sudah diketahui orang lain), jadi tetap wajib diganti saat login pertama.
                 $plainPassword = $sobatId ?? $validated['username'];
-                $mustChangePassword = false;
+                $mustChangePassword = true;
             } else {
                 $sanitizedUsername = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($validated['username']));
                 $plainPassword = $sanitizedUsername . '@3509';

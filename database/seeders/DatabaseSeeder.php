@@ -16,6 +16,19 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Pengaman: seeder ini membuat akun admin/operator/ppk dengan password
+        // dev yang mudah ditebak ('password'). Jangan sampai ini pernah dijalankan
+        // tidak sengaja di server produksi (mis. 'php artisan migrate --seed').
+        if (! app()->environment(['local', 'testing'])) {
+            $this->command?->error(
+                'DatabaseSeeder dibatalkan: environment saat ini (' . app()->environment() . ') '
+                . 'bukan local/testing. Seeder ini membuat akun dengan password default yang '
+                . 'mudah ditebak dan tidak boleh dijalankan di produksi.'
+            );
+
+            return;
+        }
+
         $admin = User::create([
             'name' => 'Administrator',
             'username' => 'admin',
