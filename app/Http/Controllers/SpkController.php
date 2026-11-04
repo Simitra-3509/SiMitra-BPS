@@ -22,6 +22,12 @@ use Illuminate\Support\Facades\DB;
 
 class SpkController extends Controller implements HasMiddleware
 {
+    /**
+     * Status yang menandakan SPK sudah final: tidak boleh diubah atau dihapus
+     * lagi, baik lewat form maupun request PUT/DELETE langsung.
+     */
+    private const LOCKED_STATUSES = ['terbit', 'selesai', 'dibayar'];
+
     public static function middleware(): array
     {
         return [
@@ -415,8 +421,8 @@ class SpkController extends Controller implements HasMiddleware
 
     public function edit(Spk $spk)
     {
-        if ($spk->status === 'terbit' && !in_array(auth()->user()->role, ['admin', 'administrator'])) {
-            return redirect()->route('spk.index')->with('error', 'SPK yang sudah terbit tidak dapat diubah.');
+        if (in_array($spk->status, self::LOCKED_STATUSES, true)) {
+            return redirect()->route('spk.index')->with('error', 'SPK dengan status "' . $spk->status . '" sudah final dan tidak dapat diubah.');
         }
 
         $spk->load(['mitra', 'details.kegiatan']);
@@ -432,6 +438,14 @@ class SpkController extends Controller implements HasMiddleware
 
     public function update(Request $request, Spk $spk)
     {
+        // Jaga konsisten dengan edit(): status final tidak boleh diubah lewat
+        // request PUT langsung, bukan hanya diblokir di tampilan form.
+        if (in_array($spk->status, self::LOCKED_STATUSES, true)) {
+            return back()->withErrors([
+                'status' => 'SPK dengan status "' . $spk->status . '" sudah final dan tidak dapat diubah.',
+            ]);
+        }
+
         $request->validate([
             'mitra_id' => 'required|exists:mitras,id',
             'bulan' => 'required|integer|min:1|max:12',
@@ -515,6 +529,12 @@ class SpkController extends Controller implements HasMiddleware
 
     public function destroy(Spk $spk)
     {
+        if (in_array($spk->status, self::LOCKED_STATUSES, true)) {
+            return back()->withErrors([
+                'status' => 'SPK dengan status "' . $spk->status . '" sudah final dan tidak dapat dihapus.',
+            ]);
+        }
+
         $spk->delete();
         return redirect()->route('spk.index')->with('success', 'SPK berhasil dihapus.');
     }
